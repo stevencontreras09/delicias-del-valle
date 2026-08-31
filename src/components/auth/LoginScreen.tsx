@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
-import { Lock, User, Eye, EyeOff, ShieldCheck, Sparkles, ChefHat } from 'lucide-react';
+import { Lock, User, Eye, EyeOff, ShieldCheck, Sparkles } from 'lucide-react';
 
 export const LoginScreen: React.FC = () => {
   const { login } = useApp();
@@ -21,13 +21,7 @@ export const LoginScreen: React.FC = () => {
         setError(res.message);
         setLoading(false);
       }
-    }, 400);
-  };
-
-  const handleQuickLogin = (u: string, p: string) => {
-    setUsername(u);
-    setPassword(p);
-    setError(null);
+    }, 350);
   };
 
   return (
@@ -37,25 +31,14 @@ export const LoginScreen: React.FC = () => {
       <div className="absolute -bottom-32 -right-32 w-96 h-96 bg-frambuesa-100 rounded-full filter blur-3xl opacity-40 pointer-events-none"></div>
 
       <div className="max-w-md w-full relative z-10 animate-fade-in space-y-6">
-        {/* Cabecera / Branding */}
-        <div className="text-center space-y-3">
-          <div className="inline-flex items-center justify-center p-3 bg-crema rounded-3xl border border-trigo-300 shadow-md">
+        {/* Cabecera con el Logo Oficial */}
+        <div className="text-center space-y-2">
+          <div className="flex justify-center">
             <img
-              src="/logo.svg"
+              src="/logo.png"
               alt="Delicias del Valle"
-              className="w-16 h-16 object-contain"
-              onError={(e) => {
-                (e.target as HTMLElement).style.display = 'none';
-              }}
+              className="w-56 max-h-40 object-contain drop-shadow-sm hover:scale-105 transition-transform"
             />
-          </div>
-          <div>
-            <h1 className="text-3xl font-serif font-bold text-chocolate-800">
-              Delicias del Valle
-            </h1>
-            <p className="text-xs font-semibold text-trigo-700 uppercase tracking-widest mt-0.5">
-              Pastelería & Panadería Artesanal
-            </p>
           </div>
           <p className="text-xs text-chocolate-500 max-w-xs mx-auto">
             Sistema de Gestión Integral de Costos BOM, Inventario, Pedidos y Producción.
@@ -67,7 +50,7 @@ export const LoginScreen: React.FC = () => {
           <div className="border-b border-trigo-100 pb-3 text-center">
             <h2 className="text-lg font-bold text-chocolate-800 flex items-center justify-center gap-2">
               <ShieldCheck className="w-5 h-5 text-frambuesa-600" />
-              <span>Acceso al Taller</span>
+              <span>Acceso al Sistema</span>
             </h2>
             <p className="text-xs text-gray-500 mt-0.5">
               Ingresa con tus credenciales asignadas
@@ -91,7 +74,7 @@ export const LoginScreen: React.FC = () => {
                   type="text"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  placeholder="Ej: Steven9909"
+                  placeholder="Tu nombre de usuario"
                   required
                   className="w-full pl-10 pr-4 py-3 rounded-2xl border border-trigo-300 text-sm focus:ring-2 focus:ring-frambuesa-500 outline-none bg-canvas/40 font-medium text-chocolate-900 transition-all"
                 />
@@ -138,45 +121,11 @@ export const LoginScreen: React.FC = () => {
               )}
             </button>
           </form>
-
-          {/* Accesos Rápidos para Demostración y Taller */}
-          <div className="pt-2 border-t border-trigo-100 space-y-2">
-            <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider block text-center">
-              Usuarios Disponibles del Taller
-            </span>
-            <div className="grid grid-cols-2 gap-2.5">
-              <button
-                type="button"
-                onClick={() => handleQuickLogin('Steven9909', '@Manzana0104')}
-                className="p-2.5 bg-crema hover:bg-trigo-100 rounded-2xl border border-trigo-300 text-left transition-all group shadow-sm hover:scale-[1.02]"
-              >
-                <div className="flex items-center gap-1.5 text-xs font-bold text-chocolate-800">
-                  <ShieldCheck className="w-4 h-4 text-frambuesa-600" />
-                  <span>Admin Maestro</span>
-                </div>
-                <span className="text-[11px] text-frambuesa-700 font-bold block mt-0.5">Steven9909</span>
-                <span className="text-[10px] text-gray-500 block">Acceso Total + SQL + Sync</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleQuickLogin('taller_delicias', 'Delicias2026*')}
-                className="p-2.5 bg-canvas hover:bg-crema rounded-2xl border border-trigo-200 text-left transition-all group shadow-sm hover:scale-[1.02]"
-              >
-                <div className="flex items-center gap-1.5 text-xs font-bold text-chocolate-800">
-                  <ChefHat className="w-4 h-4 text-amber-600" />
-                  <span>Personal del Taller</span>
-                </div>
-                <span className="text-[11px] text-chocolate-800 font-bold block mt-0.5">taller_delicias</span>
-                <span className="text-[10px] text-gray-500 block">Acceso Operativo Completo</span>
-              </button>
-            </div>
-          </div>
         </div>
 
         {/* Pie informativo */}
         <p className="text-center text-[11px] text-gray-400">
-          Delicias del Valle &copy; {new Date().getFullYear()} • Acceso Administrador & Taller Gastronómico
+          Delicias del Valle &copy; {new Date().getFullYear()} • Acceso Autorizado
         </p>
       </div>
     </div>

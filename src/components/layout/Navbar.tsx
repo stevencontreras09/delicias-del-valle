@@ -78,28 +78,13 @@ export const Navbar: React.FC = () => {
           {/* Logo & Marca (shrink-0 para evitar que se comprima o corte) */}
           <div
             onClick={() => setActiveTab('dashboard')}
-            className="flex items-center gap-2 sm:gap-2.5 cursor-pointer group select-none shrink-0"
+            className="flex items-center gap-2 cursor-pointer group select-none shrink-0 py-1"
           >
-            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl p-1 border border-trigo-300 bg-crema shadow-sm group-hover:scale-105 transition-transform flex items-center justify-center shrink-0">
-              <img
-                src="/logo.svg"
-                alt="Delicias del Valle"
-                className="w-full h-full object-contain"
-                onError={(e) => {
-                  (e.target as HTMLElement).style.display = 'none';
-                }}
-              />
-            </div>
-            <div className="shrink-0">
-              <div className="flex items-center gap-1.5">
-                <span className="font-serif text-lg sm:text-2xl font-bold text-chocolate-700 tracking-tight leading-none group-hover:text-chocolate-800">
-                  Delicias del Valle
-                </span>
-              </div>
-              <p className="text-[9px] sm:text-[11px] font-semibold text-trigo-700 tracking-wider uppercase mt-0.5 sm:mt-1">
-                Pastelería & Panadería Artesanal
-              </p>
-            </div>
+            <img
+              src="/logo.png"
+              alt="Delicias del Valle"
+              className="h-12 sm:h-14 w-auto object-contain drop-shadow-sm group-hover:scale-105 transition-transform"
+            />
           </div>
 
           {/* Navegación Desktop */}
