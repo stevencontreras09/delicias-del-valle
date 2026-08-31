@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
+import { Pedido } from '../../types';
 import {
   ChefHat,
   Clock,
@@ -36,8 +37,8 @@ export const KitchenMode: React.FC = () => {
   const [soundEnabled, setSoundEnabled] = useState(true);
 
   // Pedidos activos para producción en taller
-  const activeOrders = pedidos.list.filter(
-    (p) => p.estado === 'confirmado' || p.estado === 'en_produccion' || p.estado === 'listo'
+  const activeOrders: Pedido[] = pedidos.list.filter(
+    (p: Pedido) => p.estado === 'confirmado' || p.estado === 'en_produccion' || p.estado === 'listo'
   );
 
   // Seleccionar automáticamente el primer pedido si no hay uno seleccionado

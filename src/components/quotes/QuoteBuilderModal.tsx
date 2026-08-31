@@ -453,27 +453,48 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
                 onChange={(e) => {
                   const val = e.target.value;
                   setTamanoPorciones(val);
-                  if (val.includes('½ LB') || val.includes('0.5')) {
+                  if (val.includes('½ LB') || val.includes('Pack x 6')) {
                     setFactorReceta(0.5);
-                  } else if (val.includes('2 LB')) {
-                    setFactorReceta(2);
-                  } else if (val.includes('3 LB')) {
-                    setFactorReceta(3);
+                  } else if (val.includes('2 LB') || val.includes('2x')) {
+                    setFactorReceta(2.0);
+                  } else if (val.includes('3 LB') || val.includes('100 Mini')) {
+                    setFactorReceta(3.0);
+                  } else if (val.includes('1 Porción Individual') || val.includes('0.08x')) {
+                    setFactorReceta(0.0833);
+                  } else if (val.includes('Pack x 4 Porciones') || val.includes('0.33x')) {
+                    setFactorReceta(0.3333);
+                  } else if (val.includes('12 Mini Bocaditos') || val.includes('0.4x')) {
+                    setFactorReceta(0.4);
+                  } else if (val.includes('24 Mini Bocaditos') || val.includes('0.75x')) {
+                    setFactorReceta(0.75);
+                  } else if (val.includes('50 Mini Bocaditos') || val.includes('1.5x')) {
+                    setFactorReceta(1.5);
                   } else {
-                    setFactorReceta(1);
+                    setFactorReceta(1.0);
                   }
                 }}
                 className="w-full px-3 py-2.5 rounded-xl border border-trigo-300 focus:ring-2 focus:ring-frambuesa-400 focus:outline-none bg-white font-medium text-chocolate-900"
               >
-                <option value="1 Molde 22cm (10-12 porciones)">1 Molde 22cm (10-12 porciones) [Estándar 1x]</option>
-                <option value="1 Molde Bundt 24cm (12-14 porciones)">1 Molde Bundt 24cm (12-14 porciones) [1x]</option>
-                <option value="½ LB (8-10 porciones)">½ LB (8-10 porciones) [0.5x]</option>
-                <option value="1 LB (16-20 porciones)">1 LB (16-20 porciones) [1x]</option>
-                <option value="2 LB (30-40 porciones)">2 LB (30-40 porciones) [2x]</option>
-                <option value="3 LB (50+ porciones)">3 LB (50+ porciones) [3x]</option>
-                <option value="12 unidades (Caja / Docena)">12 unidades (Caja / Docena) [1x]</option>
-                <option value="24 unidades (Caja)">24 unidades (Caja) [2x]</option>
-                <option value="Bandeja 12 porciones">Bandeja 12 porciones [1x]</option>
+                <optgroup label="⚖️ Formato Libra (Pasteles & Moldes)">
+                  <option value="½ LB (8-10 porciones)">½ LB (8-10 porciones) [0.5x]</option>
+                  <option value="1 LB (16-20 porciones)">1 LB (16-20 porciones) [Estándar 1x]</option>
+                  <option value="2 LB (30-40 porciones)">2 LB (30-40 porciones) [2x]</option>
+                  <option value="3 LB (50+ porciones)">3 LB (50+ porciones) [3x]</option>
+                  <option value="1 Molde 22cm (10-12 porciones)">1 Molde 22cm (10-12 porciones) [1x]</option>
+                  <option value="1 Molde Bundt 24cm (12-14 porciones)">1 Molde Bundt 24cm (12-14 porciones) [1x]</option>
+                </optgroup>
+                <optgroup label="🍰 Formato Porción (Rebanadas & Platos)">
+                  <option value="1 Porción Individual (Slice)">1 Porción Individual (Slice) [0.08x]</option>
+                  <option value="Pack x 4 Porciones">Pack x 4 Porciones [0.33x]</option>
+                  <option value="Pack x 6 Porciones">Pack x 6 Porciones [0.5x]</option>
+                  <option value="Bandeja 12 porciones">Bandeja 12 porciones [1x]</option>
+                </optgroup>
+                <optgroup label="🧁 Formato Mini (Bocaditos & Mesa de Dulces)">
+                  <option value="Caja x 12 Mini Bocaditos">Caja x 12 Mini Bocaditos [0.4x]</option>
+                  <option value="Caja x 24 Mini Bocaditos">Caja x 24 Mini Bocaditos [0.75x]</option>
+                  <option value="Caja x 50 Mini Bocaditos (Eventos)">Caja x 50 Mini Bocaditos (Eventos) [1.5x]</option>
+                  <option value="Caja x 100 Mini Bocaditos (Banquete)">Caja x 100 Mini Bocaditos (Banquete) [3x]</option>
+                </optgroup>
               </select>
             </div>
 

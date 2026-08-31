@@ -176,13 +176,29 @@ export const RecipeManager: React.FC = () => {
                 </div>
 
                 {/* Resumen de Ingredientes */}
-                <div className="mt-3 flex items-center justify-between text-xs text-gray-500">
+                <div className="mt-2.5 flex items-center justify-between text-xs text-gray-500">
                   <span>
                     BOM: <b>{fijosCount}</b> fijos + <b>{varCount}</b> variables
                   </span>
                   <span className="text-[11px] font-semibold text-chocolate-700">
                     {receta.ingredientes.length} items
                   </span>
+                </div>
+
+                {/* Precios Rápidos: Libra, Porción, Mini */}
+                <div className="grid grid-cols-3 gap-1 pt-2 mt-2 border-t border-trigo-100 text-[10px]">
+                  <div className="bg-canvas p-1 rounded-lg border border-trigo-200 text-center">
+                    <span className="text-gray-500 block font-medium">Libra</span>
+                    <span className="font-extrabold text-chocolate-900">{formatCurrency(costData.precio_sugerido_margen_venta)}</span>
+                  </div>
+                  <div className="bg-canvas p-1 rounded-lg border border-trigo-200 text-center">
+                    <span className="text-gray-500 block font-medium">Porción</span>
+                    <span className="font-extrabold text-chocolate-900">{formatCurrency(Math.max(10, Math.ceil((costData.precio_sugerido_margen_venta / 12) / 10) * 10))}</span>
+                  </div>
+                  <div className="bg-canvas p-1 rounded-lg border border-trigo-200 text-center">
+                    <span className="text-gray-500 block font-medium">12 Mini</span>
+                    <span className="font-extrabold text-chocolate-900">{formatCurrency(Math.max(10, Math.ceil((costData.precio_sugerido_margen_venta * 0.4) / 10) * 10))}</span>
+                  </div>
                 </div>
               </div>
 

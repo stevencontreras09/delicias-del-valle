@@ -3,6 +3,7 @@ import { Insumo, UnidadBase } from '../../types';
 import { Modal } from '../ui/Modal';
 import { formatCurrency } from '../../utils/formatters';
 import { calcularCostoUnitarioBase } from '../../utils/calculations';
+import { Scale, Calculator, ArrowRight, Sparkles } from 'lucide-react';
 
 interface InsumoFormModalProps {
   isOpen: boolean;
@@ -24,6 +25,27 @@ const CATEGORIAS = [
   'Empaques y Desechables',
 ];
 
+type MedidaCompra = 'lb' | 'kg' | 'oz' | 'g' | 'oz_liq' | 'l' | 'gal' | 'ml' | 'ud';
+
+interface MedidaInfo {
+  label: string;
+  unidadBase: UnidadBase;
+  factorABase: number; // Factor por 1 unidad de esta medida
+  ejemplo: string;
+}
+
+const MEDIDAS_COMPRA_MAP: Record<MedidaCompra, MedidaInfo> = {
+  lb: { label: 'Libras (lb)', unidadBase: 'g', factorABase: 453.592, ejemplo: '1 lb = 453.59 g' },
+  kg: { label: 'Kilogramos (kg)', unidadBase: 'g', factorABase: 1000, ejemplo: '1 kg = 1,000 g' },
+  oz: { label: 'Onzas sólidas (oz)', unidadBase: 'g', factorABase: 28.3495, ejemplo: '1 oz = 28.35 g' },
+  g: { label: 'Gramos (g)', unidadBase: 'g', factorABase: 1, ejemplo: '1 g = 1 g' },
+  oz_liq: { label: 'Onzas Líquidas (fl oz)', unidadBase: 'ml', factorABase: 29.5735, ejemplo: '1 fl oz = 29.57 ml' },
+  l: { label: 'Litros (L)', unidadBase: 'ml', factorABase: 1000, ejemplo: '1 L = 1,000 ml' },
+  gal: { label: 'Galones (gal)', unidadBase: 'ml', factorABase: 3785.41, ejemplo: '1 gal = 3,785.4 ml' },
+  ml: { label: 'Mililitros (ml)', unidadBase: 'ml', factorABase: 1, ejemplo: '1 ml = 1 ml' },
+  ud: { label: 'Unidades / Piezas (ud)', unidadBase: 'ud', factorABase: 1, ejemplo: '1 ud = 1 ud' },
+};
+
 export const InsumoFormModal: React.FC<InsumoFormModalProps> = ({
   isOpen,
   onClose,
@@ -32,14 +54,20 @@ export const InsumoFormModal: React.FC<InsumoFormModalProps> = ({
 }) => {
   const [nombre, setNombre] = useState('');
   const [categoria, setCategoria] = useState(CATEGORIAS[0]);
-  const [unidadCompra, setUnidadCompra] = useState('Bolsa 1 kg');
+  const [unidadCompra, setUnidadCompra] = useState('Funda 1 lb');
+  
+  // Conversor Automático de Medidas (lb, kg, oz líquidas, etc.)
+  const [cantidadCompra, setCantidadCompra] = useState<number | ''>(1);
+  const [medidaCompra, setMedidaCompra] = useState<MedidaCompra>('lb');
+
   const [precioCompra, setPrecioCompra] = useState<number | ''>(0);
-  const [presentacionEmpaque, setPresentacionEmpaque] = useState<number | ''>(1000);
+  const [presentacionEmpaque, setPresentacionEmpaque] = useState<number | ''>(453.59);
   const [unidadBase, setUnidadBase] = useState<UnidadBase>('g');
   const [stockActual, setStockActual] = useState<number | ''>(0);
   const [stockMinimo, setStockMinimo] = useState<number | ''>(0);
   const [activo, setActivo] = useState(true);
 
+  // Inicialización o reset
   useEffect(() => {
     if (initialInsumo) {
       setNombre(initialInsumo.nombre);
@@ -51,18 +79,60 @@ export const InsumoFormModal: React.FC<InsumoFormModalProps> = ({
       setStockActual(initialInsumo.stock_actual);
       setStockMinimo(initialInsumo.stock_minimo);
       setActivo(initialInsumo.activo);
+
+      // Detectar medida si es posible
+      if (initialInsumo.unidad_base === 'g') {
+        if (Math.abs(initialInsumo.presentacion_empaque - 453.59) < 2) {
+          setMedidaCompra('lb');
+          setCantidadCompra(1);
+        } else if (initialInsumo.presentacion_empaque === 1000) {
+          setMedidaCompra('kg');
+          setCantidadCompra(1);
+        }
+      } else if (initialInsumo.unidad_base === 'ml') {
+        if (initialInsumo.presentacion_empaque === 1000) {
+          setMedidaCompra('l');
+          setCantidadCompra(1);
+        } else if (Math.abs(initialInsumo.presentacion_empaque - 3785.4) < 10) {
+          setMedidaCompra('gal');
+          setCantidadCompra(1);
+        }
+      } else {
+        setMedidaCompra('ud');
+        setCantidadCompra(initialInsumo.presentacion_empaque || 1);
+      }
     } else {
       setNombre('');
       setCategoria(CATEGORIAS[0]);
-      setUnidadCompra('Bolsa 1 kg');
+      setUnidadCompra('Funda 1 lb');
+      setCantidadCompra(1);
+      setMedidaCompra('lb');
       setPrecioCompra('');
-      setPresentacionEmpaque(1000);
+      setPresentacionEmpaque(453.59);
       setUnidadBase('g');
       setStockActual('');
       setStockMinimo('');
       setActivo(true);
     }
   }, [initialInsumo, isOpen]);
+
+  // Manejar cambio en el conversor automático de medida
+  const handleMedidaChange = (nuevaMedida: MedidaCompra, nuevaCantidad: number | '') => {
+    setMedidaCompra(nuevaMedida);
+    setCantidadCompra(nuevaCantidad);
+
+    const info = MEDIDAS_COMPRA_MAP[nuevaMedida];
+    const cant = typeof nuevaCantidad === 'number' && nuevaCantidad > 0 ? nuevaCantidad : 1;
+    const totalBase = Math.round(cant * info.factorABase * 100) / 100;
+
+    setUnidadBase(info.unidadBase);
+    setPresentacionEmpaque(totalBase);
+
+    // Sugerir texto descriptivo si es un insumo nuevo
+    if (!initialInsumo) {
+      setUnidadCompra(`Presentación ${cant} ${nuevaMedida.replace('_', ' ')}`);
+    }
+  };
 
   const pCompraNum = typeof precioCompra === 'number' ? precioCompra : 0;
   const presNum = typeof presentacionEmpaque === 'number' && presentacionEmpaque > 0 ? presentacionEmpaque : 1;
@@ -75,7 +145,7 @@ export const InsumoFormModal: React.FC<InsumoFormModalProps> = ({
     onSave({
       nombre: nombre.trim(),
       categoria,
-      unidad_compra: unidadCompra.trim(),
+      unidad_compra: unidadCompra.trim() || `${cantidadCompra || 1} ${medidaCompra}`,
       precio_compra: Number(precioCompra) || 0,
       presentacion_empaque: Number(presentacionEmpaque) || 1,
       unidad_base: unidadBase,
@@ -91,33 +161,35 @@ export const InsumoFormModal: React.FC<InsumoFormModalProps> = ({
       isOpen={isOpen}
       onClose={onClose}
       title={initialInsumo ? 'Editar Insumo' : 'Nuevo Insumo / Materia Prima'}
-      subtitle="Los costos unitarios base ($/g, $/ml, $/ud) se recalculan automáticamente"
-      maxWidth="xl"
+      subtitle="Conversión automática inteligente desde Libras (lb), Kilogramos (kg), Onzas Líquidas y Galones"
+      maxWidth="2xl"
     >
       <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+          {/* Nombre */}
           <div className="sm:col-span-2">
-            <label className="block text-xs font-bold text-chocolate-700 uppercase tracking-wider mb-1">
-              Nombre del Insumo *
+            <label className="block font-bold text-chocolate-700 uppercase tracking-wider mb-1">
+              Nombre del Insumo / Materia Prima *
             </label>
             <input
               type="text"
               required
-              placeholder="Ej. Harina de Almendras Extra Fina"
+              placeholder="Ej. Harina de Trigo Todo Uso, Mantequilla President, Chocolate Belga 56%"
               value={nombre}
               onChange={(e) => setNombre(e.target.value)}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-trigo-300 focus:outline-none focus:ring-2 focus:ring-frambuesa-400 text-sm"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-trigo-300 focus:outline-none focus:ring-2 focus:ring-frambuesa-400 text-sm font-semibold text-chocolate-900 bg-canvas/30"
             />
           </div>
 
+          {/* Categoría */}
           <div>
-            <label className="block text-xs font-bold text-chocolate-700 uppercase tracking-wider mb-1">
+            <label className="block font-bold text-chocolate-700 uppercase tracking-wider mb-1">
               Categoría
             </label>
             <select
               value={categoria}
               onChange={(e) => setCategoria(e.target.value)}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-trigo-300 focus:outline-none focus:ring-2 focus:ring-frambuesa-400 text-sm bg-white"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-trigo-300 focus:outline-none focus:ring-2 focus:ring-frambuesa-400 text-xs bg-white font-medium text-chocolate-900"
             >
               {CATEGORIAS.map((cat) => (
                 <option key={cat} value={cat}>
@@ -127,82 +199,166 @@ export const InsumoFormModal: React.FC<InsumoFormModalProps> = ({
             </select>
           </div>
 
+          {/* Precio de Compra en RD$ */}
           <div>
-            <label className="block text-xs font-bold text-chocolate-700 uppercase tracking-wider mb-1">
-              Unidad Base de Uso (BOM) *
-            </label>
-            <select
-              value={unidadBase}
-              onChange={(e) => setUnidadBase(e.target.value as UnidadBase)}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-trigo-300 focus:outline-none focus:ring-2 focus:ring-frambuesa-400 text-sm bg-white"
-            >
-              <option value="g">Gramos (g) - Para sólidos y harinas</option>
-              <option value="ml">Mililitros (ml) - Para líquidos y esencias</option>
-              <option value="ud">Unidades (ud) - Para huevos, empaques, bases</option>
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-xs font-bold text-chocolate-700 uppercase tracking-wider mb-1">
-              Unidad de Compra (Empaque)
-            </label>
-            <input
-              type="text"
-              placeholder="Ej. Saco 50 kg, Garrafa 5 L, Panal 30 ud"
-              value={unidadCompra}
-              onChange={(e) => setUnidadCompra(e.target.value)}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-trigo-300 focus:outline-none focus:ring-2 focus:ring-frambuesa-400 text-sm"
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs font-bold text-chocolate-700 uppercase tracking-wider mb-1">
-              Precio de Compra ($) *
+            <label className="block font-bold text-chocolate-700 uppercase tracking-wider mb-1">
+              Precio Total de Compra (RD$) *
             </label>
             <input
               type="number"
-              step="0.01"
+              step="any"
               min="0"
               required
               placeholder="0.00"
               value={precioCompra}
-              onChange={(e) => setPrecioCompra(e.target.value === '' ? '' : parseFloat(e.target.value))}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-trigo-300 focus:outline-none focus:ring-2 focus:ring-frambuesa-400 text-sm"
+              onChange={(e) =>
+                setPrecioCompra(e.target.value === '' ? '' : parseFloat(e.target.value))
+              }
+              className="w-full px-3.5 py-2.5 rounded-xl border border-trigo-300 focus:outline-none focus:ring-2 focus:ring-frambuesa-400 text-xs font-bold text-chocolate-900 bg-white"
             />
           </div>
 
+          {/* ========================================================================= */}
+          {/* CONVERSOR AUTOMÁTICO DE MEDIDA (Libras, Kilos, Onzas Líquidas, Galón, etc.) */}
+          {/* ========================================================================= */}
+          <div className="sm:col-span-2 bg-crema/60 p-4 rounded-2xl border-2 border-trigo-300 space-y-3">
+            <div className="flex items-center justify-between border-b border-trigo-200 pb-2">
+              <span className="font-bold text-chocolate-800 flex items-center gap-2">
+                <Calculator className="w-4 h-4 text-frambuesa-600" />
+                <span>Conversor Automático de Presentación de Compra</span>
+              </span>
+              <span className="text-[11px] font-semibold text-chocolate-600">
+                {MEDIDAS_COMPRA_MAP[medidaCompra].ejemplo}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {/* Cantidad de Compra */}
+              <div>
+                <label className="block font-bold text-chocolate-700 mb-1">
+                  Cantidad Comprada
+                </label>
+                <input
+                  type="number"
+                  step="any"
+                  min="0.01"
+                  required
+                  placeholder="Ej. 1, 5, 25, 50"
+                  value={cantidadCompra}
+                  onChange={(e) =>
+                    handleMedidaChange(
+                      medidaCompra,
+                      e.target.value === '' ? '' : parseFloat(e.target.value)
+                    )
+                  }
+                  className="w-full px-3 py-2 rounded-xl border border-trigo-300 focus:ring-2 focus:ring-frambuesa-400 bg-white font-bold text-chocolate-900"
+                />
+              </div>
+
+              {/* Medida de Compra (Libras, Kilos, Onzas Líquidas, Galón, etc.) */}
+              <div>
+                <label className="block font-bold text-chocolate-700 mb-1">
+                  Medida de Compra (lb, kg, oz líq, gal...) *
+                </label>
+                <select
+                  value={medidaCompra}
+                  onChange={(e) =>
+                    handleMedidaChange(e.target.value as MedidaCompra, cantidadCompra)
+                  }
+                  className="w-full px-3 py-2 rounded-xl border-2 border-frambuesa-300 focus:ring-2 focus:ring-frambuesa-400 bg-white font-bold text-frambuesa-900"
+                >
+                  <optgroup label="Sólidos y Masas (Conversión a Gramos 'g')">
+                    <option value="lb">Libras (lb) [1 lb = 453.6 g]</option>
+                    <option value="kg">Kilogramos (kg) [1 kg = 1,000 g]</option>
+                    <option value="oz">Onzas sólidas (oz) [1 oz = 28.35 g]</option>
+                    <option value="g">Gramos directos (g)</option>
+                  </optgroup>
+                  <optgroup label="Líquidos y Esencias (Conversión a Mililitros 'ml')">
+                    <option value="oz_liq">Onzas Líquidas (fl oz) [1 oz liq = 29.57 ml]</option>
+                    <option value="l">Litros (L) [1 L = 1,000 ml]</option>
+                    <option value="gal">Galón (gal) [1 gal = 3,785.4 ml]</option>
+                    <option value="ml">Mililitros directos (ml)</option>
+                  </optgroup>
+                  <optgroup label="Piezas / Empaques (Conversión a Unidades 'ud')">
+                    <option value="ud">Unidades / Piezas (ud)</option>
+                  </optgroup>
+                </select>
+              </div>
+
+              {/* Unidad de Compra (Etiqueta de Inventario) */}
+              <div>
+                <label className="block font-bold text-chocolate-700 mb-1">
+                  Etiqueta / Descripción Empaque
+                </label>
+                <input
+                  type="text"
+                  placeholder="Ej. Saco 50 lb, Galón 3.78L"
+                  value={unidadCompra}
+                  onChange={(e) => setUnidadCompra(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl border border-trigo-300 focus:ring-2 focus:ring-frambuesa-400 bg-white"
+                />
+              </div>
+            </div>
+
+            {/* Resumen de Conversión en Tiempo Real */}
+            <div className="bg-white p-3 rounded-xl border border-trigo-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-amber-600 shrink-0" />
+                <span className="text-chocolate-800">
+                  Presentación Calculada:{' '}
+                  <b className="text-frambuesa-600 font-extrabold">
+                    {presentacionEmpaque} {unidadBase}
+                  </b>
+                  <span className="text-gray-500 ml-1">
+                    ({cantidadCompra || 1} {medidaCompra} $\rightarrow$ {unidadBase})
+                  </span>
+                </span>
+              </div>
+
+              <div className="text-right font-bold text-emerald-800 bg-emerald-50 px-3 py-1 rounded-lg border border-emerald-200">
+                Costo Unitario Base: {formatCurrency(costoCalculado)} / {unidadBase}
+              </div>
+            </div>
+          </div>
+
+          {/* Ajuste Fino Manual (Presentación en Unidad Base) */}
           <div>
-            <label className="block text-xs font-bold text-chocolate-700 uppercase tracking-wider mb-1">
-              Presentación en {unidadBase.toUpperCase()} (Factor Conversión) *
+            <label className="block font-bold text-chocolate-700 uppercase tracking-wider mb-1">
+              Contenido Exacto en {unidadBase.toUpperCase()} (Base BOM) *
             </label>
             <input
               type="number"
               step="any"
               min="0.0001"
               required
-              placeholder="Ej. 50000 para saco 50kg, 1000 para 1kg"
               value={presentacionEmpaque}
-              onChange={(e) => setPresentacionEmpaque(e.target.value === '' ? '' : parseFloat(e.target.value))}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-trigo-300 focus:outline-none focus:ring-2 focus:ring-frambuesa-400 text-sm"
+              onChange={(e) =>
+                setPresentacionEmpaque(e.target.value === '' ? '' : parseFloat(e.target.value))
+              }
+              className="w-full px-3.5 py-2.5 rounded-xl border border-trigo-300 focus:outline-none focus:ring-2 focus:ring-frambuesa-400 bg-white font-semibold text-chocolate-900"
             />
           </div>
 
-          {/* Tarjeta de cálculo automático del costo unitario */}
-          <div className="bg-crema p-3.5 rounded-2xl border border-trigo-200 flex flex-col justify-center">
-            <span className="text-[11px] font-bold text-chocolate-600 uppercase">
-              Costo Unitario Base Calculado:
-            </span>
-            <span className="text-lg font-extrabold text-frambuesa-600">
-              {formatCurrency(costoCalculado)} / {unidadBase}
-            </span>
-            <span className="text-[10px] text-chocolate-500">
-              ({pCompraNum} ÷ {presNum} {unidadBase})
-            </span>
+          {/* Unidad Base */}
+          <div>
+            <label className="block font-bold text-chocolate-700 uppercase tracking-wider mb-1">
+              Unidad Base de Producción
+            </label>
+            <select
+              value={unidadBase}
+              onChange={(e) => setUnidadBase(e.target.value as UnidadBase)}
+              className="w-full px-3.5 py-2.5 rounded-xl border border-trigo-300 focus:outline-none focus:ring-2 focus:ring-frambuesa-400 bg-white font-semibold text-chocolate-900"
+            >
+              <option value="g">Gramos (g) - Sólidos y harinas</option>
+              <option value="ml">Mililitros (ml) - Líquidos y aceites</option>
+              <option value="ud">Unidades (ud) - Huevos y empaques</option>
+            </select>
           </div>
 
+          {/* Stock Actual */}
           <div>
-            <label className="block text-xs font-bold text-chocolate-700 uppercase tracking-wider mb-1">
-              Stock Actual ({unidadBase})
+            <label className="block font-bold text-chocolate-700 uppercase tracking-wider mb-1">
+              Stock Inicial ({unidadBase})
             </label>
             <input
               type="number"
@@ -210,13 +366,16 @@ export const InsumoFormModal: React.FC<InsumoFormModalProps> = ({
               min="0"
               placeholder="0"
               value={stockActual}
-              onChange={(e) => setStockActual(e.target.value === '' ? '' : parseFloat(e.target.value))}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-trigo-300 focus:outline-none focus:ring-2 focus:ring-frambuesa-400 text-sm"
+              onChange={(e) =>
+                setStockActual(e.target.value === '' ? '' : parseFloat(e.target.value))
+              }
+              className="w-full px-3.5 py-2.5 rounded-xl border border-trigo-300 focus:outline-none focus:ring-2 focus:ring-frambuesa-400 bg-white text-chocolate-900 font-semibold"
             />
           </div>
 
+          {/* Stock Mínimo de Alerta */}
           <div>
-            <label className="block text-xs font-bold text-chocolate-700 uppercase tracking-wider mb-1">
+            <label className="block font-bold text-chocolate-700 uppercase tracking-wider mb-1">
               Stock Mínimo de Alerta ({unidadBase})
             </label>
             <input
@@ -225,8 +384,10 @@ export const InsumoFormModal: React.FC<InsumoFormModalProps> = ({
               min="0"
               placeholder="0"
               value={stockMinimo}
-              onChange={(e) => setStockMinimo(e.target.value === '' ? '' : parseFloat(e.target.value))}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-trigo-300 focus:outline-none focus:ring-2 focus:ring-frambuesa-400 text-sm"
+              onChange={(e) =>
+                setStockMinimo(e.target.value === '' ? '' : parseFloat(e.target.value))
+              }
+              className="w-full px-3.5 py-2.5 rounded-xl border border-trigo-300 focus:outline-none focus:ring-2 focus:ring-frambuesa-400 bg-white text-chocolate-900 font-semibold"
             />
           </div>
         </div>
@@ -235,13 +396,13 @@ export const InsumoFormModal: React.FC<InsumoFormModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2.5 rounded-xl border border-trigo-300 text-chocolate-600 hover:bg-gray-50 text-sm font-semibold transition-colors"
+            className="px-4 py-2.5 rounded-xl border border-trigo-300 text-chocolate-600 hover:bg-gray-50 text-xs font-semibold transition-colors"
           >
             Cancelar
           </button>
           <button
             type="submit"
-            className="px-6 py-2.5 rounded-xl bg-frambuesa-500 hover:bg-frambuesa-600 text-white font-bold text-sm shadow-warm transition-all"
+            className="px-6 py-2.5 rounded-xl bg-frambuesa-500 hover:bg-frambuesa-600 text-white font-bold text-xs shadow-warm transition-all transform hover:scale-105"
           >
             {initialInsumo ? 'Guardar Cambios' : 'Crear Insumo'}
           </button>

@@ -10,9 +10,10 @@ import {
   Clock,
   Flame,
   Scale,
-  Edit2,
   ChefHat,
   Sparkles,
+  PieChart,
+  Package,
 } from 'lucide-react';
 
 interface RecipeDetailModalProps {
@@ -23,14 +24,44 @@ interface RecipeDetailModalProps {
   onEdit?: (receta: Receta) => void;
 }
 
+type FormatoPresentacion = 'libra' | 'porcion' | 'mini';
+
+interface FormatoOpcion {
+  label: string;
+  factor: number;
+  descripcion: string;
+}
+
+const FORMATOS_CONFIG: Record<FormatoPresentacion, FormatoOpcion[]> = {
+  libra: [
+    { label: '½ LB', factor: 0.5, descripcion: 'Familiar pequeño (8-10 personas)' },
+    { label: '1 LB', factor: 1.0, descripcion: 'Estándar artesanal (16-20 personas)' },
+    { label: '2 LB', factor: 2.0, descripcion: 'Celebración grande (30-40 personas)' },
+    { label: '3 LB', factor: 3.0, descripcion: 'Eventos / Bodas (50+ personas)' },
+  ],
+  porcion: [
+    { label: '1 Porción', factor: 0.0833, descripcion: 'Rebanada / Porción individual servida' },
+    { label: 'Pack x 4', factor: 0.3333, descripcion: 'Caja degustación 4 porciones' },
+    { label: 'Pack x 6', factor: 0.5, descripcion: 'Caja familiar 6 porciones' },
+    { label: 'Bandeja x 12', factor: 1.0, descripcion: 'Bandeja completa 12 porciones' },
+  ],
+  mini: [
+    { label: 'Caja x 12 Mini', factor: 0.4, descripcion: 'Bocaditos / Mini postres mesa dulce' },
+    { label: 'Caja x 24 Mini', factor: 0.75, descripcion: 'Surtido para reuniones y café' },
+    { label: 'Caja x 50 Mini', factor: 1.5, descripcion: 'Bocados para eventos y cócteles' },
+    { label: 'Caja x 100 Mini', factor: 3.0, descripcion: 'Banquete masivo para recepciones' },
+  ],
+};
+
 export const RecipeDetailModal: React.FC<RecipeDetailModalProps> = ({
   isOpen,
   onClose,
   receta,
   insumosMap,
-  onEdit,
 }) => {
+  const [formatoActivo, setFormatoActivo] = useState<FormatoPresentacion>('libra');
   const [multiplier, setMultiplier] = useState<number>(1);
+  const [selectedPresetLabel, setSelectedPresetLabel] = useState<string>('1 LB');
 
   if (!receta) return null;
 
@@ -44,6 +75,12 @@ export const RecipeDetailModal: React.FC<RecipeDetailModalProps> = ({
   const fijos = ingredientesEnriquecidos.filter((i) => i.tipo === 'fijo');
   const variables = ingredientesEnriquecidos.filter((i) => i.tipo === 'variable');
 
+  const handleSelectFormato = (formato: FormatoPresentacion, opcion: FormatoOpcion) => {
+    setFormatoActivo(formato);
+    setMultiplier(opcion.factor);
+    setSelectedPresetLabel(opcion.label);
+  };
+
   return (
     <Modal
       isOpen={isOpen}
@@ -53,31 +90,92 @@ export const RecipeDetailModal: React.FC<RecipeDetailModalProps> = ({
       maxWidth="4xl"
     >
       <div className="space-y-6">
-        {/* Barra Superior: Escalador Interactivo de Recetas */}
-        <div className="bg-crema p-4 rounded-2xl border border-trigo-200 flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-2 text-xs text-chocolate-800">
-            <Scale className="w-4 h-4 text-trigo-600" />
-            <span className="font-bold">Escalar Receta en Vivo:</span>
-            <span className="text-gray-500 font-medium">
-              (Multiplica todas las cantidades de ingredientes y costos en tiempo real)
-            </span>
-          </div>
+        {/* ========================================================================= */}
+        {/* SELECTOR DE PRESENTACIÓN DIVIDIDO EN: LIBRA, PORCIÓN Y MINI              */}
+        {/* ========================================================================= */}
+        <div className="bg-white p-4 rounded-3xl border-2 border-trigo-300 shadow-warm space-y-3">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-trigo-100 pb-2.5">
+            <div className="flex items-center gap-2">
+              <Scale className="w-5 h-5 text-frambuesa-600" />
+              <span className="font-bold text-chocolate-800 text-sm">
+                División de Receta por Presentación:
+              </span>
+            </div>
 
-          {/* Botones de Escala Rápida */}
-          <div className="flex items-center gap-1.5">
-            {[0.5, 1, 2, 3, 5, 10].map((factor) => (
+            {/* Pestañas de Formato (Libra, Porción, Mini) */}
+            <div className="flex items-center gap-1 bg-canvas p-1 rounded-2xl border border-trigo-200">
               <button
-                key={factor}
-                onClick={() => setMultiplier(factor)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all shadow-sm ${
-                  multiplier === factor
-                    ? 'bg-chocolate-700 text-white shadow-md'
-                    : 'bg-white text-chocolate-700 hover:bg-white/80 border border-trigo-200'
+                type="button"
+                onClick={() => handleSelectFormato('libra', FORMATOS_CONFIG.libra[1])}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                  formatoActivo === 'libra'
+                    ? 'bg-frambuesa-500 text-white shadow-sm'
+                    : 'text-chocolate-700 hover:bg-crema'
                 }`}
               >
-                {factor}x
+                <Scale className="w-3.5 h-3.5" />
+                <span>Libra</span>
               </button>
-            ))}
+
+              <button
+                type="button"
+                onClick={() => handleSelectFormato('porcion', FORMATOS_CONFIG.porcion[0])}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                  formatoActivo === 'porcion'
+                    ? 'bg-frambuesa-500 text-white shadow-sm'
+                    : 'text-chocolate-700 hover:bg-crema'
+                }`}
+              >
+                <PieChart className="w-3.5 h-3.5" />
+                <span>Porción</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleSelectFormato('mini', FORMATOS_CONFIG.mini[0])}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                  formatoActivo === 'mini'
+                    ? 'bg-frambuesa-500 text-white shadow-sm'
+                    : 'text-chocolate-700 hover:bg-crema'
+                }`}
+              >
+                <Package className="w-3.5 h-3.5" />
+                <span>Mini (Bocaditos)</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Opciones Específicas del Formato Seleccionado */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            {FORMATOS_CONFIG[formatoActivo].map((opc) => {
+              const isSelected = selectedPresetLabel === opc.label;
+              return (
+                <button
+                  key={opc.label}
+                  type="button"
+                  onClick={() => handleSelectFormato(formatoActivo, opc)}
+                  className={`p-2.5 rounded-2xl text-left border transition-all ${
+                    isSelected
+                      ? 'bg-chocolate-700 text-white border-chocolate-800 shadow-md transform scale-[1.02]'
+                      : 'bg-crema/40 text-chocolate-800 border-trigo-200 hover:bg-crema'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="font-extrabold text-xs">{opc.label}</span>
+                    <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md ${
+                      isSelected ? 'bg-white/20 text-white' : 'bg-trigo-200 text-chocolate-700'
+                    }`}>
+                      {opc.factor}x
+                    </span>
+                  </div>
+                  <p className={`text-[10px] mt-0.5 line-clamp-1 ${
+                    isSelected ? 'text-trigo-200' : 'text-gray-500'
+                  }`}>
+                    {opc.descripcion}
+                  </p>
+                </button>
+              );
+            })}
           </div>
         </div>
 
@@ -106,9 +204,9 @@ export const RecipeDetailModal: React.FC<RecipeDetailModalProps> = ({
           <div className="bg-canvas p-3 rounded-2xl border border-trigo-200 flex items-center gap-2.5">
             <ChefHat className="w-4 h-4 text-trigo-600" />
             <div>
-              <span className="text-gray-500 block text-[11px]">Rendimiento Actual:</span>
+              <span className="text-gray-500 block text-[11px]">Presentación Actual:</span>
               <span className="font-bold text-chocolate-800">
-                {receta.rendimiento_base * multiplier} {receta.rendimiento_unidad}
+                {selectedPresetLabel} ({multiplier}x base)
               </span>
             </div>
           </div>
@@ -127,7 +225,7 @@ export const RecipeDetailModal: React.FC<RecipeDetailModalProps> = ({
         {/* TABLA BOM: Escandallo Desglosado de Ingredientes */}
         <div className="space-y-4">
           <h3 className="text-sm font-bold text-chocolate-800 uppercase tracking-wider">
-            1. Desglose de Materia Prima Directa (BOM)
+            1. Desglose de Materia Prima Directa (BOM Escalado {multiplier}x)
           </h3>
 
           {/* Ingredientes Fijos (Base / Masa) */}
@@ -209,7 +307,7 @@ export const RecipeDetailModal: React.FC<RecipeDetailModalProps> = ({
           )}
         </div>
 
-        {/* Cascada Integral de Costos & Precios Sugeridos */}
+        {/* Cascada Integral de Costos & Precios Sugeridos con 3% Merma y Redondeo a 0 */}
         <div className="bg-canvas p-5 rounded-2xl border border-trigo-200 space-y-4">
           <h3 className="text-sm font-bold text-chocolate-800 uppercase tracking-wider">
             2. Cascada de Costos de Producción & Margen de Ganancia
@@ -222,6 +320,16 @@ export const RecipeDetailModal: React.FC<RecipeDetailModalProps> = ({
                 <span className="text-gray-600 font-medium">Materia Prima Directa (Fijos + Variables):</span>
                 <span className="font-bold text-chocolate-800">
                   {formatCurrency(costBreakdown.costo_directo_materia_prima)}
+                </span>
+              </div>
+
+              {/* 3% de Merma Técnica */}
+              <div className="flex justify-between py-1 border-b border-trigo-200 bg-amber-50/50 px-2 rounded-lg">
+                <span className="text-amber-900 font-semibold flex items-center gap-1">
+                  <span>+ Merma Técnica / Desperdicio Operativo (3%):</span>
+                </span>
+                <span className="font-bold text-amber-800">
+                  {formatCurrency(costBreakdown.costo_merma)}
                 </span>
               </div>
 
@@ -269,90 +377,71 @@ export const RecipeDetailModal: React.FC<RecipeDetailModalProps> = ({
               </div>
             </div>
 
-            {/* Columna Derecha: Precios Sugeridos y Rentabilidad */}
+            {/* Columna Derecha: Precios Sugeridos Redondeados a 0 hacia arriba */}
             <div className="bg-white p-4 rounded-2xl border border-trigo-200 space-y-3 flex flex-col justify-between">
               <div>
-                <span className="text-xs font-bold text-chocolate-800 uppercase block mb-1">
-                  Estrategia de Precios Sugeridos:
-                </span>
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-xs font-bold text-chocolate-800 uppercase block">
+                    Precio Sugerido ({selectedPresetLabel}):
+                  </span>
+                  <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                    Redondeado a 0
+                  </span>
+                </div>
                 <p className="text-[11px] text-gray-500 mb-3">
-                  Precio de venta sobre el costo total con un margen de beneficio del {receta.margen_beneficio_pct}%.
+                  Precio con margen de beneficio del {receta.margen_beneficio_pct}% calculado y redondeado hacia arriba para venta comercial.
                 </p>
 
                 <div className="space-y-2">
-                  <div className="bg-emerald-50 p-3 rounded-xl border border-emerald-200 flex items-center justify-between">
+                  <div className="bg-emerald-50 p-3.5 rounded-2xl border border-emerald-200 flex items-center justify-between">
                     <div>
                       <span className="text-xs font-bold text-emerald-900 block">
-                        Precio Sugerido Venta ({receta.margen_beneficio_pct}% Margen):
+                        Precio Sugerido de Venta:
                       </span>
                       <span className="text-[10px] text-emerald-700">
                         Ganancia neta: {formatCurrency(costBreakdown.ganancia_estimada)}
                       </span>
                     </div>
-                    <span className="text-xl font-extrabold text-emerald-700">
+                    <span className="text-2xl font-black text-emerald-700">
                       {formatCurrency(costBreakdown.precio_sugerido_margen_venta)}
                     </span>
                   </div>
 
                   <div className="bg-canvas p-3 rounded-xl border border-trigo-200 flex items-center justify-between">
                     <span className="text-xs text-chocolate-700 font-semibold">
-                      Costo Unitario por {receta.rendimiento_unidad}:
+                      Costo Total de Elaboración:
                     </span>
                     <span className="text-sm font-bold text-chocolate-900">
-                      {formatCurrency(costBreakdown.costo_total_produccion / (receta.rendimiento_base || 1))}
+                      {formatCurrency(costBreakdown.costo_total_produccion)}
                     </span>
                   </div>
                 </div>
               </div>
 
-              <div className="pt-2 border-t border-trigo-100 text-[11px] text-gray-500 italic">
-                Fórmula de Precio = Costo Total / (1 - Margen%)
+              <div className="pt-3 border-t border-trigo-200">
+                <p className="text-[11px] text-gray-500 italic">
+                  💡 Tip: Puedes alternar en un clic entre <b>Libra</b>, <b>Porción</b> y <b>Mini</b> para cotizar eventos, mesas de postres o porciones individuales.
+                </p>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Instrucciones de Taller */}
+        {/* Instrucciones de Preparación */}
         {receta.instrucciones && receta.instrucciones.length > 0 && (
-          <div className="bg-white p-5 rounded-2xl border border-trigo-200 space-y-2 text-xs">
-            <h3 className="text-xs font-bold text-chocolate-800 uppercase tracking-wider flex items-center gap-1.5">
-              <ChefHat className="w-4 h-4 text-chocolate-600" />
-              <span>Instrucciones de Elaboración en Cocina</span>
+          <div className="bg-white p-5 rounded-2xl border border-trigo-200 space-y-3">
+            <h3 className="text-sm font-bold text-chocolate-800 uppercase tracking-wider">
+              3. Pasos Maestros de Elaboración en Taller
             </h3>
-            <ol className="list-decimal list-inside space-y-1.5 text-chocolate-700 leading-relaxed pt-1">
-              {receta.instrucciones.map((instruccion, i) => (
-                <li key={i} className="pl-1">
-                  {instruccion}
+            <ol className="space-y-2 text-xs text-chocolate-800 list-decimal list-inside leading-relaxed">
+              {receta.instrucciones.map((inst, idx) => (
+                <li key={idx} className="p-2 rounded-xl hover:bg-canvas transition-colors">
+                  {inst}
                 </li>
               ))}
             </ol>
           </div>
         )}
-
-        {/* Footer */}
-        <div className="pt-4 border-t border-trigo-200 flex items-center justify-between">
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-4 py-2.5 rounded-xl border border-trigo-300 text-chocolate-700 hover:bg-gray-50 text-xs font-bold transition-colors"
-          >
-            Cerrar
-          </button>
-
-          {onEdit && (
-            <button
-              type="button"
-              onClick={() => {
-                onClose();
-                onEdit(receta);
-              }}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-chocolate-700 hover:bg-chocolate-800 text-white text-xs font-bold transition-all shadow-warm"
-            >
-              <Edit2 className="w-4 h-4" />
-              <span>Editar Receta & Porcentajes</span>
-            </button>
-          )}
-        </div>
       </div>
     </Modal>
   );

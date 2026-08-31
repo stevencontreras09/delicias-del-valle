@@ -83,6 +83,7 @@ export interface RecetaCostosCalculados {
   costo_ingredientes_fijos: number;
   costo_ingredientes_variables: number;
   costo_directo_materia_prima: number;
+  costo_merma: number; // 3% de merma técnica de producción
   costo_materiales_indirectos: number;
   costo_operativo: number;
   costo_reposicion_equipos: number;

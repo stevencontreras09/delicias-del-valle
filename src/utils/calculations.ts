@@ -1,6 +1,15 @@
 import { Insumo, Receta, RecetaIngrediente, RecetaCostosCalculados } from '../types';
 
 /**
+ * Redondea cualquier precio hacia arriba al número superior que termine en 0 (múltiplo de 10)
+ * Ej: 1,234.20 -> 1,240 | 851 -> 860 | 95 -> 100 | 1,200 -> 1,200
+ */
+export function redondearPrecioHaciaArribaCero(valor: number): number {
+  if (!valor || valor <= 0) return 0;
+  return Math.ceil(valor / 10) * 10;
+}
+
+/**
  * Calcula el costo unitario base de un insumo ($/g, $/ml, $/ud)
  */
 export function calcularCostoUnitarioBase(precioCompra: number, presentacionEmpaque: number): number {
@@ -21,7 +30,8 @@ export function calcularCostoIngrediente(
 }
 
 /**
- * Calcula el desglose completo de costos de una receta (BOM) con porcentajes en cascada
+ * Calcula el desglose completo de costos de una receta (BOM) con porcentajes en cascada,
+ * incluyendo el 3% de merma técnica operativa y precios sugeridos redondeados hacia arriba a 0.
  */
 export function calcularCostosReceta(
   receta: Receta,
@@ -45,6 +55,9 @@ export function calcularCostosReceta(
 
   const mpd = costoFijos + costoVariables; // Materia Prima Directa
 
+  // 3% de Merma Técnica / Desperdicio Operativo de Cocina
+  const costoMerma = mpd * 0.03;
+
   const indirectosPct = receta.materiales_indirectos_pct ?? 10;
   const operativosPct = receta.costos_operativos_pct ?? 15;
   const reposicionPct = receta.reposicion_equipos_pct ?? 10;
@@ -56,9 +69,10 @@ export function calcularCostosReceta(
   const costoReposicionEquipos = mpd * (reposicionPct / 100);
   const costoManoObra = mpd * (manoObraPct / 100);
 
-  // Costo Total de Producción (CTP)
+  // Costo Total de Producción (CTP) incluyendo el 3% de merma
   const costoTotalProduccion = 
     mpd + 
+    costoMerma +
     costoMaterialesIndirectos + 
     costoOperativo + 
     costoReposicionEquipos + 
@@ -67,11 +81,13 @@ export function calcularCostosReceta(
   // Precio Sugerido basado en margen sobre venta (Margen estándar comercial)
   // Precio = Costo / (1 - Margen%)
   const divisor = Math.max(0.01, 1 - (margenPct / 100));
-  const precioSugeridoMargenVenta = costoTotalProduccion / divisor;
+  const precioSugeridoMargenVentaRaw = costoTotalProduccion / divisor;
+  const precioSugeridoMargenVenta = redondearPrecioHaciaArribaCero(precioSugeridoMargenVentaRaw);
 
   // Precio Sugerido basado en markup sobre costo
   // Precio = Costo * (1 + Margen%)
-  const precioSugeridoMarkup = costoTotalProduccion * (1 + (margenPct / 100));
+  const precioSugeridoMarkupRaw = costoTotalProduccion * (1 + (margenPct / 100));
+  const precioSugeridoMarkup = redondearPrecioHaciaArribaCero(precioSugeridoMarkupRaw);
 
   const gananciaEstimada = precioSugeridoMargenVenta - costoTotalProduccion;
 
@@ -79,6 +95,7 @@ export function calcularCostosReceta(
     costo_ingredientes_fijos: costoFijos,
     costo_ingredientes_variables: costoVariables,
     costo_directo_materia_prima: mpd,
+    costo_merma: costoMerma,
     costo_materiales_indirectos: costoMaterialesIndirectos,
     costo_operativo: costoOperativo,
     costo_reposicion_equipos: costoReposicionEquipos,
