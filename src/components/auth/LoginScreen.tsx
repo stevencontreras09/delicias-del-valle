@@ -4,8 +4,8 @@ import { Lock, User, Eye, EyeOff, ShieldCheck, Sparkles, ChefHat } from 'lucide-
 
 export const LoginScreen: React.FC = () => {
   const { login } = useApp();
-  const [username, setUsername] = useState('Steven9909');
-  const [password, setPassword] = useState('@Manzana0104');
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);

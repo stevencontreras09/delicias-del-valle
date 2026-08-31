@@ -157,15 +157,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   });
 
   const [currentUser, setCurrentUser] = useState<Usuario | null>(() => {
-    const saved = localStorage.getItem(`${STORAGE_KEY}_session_user`);
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch {
-        return null;
-      }
-    }
-    return INITIAL_USUARIOS[0];
+    // Siempre iniciar en la pantalla de Login primero
+    return null;
   });
 
   // Estados de datos operacionales
