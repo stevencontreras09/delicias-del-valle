@@ -92,9 +92,15 @@ export function generarPdfCotizacion(cotizacion: Cotizacion): void {
   // Tabla de Productos / Items
   const tableData = cotizacion.items.map((item, index) => {
     let descripcion = `${item.receta_nombre}\n• Tamaño: ${item.tamano_porciones}`;
-    if (item.masa_base) descripcion += ` | Masa: ${item.masa_base}`;
-    if (item.relleno) descripcion += ` | Relleno: ${item.relleno}`;
-    if (item.decoracion) descripcion += `\n• Decoración: ${item.decoracion}`;
+    if (item.masa_base && !item.masa_base.toLowerCase().startsWith('ningun') && !item.masa_base.toLowerCase().startsWith('no aplica')) {
+      descripcion += ` | Masa: ${item.masa_base}`;
+    }
+    if (item.relleno && !item.relleno.toLowerCase().startsWith('ningun') && !item.relleno.toLowerCase().startsWith('no aplica')) {
+      descripcion += ` | Relleno: ${item.relleno}`;
+    }
+    if (item.decoracion && !item.decoracion.toLowerCase().startsWith('ningun') && !item.decoracion.toLowerCase().startsWith('no aplica')) {
+      descripcion += `\n• Decoración: ${item.decoracion}`;
+    }
     if (item.dedicatoria) descripcion += `\n• Dedicatoria: "${item.dedicatoria}"`;
     if (item.extras && item.extras.length > 0) {
       descripcion += `\n• Extras: ${item.extras.map(e => e.nombre).join(', ')}`;

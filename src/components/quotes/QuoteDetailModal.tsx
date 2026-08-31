@@ -305,9 +305,11 @@ export const QuoteDetailModal: React.FC<QuoteDetailModalProps> = ({
                   <td className="py-3 px-4">
                     <p className="font-bold text-chocolate-900 text-sm">{item.receta_nombre}</p>
                     <p className="text-xs text-chocolate-600 font-medium mt-0.5">
-                      {item.tamano_porciones} • Masa: {item.masa_base} • Relleno: {item.relleno}
+                      {item.tamano_porciones}
+                      {item.masa_base && !item.masa_base.toLowerCase().startsWith('ningun') && ` • Masa: ${item.masa_base}`}
+                      {item.relleno && !item.relleno.toLowerCase().startsWith('ningun') && ` • Relleno: ${item.relleno}`}
                     </p>
-                    {item.decoracion && (
+                    {item.decoracion && !item.decoracion.toLowerCase().startsWith('ningun') && (
                       <p className="text-xs text-gray-500">Decoración: {item.decoracion}</p>
                     )}
                     {item.dedicatoria && (

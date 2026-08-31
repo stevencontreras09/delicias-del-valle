@@ -19,9 +19,15 @@ export function generarMensajeCotizacionWhatsApp(cotizacion: Cotizacion): { mens
   cotizacion.items.forEach((item, index) => {
     texto += `\n*${index + 1}. ${item.receta_nombre}*\n`;
     texto += `   • Tamaño / Porciones: ${item.tamano_porciones}\n`;
-    if (item.masa_base) texto += `   • Masa Base: ${item.masa_base}\n`;
-    if (item.relleno) texto += `   • Relleno: ${item.relleno}\n`;
-    if (item.decoracion) texto += `   • Decoración: ${item.decoracion}\n`;
+    if (item.masa_base && !item.masa_base.toLowerCase().startsWith('ningun') && !item.masa_base.toLowerCase().startsWith('no aplica')) {
+      texto += `   • Masa Base: ${item.masa_base}\n`;
+    }
+    if (item.relleno && !item.relleno.toLowerCase().startsWith('ningun') && !item.relleno.toLowerCase().startsWith('no aplica')) {
+      texto += `   • Relleno: ${item.relleno}\n`;
+    }
+    if (item.decoracion && !item.decoracion.toLowerCase().startsWith('ningun') && !item.decoracion.toLowerCase().startsWith('no aplica')) {
+      texto += `   • Decoración: ${item.decoracion}\n`;
+    }
     if (item.dedicatoria) texto += `   • Dedicatoria: "${item.dedicatoria}"\n`;
     if (item.extras && item.extras.length > 0) {
       texto += `   • Extras: ${item.extras.map(e => `${e.nombre} (${formatCurrency(e.precio)})`).join(', ')}\n`;
