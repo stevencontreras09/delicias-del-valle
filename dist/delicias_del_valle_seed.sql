@@ -1,0 +1,1011 @@
+-- ==============================================================================
+-- DELICIAS DEL VALLE - PASTELERÍA Y PANADERÍA ARTESANAL
+-- ARCHIVO MAESTRO DE SCHEMA & SEED PARA POSTGRESQL / SUPABASE
+-- (Tablas limpias, 0 transacciones ficticias, catálogo maestro de 93 insumos y 53 recetas)
+-- ==============================================================================
+
+-- 1. Habilitar extensiones requeridas
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+
+-- 2. Limpieza de tablas (opcional para recrear en limpio)
+DROP TABLE IF EXISTS usuarios CASCADE;
+DROP TABLE IF EXISTS pagos CASCADE;
+DROP TABLE IF EXISTS pedido_items CASCADE;
+DROP TABLE IF EXISTS pedidos CASCADE;
+DROP TABLE IF EXISTS cotizacion_items CASCADE;
+DROP TABLE IF EXISTS cotizaciones CASCADE;
+DROP TABLE IF EXISTS receta_ingredientes CASCADE;
+DROP TABLE IF EXISTS recetas CASCADE;
+DROP TABLE IF EXISTS mermas CASCADE;
+DROP TABLE IF EXISTS insumos CASCADE;
+DROP TABLE IF EXISTS configuracion_taller CASCADE;
+
+-- ==============================================================================
+-- 3. DEFINICIÓN DE TABLAS (DDL)
+-- ==============================================================================
+
+-- Tabla: Usuarios y Roles (RBAC)
+CREATE TABLE usuarios (
+  id SERIAL PRIMARY KEY,
+  username VARCHAR(50) UNIQUE NOT NULL,
+  password VARCHAR(255) NOT NULL,
+  nombre_completo VARCHAR(150) NOT NULL,
+  email VARCHAR(150) UNIQUE NOT NULL,
+  telefono VARCHAR(40),
+  rol VARCHAR(30) NOT NULL DEFAULT 'pastelero' CHECK (rol IN ('admin', 'pastelero', 'cajero', 'operador')),
+  activo BOOLEAN NOT NULL DEFAULT TRUE,
+  avatar_url TEXT,
+  ultimo_acceso TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Tabla: Insumos (Materia Prima)
+CREATE TABLE insumos (
+  id SERIAL PRIMARY KEY,
+  nombre VARCHAR(150) NOT NULL,
+  categoria VARCHAR(60) NOT NULL,
+  unidad_compra VARCHAR(50) NOT NULL,
+  precio_compra DECIMAL(12,2) NOT NULL CHECK (precio_compra >= 0),
+  presentacion_empaque DECIMAL(12,2) NOT NULL CHECK (presentacion_empaque > 0),
+  unidad_base VARCHAR(10) NOT NULL CHECK (unidad_base IN ('g', 'ml', 'ud')),
+  factor_conversion DECIMAL(12,4) NOT NULL CHECK (factor_conversion > 0),
+  costo_unitario_base DECIMAL(12,6) NOT NULL DEFAULT 0,
+  stock_actual DECIMAL(12,2) NOT NULL DEFAULT 0 CHECK (stock_actual >= 0),
+  stock_minimo DECIMAL(12,2) NOT NULL DEFAULT 0 CHECK (stock_minimo >= 0),
+  activo BOOLEAN NOT NULL DEFAULT TRUE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Tabla: Mermas y Desperdicios
+CREATE TABLE mermas (
+  id SERIAL PRIMARY KEY,
+  insumo_id INT NOT NULL REFERENCES insumos(id) ON DELETE RESTRICT,
+  insumo_nombre VARCHAR(150) NOT NULL,
+  cantidad DECIMAL(12,2) NOT NULL CHECK (cantidad > 0),
+  unidad_base VARCHAR(10) NOT NULL,
+  motivo VARCHAR(50) NOT NULL,
+  costo_perdido DECIMAL(12,2) NOT NULL CHECK (costo_perdido >= 0),
+  fecha DATE NOT NULL DEFAULT CURRENT_DATE,
+  notas TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Tabla: Recetas Maestras (BOM)
+CREATE TABLE recetas (
+  id SERIAL PRIMARY KEY,
+  nombre VARCHAR(180) NOT NULL,
+  categoria VARCHAR(60) NOT NULL,
+  descripcion TEXT,
+  rendimiento_base DECIMAL(10,2) NOT NULL DEFAULT 1 CHECK (rendimiento_base > 0),
+  rendimiento_unidad VARCHAR(60) NOT NULL DEFAULT '1 LB',
+  tiempo_preparacion_min INT NOT NULL DEFAULT 30,
+  tiempo_horneado_min INT NOT NULL DEFAULT 45,
+  temperatura_horno_c INT DEFAULT 180,
+  materiales_indirectos_pct DECIMAL(5,2) NOT NULL DEFAULT 10.00,
+  costos_operativos_pct DECIMAL(5,2) NOT NULL DEFAULT 15.00,
+  reposicion_equipos_pct DECIMAL(5,2) NOT NULL DEFAULT 10.00,
+  mano_obra_pct DECIMAL(5,2) NOT NULL DEFAULT 30.00,
+  margen_beneficio_pct DECIMAL(5,2) NOT NULL DEFAULT 50.00,
+  activa BOOLEAN NOT NULL DEFAULT TRUE,
+  instrucciones JSONB DEFAULT '[]'::jsonb,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Tabla: Ingredientes de Recetas (Desglose BOM Fijos y Variables)
+CREATE TABLE receta_ingredientes (
+  id SERIAL PRIMARY KEY,
+  receta_id INT NOT NULL REFERENCES recetas(id) ON DELETE CASCADE,
+  insumo_id INT NOT NULL REFERENCES insumos(id) ON DELETE RESTRICT,
+  cantidad DECIMAL(12,2) NOT NULL CHECK (cantidad > 0),
+  tipo VARCHAR(20) NOT NULL CHECK (tipo IN ('fijo', 'variable')),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Tabla: Cotizaciones
+CREATE TABLE cotizaciones (
+  id SERIAL PRIMARY KEY,
+  codigo VARCHAR(30) UNIQUE NOT NULL,
+  cliente_nombre VARCHAR(150) NOT NULL,
+  cliente_telefono VARCHAR(40) NOT NULL,
+  fecha_emision DATE NOT NULL DEFAULT CURRENT_DATE,
+  fecha_evento DATE,
+  validez_dias INT NOT NULL DEFAULT 5,
+  subtotal DECIMAL(12,2) NOT NULL DEFAULT 0,
+  descuento DECIMAL(12,2) NOT NULL DEFAULT 0,
+  costo_envio DECIMAL(12,2) NOT NULL DEFAULT 0,
+  total DECIMAL(12,2) NOT NULL DEFAULT 0,
+  notas TEXT,
+  estado VARCHAR(30) NOT NULL DEFAULT 'pendiente',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Tabla: Items de Cotizaciones
+CREATE TABLE cotizacion_items (
+  id SERIAL PRIMARY KEY,
+  cotizacion_id INT NOT NULL REFERENCES cotizaciones(id) ON DELETE CASCADE,
+  receta_id INT REFERENCES recetas(id) ON DELETE SET NULL,
+  receta_nombre VARCHAR(180) NOT NULL,
+  tamano_porciones VARCHAR(100) NOT NULL,
+  masa_base VARCHAR(100) NOT NULL,
+  relleno VARCHAR(100) NOT NULL,
+  decoracion VARCHAR(150) NOT NULL,
+  dedicatoria TEXT,
+  extras JSONB DEFAULT '[]'::jsonb,
+  cantidad INT NOT NULL DEFAULT 1 CHECK (cantidad > 0),
+  precio_unitario DECIMAL(12,2) NOT NULL CHECK (precio_unitario >= 0),
+  subtotal DECIMAL(12,2) NOT NULL CHECK (subtotal >= 0),
+  factor_receta DECIMAL(8,3) NOT NULL DEFAULT 1.000
+);
+
+-- Tabla: Pedidos y Facturas
+CREATE TABLE pedidos (
+  id SERIAL PRIMARY KEY,
+  cotizacion_id INT REFERENCES cotizaciones(id) ON DELETE SET NULL,
+  numero_factura VARCHAR(30) UNIQUE NOT NULL,
+  cliente_nombre VARCHAR(150) NOT NULL,
+  cliente_telefono VARCHAR(40) NOT NULL,
+  fecha_pedido DATE NOT NULL DEFAULT CURRENT_DATE,
+  fecha_entrega DATE NOT NULL,
+  hora_entrega TIME NOT NULL DEFAULT '14:00',
+  tipo_entrega VARCHAR(30) NOT NULL DEFAULT 'recogida_local',
+  direccion_entrega TEXT,
+  subtotal DECIMAL(12,2) NOT NULL DEFAULT 0,
+  costo_envio DECIMAL(12,2) NOT NULL DEFAULT 0,
+  total DECIMAL(12,2) NOT NULL DEFAULT 0,
+  anticipo_pagado DECIMAL(12,2) NOT NULL DEFAULT 0,
+  saldo_pendiente DECIMAL(12,2) NOT NULL DEFAULT 0,
+  estado VARCHAR(40) NOT NULL DEFAULT 'confirmado',
+  checklist_completado JSONB DEFAULT '{}'::jsonb,
+  inventario_descontado BOOLEAN NOT NULL DEFAULT FALSE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Tabla: Items de Pedidos
+CREATE TABLE pedido_items (
+  id SERIAL PRIMARY KEY,
+  pedido_id INT NOT NULL REFERENCES pedidos(id) ON DELETE CASCADE,
+  receta_id INT REFERENCES recetas(id) ON DELETE SET NULL,
+  receta_nombre VARCHAR(180) NOT NULL,
+  tamano_porciones VARCHAR(100) NOT NULL,
+  masa_base VARCHAR(100) NOT NULL,
+  relleno VARCHAR(100) NOT NULL,
+  decoracion VARCHAR(150) NOT NULL,
+  dedicatoria TEXT,
+  extras_texto TEXT,
+  cantidad INT NOT NULL DEFAULT 1 CHECK (cantidad > 0),
+  precio_unitario DECIMAL(12,2) NOT NULL CHECK (precio_unitario >= 0),
+  subtotal DECIMAL(12,2) NOT NULL CHECK (subtotal >= 0),
+  factor_receta DECIMAL(8,3) NOT NULL DEFAULT 1.000
+);
+
+-- Tabla: Pagos de Pedidos (50/50 Anticipo y Saldo)
+CREATE TABLE pagos (
+  id SERIAL PRIMARY KEY,
+  pedido_id INT NOT NULL REFERENCES pedidos(id) ON DELETE CASCADE,
+  monto DECIMAL(12,2) NOT NULL CHECK (monto > 0),
+  metodo VARCHAR(50) NOT NULL,
+  referencia VARCHAR(100),
+  tipo_pago VARCHAR(50) NOT NULL,
+  fecha TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Tabla: Configuración General del Taller
+CREATE TABLE configuracion_taller (
+  id SERIAL PRIMARY KEY,
+  nombre_negocio VARCHAR(100) NOT NULL DEFAULT 'Delicias del Valle',
+  telefono_whatsapp VARCHAR(30) NOT NULL DEFAULT '+18095550142',
+  direccion_taller TEXT NOT NULL DEFAULT 'Av. Winston Churchill #105, Santo Domingo, República Dominicana',
+  porcentaje_anticipo_default DECIMAL(5,2) NOT NULL DEFAULT 50.00,
+  porcentaje_indirectos_default DECIMAL(5,2) NOT NULL DEFAULT 10.00,
+  porcentaje_operativos_default DECIMAL(5,2) NOT NULL DEFAULT 15.00,
+  porcentaje_reposicion_default DECIMAL(5,2) NOT NULL DEFAULT 10.00,
+  porcentaje_mano_obra_default DECIMAL(5,2) NOT NULL DEFAULT 30.00,
+  porcentaje_margen_default DECIMAL(5,2) NOT NULL DEFAULT 50.00,
+  moneda_simbolo VARCHAR(10) NOT NULL DEFAULT 'RD$',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- ==============================================================================
+-- 4. TRIGGERS Y FUNCIONES EN POSTGRESQL
+-- ==============================================================================
+
+-- Función para actualizar costo unitario base automáticamente
+CREATE OR REPLACE FUNCTION trg_actualizar_costo_unitario()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF NEW.presentacion_empaque > 0 THEN
+    NEW.costo_unitario_base := NEW.precio_compra / NEW.presentacion_empaque;
+  END IF;
+  NEW.updated_at := NOW();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trigger_insumos_costo
+BEFORE INSERT OR UPDATE ON insumos
+FOR EACH ROW
+EXECUTE FUNCTION trg_actualizar_costo_unitario();
+
+-- Función Trigger para Descontar Inventario Inmediato al Confirmar Pedido
+CREATE OR REPLACE FUNCTION trg_descontar_inventario_pedido()
+RETURNS TRIGGER AS $$
+DECLARE
+  item RECORD;
+  ing RECORD;
+  cant_a_descontar DECIMAL(12,2);
+BEGIN
+  IF (NEW.estado IN ('confirmado', 'en_produccion', 'listo', 'entregado')) AND (NEW.inventario_descontado = FALSE) THEN
+    FOR item IN SELECT * FROM pedido_items WHERE pedido_id = NEW.id LOOP
+      IF item.receta_id IS NOT NULL THEN
+        FOR ing IN SELECT * FROM receta_ingredientes WHERE receta_id = item.receta_id LOOP
+          cant_a_descontar := ing.cantidad * item.factor_receta * item.cantidad;
+          UPDATE insumos
+          SET stock_actual = GREATEST(0, stock_actual - cant_a_descontar),
+              updated_at = NOW()
+          WHERE id = ing.insumo_id;
+        END LOOP;
+      END IF;
+    END LOOP;
+    NEW.inventario_descontado := TRUE;
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trigger_descontar_inventario
+BEFORE INSERT OR UPDATE ON pedidos
+FOR EACH ROW
+EXECUTE FUNCTION trg_descontar_inventario_pedido();
+
+-- ==============================================================================
+-- 5. POLÍTICAS DE ACCESO SUPABASE (ROW LEVEL SECURITY - RLS)
+-- ==============================================================================
+ALTER TABLE usuarios ENABLE ROW LEVEL SECURITY;
+ALTER TABLE insumos ENABLE ROW LEVEL SECURITY;
+ALTER TABLE mermas ENABLE ROW LEVEL SECURITY;
+ALTER TABLE recetas ENABLE ROW LEVEL SECURITY;
+ALTER TABLE receta_ingredientes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE cotizaciones ENABLE ROW LEVEL SECURITY;
+ALTER TABLE cotizacion_items ENABLE ROW LEVEL SECURITY;
+ALTER TABLE pedidos ENABLE ROW LEVEL SECURITY;
+ALTER TABLE pedido_items ENABLE ROW LEVEL SECURITY;
+ALTER TABLE pagos ENABLE ROW LEVEL SECURITY;
+ALTER TABLE configuracion_taller ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Acceso total usuarios" ON usuarios FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Acceso total insumos" ON insumos FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Acceso total mermas" ON mermas FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Acceso total recetas" ON recetas FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Acceso total receta_ingredientes" ON receta_ingredientes FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Acceso total cotizaciones" ON cotizaciones FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Acceso total cotizacion_items" ON cotizacion_items FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Acceso total pedidos" ON pedidos FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Acceso total pedido_items" ON pedido_items FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Acceso total pagos" ON pagos FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Acceso total configuracion_taller" ON configuracion_taller FOR ALL USING (true) WITH CHECK (true);
+
+-- ==============================================================================
+-- 6. INSERT DE DATOS INICIALES (SEED MAESTRO EN DOP / RD$)
+-- ==============================================================================
+
+-- 0. Usuarios (Admin Maestro Steven9909 + Personal de Taller)
+INSERT INTO usuarios (id, username, password, nombre_completo, email, telefono, rol, activo, created_at, ultimo_acceso) VALUES
+(1, 'Steven9909', '@Manzana0104', 'Steven (Administrador Maestro)', 'steven@deliciasdelvalle.com', '+1 (809) 555-0142', 'admin', TRUE, '2026-08-01 08:00:00+00', '2026-08-31 17:00:00+00'),
+(2, 'taller_delicias', 'Delicias2026*', 'Equipo del Taller (Acceso Operativo)', 'taller@deliciasdelvalle.com', '+1 (809) 555-0142', 'operador', TRUE, '2026-08-10 08:00:00+00', '2026-08-31 15:30:00+00');
+
+-- A. Insumos Maestros (93 Registros en DOP / RD$ con stock_actual = 0)
+INSERT INTO insumos (id, nombre, categoria, unidad_compra, precio_compra, presentacion_empaque, unidad_base, factor_conversion, costo_unitario_base, stock_actual, stock_minimo, activo) VALUES
+(1, 'Harina de Trigo Todo Uso (Especial Repostería)', 'Harinas y Féculas', 'Saco 50 kg', 2750.00, 50000, 'g', 50000, 0.055000, 100000, 10000, TRUE),
+(2, 'Harina de Trigo Fuerza (Panadería)', 'Harinas y Féculas', 'Saco 50 kg', 2900.00, 50000, 'g', 50000, 0.058000, 100000, 10000, TRUE),
+(3, 'Harina de Almendras Pura Extra Fina', 'Harinas y Féculas', 'Bolsa 1 kg', 850.00, 1000, 'g', 1000, 0.850000, 50000, 800, TRUE),
+(4, 'Fécula de Maíz (Maicena)', 'Harinas y Féculas', 'Caja 1 kg', 170.00, 1000, 'g', 1000, 0.170000, 50000, 1000, TRUE),
+(5, 'Harina de Avena Integral', 'Harinas y Féculas', 'Bolsa 1 kg', 195.00, 1000, 'g', 1000, 0.195000, 50000, 500, TRUE),
+(6, 'Harina de Centeno Integral', 'Harinas y Féculas', 'Bolsa 1 kg', 250.00, 1000, 'g', 1000, 0.250000, 50000, 500, TRUE),
+(7, 'Fécula de Yuca / Almidón Agrio', 'Harinas y Féculas', 'Bolsa 1 kg', 210.00, 1000, 'g', 1000, 0.210000, 50000, 600, TRUE),
+(8, 'Salvado de Trigo', 'Harinas y Féculas', 'Bolsa 500 g', 95.00, 500, 'g', 500, 0.190000, 50000, 300, TRUE),
+(9, 'Azúcar Blanco Refinado Especial', 'Azúcares y Endulzantes', 'Saco 50 kg', 2550.00, 50000, 'g', 50000, 0.051000, 100000, 8000, TRUE),
+(10, 'Azúcar Morena / Mascabado Artesanal', 'Azúcares y Endulzantes', 'Bolsa 2.5 kg', 340.00, 2500, 'g', 2500, 0.136000, 50000, 2000, TRUE),
+(11, 'Azúcar Glass / Micropulverizada 4X', 'Azúcares y Endulzantes', 'Bolsa 5 kg', 590.00, 5000, 'g', 5000, 0.118000, 50000, 3000, TRUE),
+(12, 'Miel de Abejas 100% Pura', 'Azúcares y Endulzantes', 'Frasco 1000 g', 520.00, 1000, 'g', 1000, 0.520000, 50000, 500, TRUE),
+(13, 'Jarabe de Glucosa Repostera', 'Azúcares y Endulzantes', 'Tarro 1000 g', 260.00, 1000, 'g', 1000, 0.260000, 50000, 400, TRUE),
+(14, 'Jarabe de Arce Puro (Maple)', 'Azúcares y Endulzantes', 'Botella 500 ml', 690.00, 500, 'ml', 500, 1.380000, 50000, 200, TRUE),
+(15, 'Azúcar Invertido', 'Azúcares y Endulzantes', 'Envase 1 kg', 310.00, 1000, 'g', 1000, 0.310000, 50000, 300, TRUE),
+(16, 'Mantequilla Sin Sal 82% Grasa (Pastelera)', 'Lácteos y Grasas', 'Bloque 5 kg', 2350.00, 5000, 'g', 5000, 0.470000, 10000, 2500, TRUE),
+(17, 'Mantequilla Con Sal Artesanal', 'Lácteos y Grasas', 'Bloque 1 kg', 495.00, 1000, 'g', 1000, 0.495000, 3000, 1000, TRUE),
+(18, 'Margarina Hojaldre Especial', 'Lácteos y Grasas', 'Caja 5 kg', 990.00, 5000, 'g', 5000, 0.198000, 10000, 2000, TRUE),
+(19, 'Manteca Vegetal Repostera', 'Lácteos y Grasas', 'Bloque 2 kg', 420.00, 2000, 'g', 2000, 0.210000, 4000, 1000, TRUE),
+(20, 'Aceite de Girasol / Canola Neutro', 'Lácteos y Grasas', 'Garrafa 5 L', 860.00, 5000, 'ml', 5000, 0.172000, 10000, 2000, TRUE),
+(21, 'Aceite de Oliva Extra Virgen', 'Lácteos y Grasas', 'Botella 1 L', 590.00, 1000, 'ml', 1000, 0.590000, 2000, 500, TRUE),
+(22, 'Aceite de Coco Virgen', 'Lácteos y Grasas', 'Frasco 500 ml', 390.00, 500, 'ml', 500, 0.780000, 1000, 200, TRUE),
+(23, 'Leche Entera Pasteurizada', 'Lácteos y Grasas', 'Caja 12 L', 840.00, 12000, 'ml', 12000, 0.070000, 24000, 4000, TRUE),
+(24, 'Crema de Leche 35% Grasa (Heavy Cream)', 'Lácteos y Grasas', 'Litro 1000 ml', 295.00, 1000, 'ml', 1000, 0.295000, 6000, 2000, TRUE),
+(25, 'Queso Crema Tipo Philadelphia Profesional', 'Lácteos y Grasas', 'Bloque 2 kg', 1050.00, 2000, 'g', 2000, 0.525000, 6000, 2000, TRUE),
+(26, 'Queso Mascarpone Artesanal', 'Lácteos y Grasas', 'Pote 500 g', 420.00, 500, 'g', 500, 0.840000, 1200, 400, TRUE),
+(27, 'Leche Condensada Azucarada', 'Lácteos y Grasas', 'Lata 395 g', 125.00, 395, 'g', 395, 0.316456, 3600, 1200, TRUE),
+(28, 'Leche Evaporada', 'Lácteos y Grasas', 'Lata 400 g', 115.00, 400, 'g', 400, 0.287500, 3600, 1200, TRUE),
+(29, 'Dulce de Leche / Arequipe Repostero Manga', 'Lácteos y Grasas', 'Manga 1 kg', 290.00, 1000, 'g', 1000, 0.290000, 4500, 1500, TRUE),
+(30, 'Suero de Mantequilla / Buttermilk', 'Lácteos y Grasas', 'Litro 1000 ml', 195.00, 1000, 'ml', 1000, 0.195000, 2400, 800, TRUE),
+(31, 'Crema Chantilly Vegetal Líquida', 'Lácteos y Grasas', 'Caja 1 L', 230.00, 1000, 'ml', 1000, 0.230000, 4500, 1500, TRUE),
+(32, 'Yogurt Griego Natural Sin Azúcar', 'Lácteos y Grasas', 'Pote 1 kg', 280.00, 1000, 'g', 1000, 0.280000, 2000, 600, TRUE),
+(33, 'Queso Parmesano Rallado Fino', 'Lácteos y Grasas', 'Bolsa 500 g', 450.00, 500, 'g', 500, 0.900000, 1200, 400, TRUE),
+(34, 'Queso Mozzarella Bloque', 'Lácteos y Grasas', 'Bloque 2.5 kg', 920.00, 2500, 'g', 2500, 0.368000, 5000, 1000, TRUE),
+(35, 'Huevos Frescos Grado AA (55-60g c/u)', 'Huevos', 'Panal 30 ud', 270.00, 30, 'ud', 30, 9.000000, 135, 45, TRUE),
+(36, 'Claras de Huevo Pasteurizadas', 'Huevos', 'Botella 1000 ml', 290.00, 1000, 'ml', 1000, 0.290000, 2400, 800, TRUE),
+(37, 'Yemas de Huevo Pasteurizadas', 'Huevos', 'Botella 1000 ml', 375.00, 1000, 'ml', 1000, 0.375000, 2000, 500, TRUE),
+(38, 'Chocolate Cobertura Semiamargo 56% Belga', 'Chocolates y Cacaos', 'Bolsa 2.5 kg', 1680.00, 2500, 'g', 2500, 0.672000, 5000, 1500, TRUE),
+(39, 'Chocolate Cobertura Blanco 30% Belga', 'Chocolates y Cacaos', 'Bolsa 2.5 kg', 1750.00, 2500, 'g', 2500, 0.700000, 5000, 1200, TRUE),
+(40, 'Chocolate Cobertura con Leche 38%', 'Chocolates y Cacaos', 'Bolsa 2.5 kg', 1700.00, 2500, 'g', 2500, 0.680000, 5000, 1000, TRUE),
+(41, 'Cacao en Polvo Alcalino 100% Puro', 'Chocolates y Cacaos', 'Bolsa 1 kg', 580.00, 1000, 'g', 1000, 0.580000, 3000, 1000, TRUE),
+(42, 'Gotas de Chocolate Horneables Semidulces', 'Chocolates y Cacaos', 'Bolsa 1 kg', 435.00, 1000, 'g', 1000, 0.435000, 2400, 800, TRUE),
+(43, 'Gotas de Chocolate Blanco Horneables', 'Chocolates y Cacaos', 'Bolsa 1 kg', 470.00, 1000, 'g', 1000, 0.470000, 2000, 500, TRUE),
+(44, 'Nutella / Crema de Avellanas con Cacao', 'Chocolates y Cacaos', 'Frasco 3 kg', 1590.00, 3000, 'g', 3000, 0.530000, 6000, 1000, TRUE),
+(45, 'Manteca de Cacao Pura', 'Chocolates y Cacaos', 'Bloque 1 kg', 1100.00, 1000, 'g', 1000, 1.100000, 2000, 300, TRUE),
+(46, 'Fresas Frescas Seleccionadas', 'Frutas y Mermeladas', 'Caja 1 kg', 270.00, 1000, 'g', 1000, 0.270000, 4500, 1500, TRUE),
+(47, 'Arándanos Frescos', 'Frutas y Mermeladas', 'Caja 500 g', 315.00, 500, 'g', 500, 0.630000, 1000, 300, TRUE),
+(48, 'Frambuesas Frescas / IQF', 'Frutas y Mermeladas', 'Bolsa 1 kg', 590.00, 1000, 'g', 1000, 0.590000, 2000, 600, TRUE),
+(49, 'Moras Silvestres', 'Frutas y Mermeladas', 'Bolsa 1 kg', 230.00, 1000, 'g', 1000, 0.230000, 2400, 800, TRUE),
+(50, 'Pulpa de Maracuyá / Chinola 100% Pura', 'Frutas y Mermeladas', 'Bolsa 1 kg', 240.00, 1000, 'g', 1000, 0.240000, 3000, 1000, TRUE),
+(51, 'Limones Frescos (Zumo y Ralladura)', 'Frutas y Mermeladas', 'Bolsa 1 kg', 135.00, 1000, 'g', 1000, 0.135000, 2400, 800, TRUE),
+(52, 'Manzanas Granny Smith (Verdes)', 'Frutas y Mermeladas', 'Bolsa 1 kg', 185.00, 1000, 'g', 1000, 0.185000, 3000, 1000, TRUE),
+(53, 'Zanahoria Fresca Rallada', 'Frutas y Mermeladas', 'Bolsa 1 kg', 90.00, 1000, 'g', 1000, 0.090000, 3000, 1000, TRUE),
+(54, 'Banano / Guineo Maduro', 'Frutas y Mermeladas', 'Racimo 1 kg', 85.00, 1000, 'g', 1000, 0.085000, 2000, 600, TRUE),
+(55, 'Mermelada Artesanal de Frutos Rojos', 'Frutas y Mermeladas', 'Frasco 1 kg', 375.00, 1000, 'g', 1000, 0.375000, 3000, 1000, TRUE),
+(56, 'Cerezas Marrasquino con Tallo', 'Frutas y Mermeladas', 'Frasco 500 g', 290.00, 500, 'g', 500, 0.580000, 1000, 250, TRUE),
+(57, 'Nueces del Nogal Picadas', 'Frutos Secos y Semillas', 'Bolsa 1 kg', 775.00, 1000, 'g', 1000, 0.775000, 2000, 600, TRUE),
+(58, 'Almendras Fileteadas Tostadas', 'Frutos Secos y Semillas', 'Bolsa 1 kg', 820.00, 1000, 'g', 1000, 0.820000, 2000, 500, TRUE),
+(59, 'Pistachos Pelados Sin Sal', 'Frutos Secos y Semillas', 'Bolsa 500 g', 665.00, 500, 'g', 500, 1.330000, 1000, 200, TRUE),
+(60, 'Coco Rallado Deshidratado Sin Azúcar', 'Frutos Secos y Semillas', 'Bolsa 1 kg', 290.00, 1000, 'g', 1000, 0.290000, 2000, 600, TRUE),
+(61, 'Semillas de Amapola', 'Frutos Secos y Semillas', 'Bolsa 250 g', 210.00, 250, 'g', 250, 0.840000, 500, 100, TRUE),
+(62, 'Semillas de Chía Orgánicas', 'Frutos Secos y Semillas', 'Bolsa 500 g', 195.00, 500, 'g', 500, 0.390000, 1000, 200, TRUE),
+(63, 'Ajonjolí Tostado / Sésamo', 'Frutos Secos y Semillas', 'Bolsa 500 g', 170.00, 500, 'g', 500, 0.340000, 1000, 300, TRUE),
+(64, 'Uvas Pasas Rubias / Morenas', 'Frutos Secos y Semillas', 'Bolsa 1 kg', 270.00, 1000, 'g', 1000, 0.270000, 2000, 500, TRUE),
+(65, 'Polvo para Hornear Doble Acción', 'Leudantes y Químicos', 'Lata 1 kg', 335.00, 1000, 'g', 1000, 0.335000, 2400, 800, TRUE),
+(66, 'Bicarbonato de Sodio Grado Alimenticio', 'Leudantes y Químicos', 'Bolsa 1 kg', 195.00, 1000, 'g', 1000, 0.195000, 2000, 600, TRUE),
+(67, 'Levadura Seca Instantánea de Panadería', 'Leudantes y Químicos', 'Paquete 500 g', 230.00, 500, 'g', 500, 0.460000, 1500, 500, TRUE),
+(68, 'Sal Marina Fina de Cocina', 'Leudantes y Químicos', 'Bolsa 1 kg', 50.00, 1000, 'g', 1000, 0.050000, 3000, 1000, TRUE),
+(69, 'Sal Marina en Escamas (Fleur de Sel)', 'Leudantes y Químicos', 'Tarro 250 g', 270.00, 250, 'g', 250, 1.080000, 500, 150, TRUE),
+(70, 'Gelatina Sin Sabor / Grenetina 250 Bloom', 'Leudantes y Químicos', 'Bolsa 500 g', 435.00, 500, 'g', 500, 0.870000, 1000, 300, TRUE),
+(71, 'Cremor Tártaro', 'Leudantes y Químicos', 'Tarro 250 g', 215.00, 250, 'g', 250, 0.860000, 500, 100, TRUE),
+(72, 'CMC / Goma Xantana', 'Leudantes y Químicos', 'Tarro 200 g', 255.00, 200, 'g', 200, 1.275000, 400, 100, TRUE),
+(73, 'Extracto Puro de Vainilla de Madagascar', 'Esencias y Colorantes', 'Frasco 500 ml', 1120.00, 500, 'ml', 500, 2.240000, 1000, 200, TRUE),
+(74, 'Pasta de Vainilla con Semillas Naturales', 'Esencias y Colorantes', 'Tubo 200 g', 910.00, 200, 'g', 200, 4.550000, 400, 100, TRUE),
+(75, 'Extracto de Almendras Amargas', 'Esencias y Colorantes', 'Frasco 120 ml', 255.00, 120, 'ml', 120, 2.125000, 240, 50, TRUE),
+(76, 'Canela en Polvo Ceilán Extra Fina', 'Esencias y Colorantes', 'Tarro 500 g', 410.00, 500, 'g', 500, 0.820000, 1000, 200, TRUE),
+(77, 'Nuez Moscada Molida', 'Esencias y Colorantes', 'Frasco 100 g', 190.00, 100, 'g', 100, 1.900000, 200, 40, TRUE),
+(78, 'Jengibre en Polvo', 'Esencias y Colorantes', 'Tarro 250 g', 205.00, 250, 'g', 250, 0.820000, 500, 100, TRUE),
+(79, 'Café Espresso Instantáneo Liofilizado', 'Esencias y Colorantes', 'Frasco 200 g', 390.00, 200, 'g', 200, 1.950000, 400, 100, TRUE),
+(80, 'Ron Dominicano Añejo Repostería', 'Esencias y Colorantes', 'Botella 750 ml', 640.00, 750, 'ml', 750, 0.853333, 1500, 300, TRUE),
+(81, 'Licor de Café / Kahlúa', 'Esencias y Colorantes', 'Botella 700 ml', 790.00, 700, 'ml', 700, 1.128571, 1400, 200, TRUE),
+(82, 'Colorante en Gel Rojo Navidad / Red Velvet', 'Esencias y Colorantes', 'Frasco 100 g', 230.00, 100, 'g', 100, 2.300000, 200, 50, TRUE),
+(83, 'Colorantes en Gel Surtidos (Kit Profesional)', 'Esencias y Colorantes', 'Kit 12x25g (300g)', 990.00, 300, 'g', 300, 3.300000, 600, 150, TRUE),
+(84, 'Caja de Torta 1 LB con Ventana Transparente', 'Empaques y Desechables', 'Paquete 50 ud', 2100.00, 50, 'ud', 50, 42.000000, 100, 25, TRUE),
+(85, 'Caja de Torta 1/2 LB con Ventana', 'Empaques y Desechables', 'Paquete 50 ud', 1700.00, 50, 'ud', 50, 34.000000, 100, 20, TRUE),
+(86, 'Base Rígida para Torta 25 cm', 'Empaques y Desechables', 'Paquete 25 ud', 680.00, 25, 'ud', 25, 27.200000, 50, 15, TRUE),
+(87, 'Base Rígida para Torta 18 cm', 'Empaques y Desechables', 'Paquete 25 ud', 530.00, 25, 'ud', 25, 21.200000, 50, 15, TRUE),
+(88, 'Caja para 6 Cupcakes con Insertos', 'Empaques y Desechables', 'Paquete 25 ud', 830.00, 25, 'ud', 25, 33.200000, 50, 12, TRUE),
+(89, 'Caja para 12 Cupcakes con Insertos', 'Empaques y Desechables', 'Paquete 25 ud', 1130.00, 25, 'ud', 25, 45.200000, 50, 10, TRUE),
+(90, 'Capacillos de Papel Horno #8 para Cupcake', 'Empaques y Desechables', 'Paquete 500 ud', 300.00, 500, 'ud', 500, 0.600000, 1000, 200, TRUE),
+(91, 'Caja Domo Transparente para Postres', 'Empaques y Desechables', 'Paquete 100 ud', 970.00, 100, 'ud', 100, 9.700000, 200, 40, TRUE),
+(92, 'Cinta de Tela Satinada Frambuesa / Dorada', 'Empaques y Desechables', 'Rollo 50 metros', 360.00, 50, 'ud', 50, 7.200000, 100, 10, TRUE),
+(93, 'Stickers de Marca y Cierre Delicias del Valle', 'Empaques y Desechables', 'Rollo 500 ud', 900.00, 500, 'ud', 500, 1.800000, 1000, 100, TRUE);
+
+-- B. Recetas Maestras (53 Recetas con Cascada BOM)
+INSERT INTO recetas (id, nombre, categoria, descripcion, rendimiento_base, rendimiento_unidad, tiempo_preparacion_min, tiempo_horneado_min, temperatura_horno_c, materiales_indirectos_pct, costos_operativos_pct, reposicion_equipos_pct, mano_obra_pct, margen_beneficio_pct, activa, instrucciones) VALUES
+(1, 'Torta Tradicional de Vainilla Francesa (1 LB)', 'Tortas y Pasteles', 'Bizcocho húmedo y esponjoso con extracto puro de vainilla de Madagascar y mantequilla 82%.', 1, '1 LB (16-20 porciones)', 35, 50, 175, 10.00, 15.00, 10.00, 30.00, 50.00, TRUE, '["Batir la mantequilla pomada con el azúcar blanco hasta blanquear y lograr textura cremosa (8-10 min).","Agregar los huevos uno a uno batiendo bien después de cada adición.","Incorporar la vainilla de Madagascar y la sal marina.","Tamizar la harina de repostería con el polvo de hornear y agregar alternando con la leche entera.","Hornear a 175°C por 45-50 min hasta que el palillo salga limpio.","Dejar enfriar completamente antes de desmoldar, rellenar y decorar."]'::jsonb),
+(2, 'Torta Red Velvet Terciopelo Rojo (1 LB)', 'Tortas y Pasteles', 'Elegante bizcocho rojo aterciopelado con un toque sutil de cacao, buttermilk y buttercream de queso crema Philadelphia.', 1, '1 LB (16-20 porciones)', 40, 45, 175, 10.00, 15.00, 10.00, 30.00, 50.00, TRUE, '["Mezclar el aceite con el azúcar blanco y los huevos hasta emulsionar.","Añadir el colorante rojo en gel, la vainilla y el cacao tamizado.","Incorporar la harina alternando con el buttermilk.","Al final activar el bicarbonato con vinagre e incorporar de inmediato.","Hornear a 175°C por 40-45 min. Enfriar y rellenar con frosting de queso crema."]'::jsonb),
+(3, 'Torta Suprema de Chocolate Suizo 56% (1 LB)', 'Tortas y Pasteles', 'Para verdaderos amantes del chocolate. Masa húmeda de cacao holandés, rellena de ganache semiamargo y frutos rojos.', 1, '1 LB (16-20 porciones)', 40, 50, 170, 12.00, 15.00, 10.00, 30.00, 50.00, TRUE, '[]'::jsonb),
+(4, 'Torta de Zanahoria, Nuez y Especias de Ceilán (1 LB)', 'Tortas y Pasteles', 'Esponjosa y aromática con canela de Ceilán, nuez del nogal crocante y relleno cremoso de queso Philadelphia.', 1, '1 LB (16-20 porciones)', 45, 55, 175, 10.00, 15.00, 10.00, 30.00, 50.00, TRUE, '[]'::jsonb),
+(5, 'Torta Tradicional de Vainilla (½ LB)', 'Tortas y Pasteles', 'Presentación mediana ideal para reuniones familiares de 8 a 10 personas.', 0.5, '½ LB (8-10 porciones)', 25, 40, 175, 10.00, 15.00, 10.00, 30.00, 50.00, TRUE, '[]'::jsonb),
+(6, 'Torta Red Velvet (½ LB)', 'Tortas y Pasteles', 'Versión ½ LB con bizcocho aterciopelado y crema de queso.', 0.5, '½ LB (8-10 porciones)', 30, 38, 175, 10.00, 15.00, 10.00, 30.00, 50.00, TRUE, '[]'::jsonb),
+(7, 'Torta Suprema de Chocolate (½ LB)', 'Tortas y Pasteles', 'Presentación ½ LB con ganache de chocolate semiamargo.', 0.5, '½ LB (8-10 porciones)', 30, 40, 170, 10.00, 15.00, 10.00, 30.00, 50.00, TRUE, '[]'::jsonb),
+(8, 'Torta de Frutos del Bosque y Almendras (1 LB)', 'Tortas y Pasteles', 'Bizcocho suave de almendras con compota rústica de fresas, moras y frambuesas.', 1, '1 LB (16-20 porciones)', 40, 48, 175, 10.00, 15.00, 10.00, 30.00, 50.00, TRUE, '[]'::jsonb),
+(9, 'Torta Selva Negra Tradicional (1 LB)', 'Tortas y Pasteles', 'Bizcocho de chocolate humedecido con licor de cerezas, chantilly fresca y cerezas al marrasquino.', 1, '1 LB (16-20 porciones)', 45, 45, 175, 10.00, 15.00, 10.00, 30.00, 50.00, TRUE, '[]'::jsonb),
+(10, 'Torta de Naranja y Semillas de Amapola (1 LB)', 'Tortas y Pasteles', 'Bizcocho aromático con ralladura de cítricos naturales, semillas de amapola y glaseado brillante.', 1, '1 LB (16-20 porciones)', 30, 45, 175, 10.00, 15.00, 10.00, 30.00, 50.00, TRUE, '[]'::jsonb),
+(11, 'Cupcakes de Vainilla Clásicos (Caja x 12)', 'Cupcakes y Muffins', 'Suaves ponquecitos individuales coronados con buttercream de vainilla y perlas artesanales.', 1, '12 unidades', 20, 22, 180, 10.00, 15.00, 10.00, 30.00, 50.00, TRUE, '[]'::jsonb),
+(12, 'Cupcakes de Chocolate y Nutella (Caja x 12)', 'Cupcakes y Muffins', 'Bizcocho húmedo de cacao relleno de Nutella pura y frosting de chocolate semiamargo.', 1, '12 unidades', 25, 22, 180, 10.00, 15.00, 10.00, 30.00, 50.00, TRUE, '[]'::jsonb),
+(13, 'Cupcakes Red Velvet con Frosting de Queso (Caja x 12)', 'Cupcakes y Muffins', 'Terciopelo rojo individual con generoso copete de queso Philadelphia.', 1, '12 unidades', 25, 22, 175, 10.00, 15.00, 10.00, 30.00, 50.00, TRUE, '[]'::jsonb),
+(14, 'Cupcakes de Vainilla Clásicos (Caja x 6)', 'Cupcakes y Muffins', 'Presentación de media docena en caja con ventana.', 1, '6 unidades', 15, 22, 180, 10.00, 15.00, 10.00, 30.00, 50.00, TRUE, '[]'::jsonb),
+(15, 'Muffins de Arándanos y Limón (Docena)', 'Cupcakes y Muffins', 'Muffins esponjosos con arándanos frescos enteros y crumble crocante en la superficie.', 1, '12 unidades', 20, 25, 190, 10.00, 15.00, 10.00, 30.00, 50.00, TRUE, '[]'::jsonb),
+(16, 'Muffins de Manzana, Canela y Avena (Docena)', 'Cupcakes y Muffins', 'Muffins saludables con trozos de manzana verde y avena integral.', 1, '12 unidades', 20, 25, 185, 10.00, 15.00, 10.00, 30.00, 50.00, TRUE, '[]'::jsonb),
+(17, 'Muffins de Banano y Chispas de Chocolate (Docena)', 'Cupcakes y Muffins', 'Masa ultra tierna de banano maduro con gotas de chocolate horneable.', 1, '12 unidades', 20, 25, 180, 10.00, 15.00, 10.00, 30.00, 50.00, TRUE, '[]'::jsonb),
+(18, 'Galletas Choco-Chips estilo New York (Docena)', 'Galletas y Alfajores', 'Galletas grandes y gruesas: crujientes por fuera y centro chicloso y derretido con nueces y chocolate semiamargo.', 1, '12 unidades (100g c/u)', 25, 14, 190, 10.00, 15.00, 10.00, 30.00, 50.00, TRUE, '[]'::jsonb),
+(19, 'Alfajores de Maicena Tradicionales con Dulce de Leche (Docena)', 'Galletas y Alfajores', 'Masa ultra suave que se deshace en la boca, rellena de abundante dulce de leche y coco rallado.', 1, '12 unidades grandes', 35, 12, 160, 10.00, 15.00, 10.00, 30.00, 50.00, TRUE, '[]'::jsonb),
+(20, 'Galletas Red Velvet Rellenas de Nutella (Docena)', 'Galletas y Alfajores', 'Masa aterciopelada roja rellena en el centro con un corazón de Nutella derretida.', 1, '12 unidades', 30, 12, 180, 10.00, 15.00, 10.00, 30.00, 50.00, TRUE, '[]'::jsonb),
+(21, 'Galletas de Avena, Miel y Pasas (Docena)', 'Galletas y Alfajores', 'Galletas crocantes y saludables con miel de abejas y canela.', 1, '12 unidades', 20, 15, 175, 10.00, 15.00, 10.00, 30.00, 50.00, TRUE, '[]'::jsonb),
+(22, 'Alfajores Marplatenses Bañados en Chocolate 56% (Docena)', 'Galletas y Alfajores', 'Galletas de cacao y especias, rellenas de abundante arequipe y bañadas en chocolate semiamargo.', 1, '12 unidades', 45, 12, 170, 10.00, 15.00, 10.00, 30.00, 50.00, TRUE, '[]'::jsonb),
+(23, 'Galletas de Mantequilla Danesas / Shortbread (Caja x 24)', 'Galletas y Alfajores', 'Galletitas finas con 100% mantequilla pura y un toque de flor de sal marina.', 1, '24 unidades', 25, 15, 165, 10.00, 15.00, 10.00, 30.00, 50.00, TRUE, '[]'::jsonb),
+(24, 'Macarons Franceses de Almendra y Frambuesa (Caja x 8)', 'Galletas y Alfajores', 'Conchas crujientes de harina de almendra con ganache montada de chocolate blanco y frambuesa.', 1, '8 unidades', 50, 16, 150, 12.00, 15.00, 10.00, 35.00, 50.00, TRUE, '[]'::jsonb),
+(25, 'Galletas Craqueladas de Chocolate Fudgy (Docena)', 'Galletas y Alfajores', 'Galletas tipo brownie con costra azucarada blanca y craquelado perfecto.', 1, '12 unidades', 25, 12, 175, 10.00, 15.00, 10.00, 30.00, 50.00, TRUE, '[]'::jsonb),
+(26, 'Brownie Fudgy de Chocolate Belga y Nuez (Molde 9 porciones)', 'Brownies y Blondies', 'Brownie denso y melcochudo con 56% chocolate real, mantequilla francesa y nueces crujientes.', 1, '9 porciones (cuadros)', 25, 30, 170, 10.00, 15.00, 10.00, 30.00, 50.00, TRUE, '[]'::jsonb),
+(27, 'Brownie con Remolino de Arequipe Artesanal (Molde 9 porciones)', 'Brownies y Blondies', 'Base fudgy de chocolate coronada con remolinos dorados de arequipe repostero.', 1, '9 porciones', 25, 32, 170, 10.00, 15.00, 10.00, 30.00, 50.00, TRUE, '[]'::jsonb),
+(28, 'Blondie de Vainilla y Chocolate Blanco con Pistachos (Molde 9 porciones)', 'Brownies y Blondies', 'El primo dorado del brownie: elaborado con azúcar morena, chocolate blanco y pistachos.', 1, '9 porciones', 25, 28, 175, 10.00, 15.00, 10.00, 30.00, 50.00, TRUE, '[]'::jsonb),
+(29, 'Brownie Cheesecake (Molde 9 porciones)', 'Brownies y Blondies', 'Doble capa sublime: base de brownie húmedo y cubierta horneada de cheesecake cremoso.', 1, '9 porciones', 30, 35, 165, 10.00, 15.00, 10.00, 30.00, 50.00, TRUE, '[]'::jsonb),
+(30, 'Brownie Bites para Eventos (Caja x 24 mini cuadros)', 'Brownies y Blondies', 'Bocaditos de brownie tamaño bocado decorados con topping variado.', 1, '24 mini porciones', 30, 25, 170, 10.00, 15.00, 10.00, 30.00, 50.00, TRUE, '[]'::jsonb),
+(31, 'Postre Tres Leches Tradicional Artesanal (Bandeja 12 porciones)', 'Tres Leches y Postres Fríos', 'Bizcochuelo esponjoso embebido en mezcla de 3 leches premium con canela y merengue tostado.', 1, 'Bandeja (12 porciones)', 35, 30, 175, 10.00, 15.00, 10.00, 30.00, 50.00, TRUE, '[]'::jsonb),
+(32, 'Postre Cuatro Leches con Arequipe (Bandeja 12 porciones)', 'Tres Leches y Postres Fríos', 'Variación con arequipe artesanal integrado a la mezcla de leches y cobertura.', 1, 'Bandeja (12 porciones)', 35, 30, 175, 10.00, 15.00, 10.00, 30.00, 50.00, TRUE, '[]'::jsonb),
+(33, 'Tres Leches de Maracuyá Frío (Bandeja 12 porciones)', 'Tres Leches y Postres Fríos', 'Equilibrio cítrico perfecto con reducción artesanal de pulpa de maracuyá pura.', 1, 'Bandeja (12 porciones)', 40, 30, 175, 10.00, 15.00, 10.00, 30.00, 50.00, TRUE, '[]'::jsonb),
+(34, 'Tiramisú Clásico Italiano con Mascarpone (Bandeja 8 porciones)', 'Tres Leches y Postres Fríos', 'Capas de bizcochos savoiardi humedecidos en espresso y Kahlúa, crema sedosa de queso mascarpone y cacao holandés.', 1, 'Bandeja (8 porciones)', 40, 45, 180, 10.00, 15.00, 10.00, 30.00, 50.00, TRUE, '[]'::jsonb),
+(35, 'Mousse de Chocolate Belga 56% en Vasitos (Pack x 6)', 'Tres Leches y Postres Fríos', 'Postre frío individual aireado y ligero con chocolate belga y avellanas.', 1, '6 vasitos', 30, 45, 180, 10.00, 15.00, 10.00, 30.00, 50.00, TRUE, '[]'::jsonb),
+(36, 'Mousse de Frutos Rojos y Chocolate Blanco (Pack x 6)', 'Tres Leches y Postres Fríos', 'Vasitos individuales con crema de chocolate blanco y coulis de frambuesa.', 1, '6 vasitos', 30, 45, 180, 10.00, 15.00, 10.00, 30.00, 50.00, TRUE, '[]'::jsonb),
+(37, 'New York Cheesecake Horneado con Frutos Rojos (Molde 24cm)', 'Cheesecakes y Tartas', 'Cheesecake horneado a baño maría, textura densa y cremosa, base de galleta y compota de frutos rojos.', 1, '1 molde 24cm (12 porciones)', 40, 75, 150, 10.00, 18.00, 10.00, 30.00, 50.00, TRUE, '[]'::jsonb),
+(38, 'Cheesecake de Maracuyá Frío Sin Horno (Molde 22cm)', 'Cheesecakes y Tartas', 'Postre refrescante con suave crema de queso y espejo brillante de maracuyá.', 1, '1 molde 22cm (10 porciones)', 35, 45, 180, 10.00, 12.00, 10.00, 30.00, 50.00, TRUE, '[]'::jsonb),
+(39, 'Tarta de Manzana Caramelizada Rústica (Molde 26cm)', 'Cheesecakes y Tartas', 'Masa quebrada de mantequilla rellena de manzanas salteadas en canela y azúcar morena.', 1, '1 molde 26cm (8-10 porciones)', 40, 45, 180, 10.00, 15.00, 10.00, 30.00, 50.00, TRUE, '[]'::jsonb),
+(40, 'Tarta de Limón y Merengue Suizo / Lemon Pie (Molde 24cm)', 'Cheesecakes y Tartas', 'Masa sablé crujiente con cuajada ácida de limón natural y copas de merengue suizo flambeado.', 1, '1 molde 24cm (10 porciones)', 45, 25, 175, 10.00, 15.00, 10.00, 30.00, 50.00, TRUE, '[]'::jsonb),
+(41, 'Cheesecake Vasco Tostado / San Sebastián (Molde 22cm)', 'Cheesecakes y Tartas', 'El icónico cheesecake tostado por fuera con centro cremoso que fluye suavemente.', 1, '1 molde 22cm (10 porciones)', 25, 40, 210, 10.00, 18.00, 10.00, 30.00, 50.00, TRUE, '[]'::jsonb),
+(42, 'Tarta de Ganache de Chocolate y Caramelo Salado (Molde 24cm)', 'Cheesecakes y Tartas', 'Base de chocolate, toffee salado artesanal y ganache sedoso de chocolate belga.', 1, '1 molde 24cm (10 porciones)', 45, 20, 175, 10.00, 15.00, 10.00, 30.00, 50.00, TRUE, '[]'::jsonb),
+(43, 'Pan Brioche Francés Artesanal de Mantequilla (Molde 600g)', 'Panes y Masas Saladas', 'Pan enriquecido con 40% mantequilla de alta calidad, miga algodonosa dorada.', 1, '1 molde 600g (12 rebanadas)', 45, 32, 175, 8.00, 15.00, 10.00, 35.00, 50.00, TRUE, '[]'::jsonb),
+(44, 'Focaccia Artesanal al Romero, Oliva y Sal Marina (Bandeja 6 porciones)', 'Panes y Masas Saladas', 'Pan plano italiano de fermentación lenta con abundante aceite de oliva extra virgen y sal marina en escamas.', 1, 'Bandeja (6 porciones)', 35, 25, 220, 8.00, 15.00, 10.00, 30.00, 50.00, TRUE, '[]'::jsonb),
+(45, 'Pan de Queso / Pandebono Colombiano Artesanal (Docena)', 'Panes y Masas Saladas', 'Bocados tradicionales con fécula de yuca, queso y maíz, suaves por dentro y dorados por fuera.', 1, '12 unidades', 25, 18, 200, 8.00, 15.00, 10.00, 30.00, 50.00, TRUE, '[]'::jsonb),
+(46, 'Rollos de Canela Glaseados estilo Cinnabon (Pack x 6)', 'Panes y Masas Saladas', 'Masa brioche enrollada con abundante mantequilla, azúcar morena y canela de Ceilán, con glaseado de queso crema.', 1, '6 unidades grandes', 40, 24, 180, 10.00, 15.00, 10.00, 30.00, 50.00, TRUE, '[]'::jsonb),
+(47, 'Croissants de Mantequilla Franceses (Pack x 6)', 'Panes y Masas Saladas', 'Hojaldre laminado artesanal con capas crujientes y alveolos perfectos.', 1, '6 unidades', 60, 20, 195, 10.00, 18.00, 10.00, 40.00, 50.00, TRUE, '[]'::jsonb),
+(48, 'Pan Rústico Campesino de Masa Madre (Hogaza 750g)', 'Panes y Masas Saladas', 'Hogaza crujiente con fermentación natural de 24 horas, corteza tostada y miga abierta.', 1, '1 hogaza (750g)', 40, 40, 230, 8.00, 18.00, 10.00, 35.00, 50.00, TRUE, '[]'::jsonb),
+(49, 'Buttercream Suizo de Vainilla (Lote 1 kg)', 'Rellenos y Coberturas', 'Crema de mantequilla a base de merengue suizo, sedosa, estable y nada empalagosa.', 1, '1 kg (rinde para 2 tortas)', 25, 45, 180, 8.00, 10.00, 10.00, 25.00, 50.00, TRUE, '[]'::jsonb),
+(50, 'Ganache de Chocolate Semiamargo 56% (Lote 1 kg)', 'Rellenos y Coberturas', 'Emulsión perfecta de chocolate belga y crema de leche para relleno o cobertura lisa.', 1, '1 kg', 15, 45, 180, 8.00, 10.00, 10.00, 25.00, 50.00, TRUE, '[]'::jsonb),
+(51, 'Crema Pastelera Artesanal de Vainilla (Lote 1 kg)', 'Rellenos y Coberturas', 'Crema cocida tradicional con leche entera, yemas, maicena y vainilla natural en vaina.', 1, '1 kg', 20, 45, 180, 8.00, 12.00, 10.00, 25.00, 50.00, TRUE, '[]'::jsonb),
+(52, 'Compota Rústica de Frutos Rojos Silvestres (Lote 800g)', 'Rellenos y Coberturas', 'Reducción artesanal de fresas, moras y frambuesas con toque de zumo de limón natural.', 1, '800g', 25, 45, 180, 8.00, 12.00, 10.00, 25.00, 50.00, TRUE, '[]'::jsonb),
+(53, 'Caramelo Salado Artesanal / Toffee (Lote 600g)', 'Rellenos y Coberturas', 'Caramelo dorado cremoso con mantequilla pura, crema y escamas de flor de sal marina.', 1, '600g', 20, 45, 180, 8.00, 12.00, 10.00, 25.00, 50.00, TRUE, '[]'::jsonb);
+
+-- C. Ingredientes de Recetas (BOM Fijos y Variables)
+INSERT INTO receta_ingredientes (receta_id, insumo_id, cantidad, tipo) VALUES
+(1, 1, 500, 'fijo'),
+(1, 9, 450, 'fijo'),
+(1, 16, 250, 'fijo'),
+(1, 35, 6, 'fijo'),
+(1, 23, 250, 'fijo'),
+(1, 65, 15, 'fijo'),
+(1, 73, 15, 'fijo'),
+(1, 68, 3, 'fijo'),
+(1, 29, 250, 'variable'),
+(1, 31, 350, 'variable'),
+(1, 84, 1, 'variable'),
+(1, 86, 1, 'variable'),
+(1, 92, 1, 'variable'),
+(1, 93, 1, 'variable'),
+(2, 1, 450, 'fijo'),
+(2, 9, 400, 'fijo'),
+(2, 20, 220, 'fijo'),
+(2, 35, 4, 'fijo'),
+(2, 30, 250, 'fijo'),
+(2, 41, 25, 'fijo'),
+(2, 66, 8, 'fijo'),
+(2, 82, 12, 'fijo'),
+(2, 73, 10, 'fijo'),
+(2, 25, 400, 'variable'),
+(2, 16, 150, 'variable'),
+(2, 11, 250, 'variable'),
+(2, 84, 1, 'variable'),
+(2, 86, 1, 'variable'),
+(2, 93, 1, 'variable'),
+(3, 1, 400, 'fijo'),
+(3, 41, 90, 'fijo'),
+(3, 9, 450, 'fijo'),
+(3, 35, 5, 'fijo'),
+(3, 20, 200, 'fijo'),
+(3, 23, 200, 'fijo'),
+(3, 79, 10, 'fijo'),
+(3, 65, 12, 'fijo'),
+(3, 66, 6, 'fijo'),
+(3, 38, 350, 'variable'),
+(3, 24, 300, 'variable'),
+(3, 55, 150, 'variable'),
+(3, 84, 1, 'variable'),
+(3, 86, 1, 'variable'),
+(3, 93, 1, 'variable'),
+(4, 1, 450, 'fijo'),
+(4, 53, 400, 'fijo'),
+(4, 10, 300, 'fijo'),
+(4, 9, 150, 'fijo'),
+(4, 20, 220, 'fijo'),
+(4, 35, 5, 'fijo'),
+(4, 57, 120, 'fijo'),
+(4, 76, 10, 'fijo'),
+(4, 77, 2, 'fijo'),
+(4, 65, 12, 'fijo'),
+(4, 25, 350, 'variable'),
+(4, 11, 200, 'variable'),
+(4, 84, 1, 'variable'),
+(4, 86, 1, 'variable'),
+(4, 93, 1, 'variable'),
+(5, 1, 250, 'fijo'),
+(5, 9, 225, 'fijo'),
+(5, 16, 125, 'fijo'),
+(5, 35, 3, 'fijo'),
+(5, 23, 125, 'fijo'),
+(5, 65, 8, 'fijo'),
+(5, 73, 8, 'fijo'),
+(5, 68, 2, 'fijo'),
+(5, 29, 140, 'variable'),
+(5, 31, 200, 'variable'),
+(5, 85, 1, 'variable'),
+(5, 87, 1, 'variable'),
+(5, 93, 1, 'variable'),
+(6, 1, 225, 'fijo'),
+(6, 9, 200, 'fijo'),
+(6, 20, 110, 'fijo'),
+(6, 35, 2, 'fijo'),
+(6, 30, 130, 'fijo'),
+(6, 41, 13, 'fijo'),
+(6, 66, 4, 'fijo'),
+(6, 82, 6, 'fijo'),
+(6, 25, 200, 'variable'),
+(6, 16, 80, 'variable'),
+(6, 11, 130, 'variable'),
+(6, 85, 1, 'variable'),
+(6, 87, 1, 'variable'),
+(6, 93, 1, 'variable'),
+(7, 1, 200, 'fijo'),
+(7, 41, 45, 'fijo'),
+(7, 9, 225, 'fijo'),
+(7, 35, 3, 'fijo'),
+(7, 20, 100, 'fijo'),
+(7, 23, 100, 'fijo'),
+(7, 38, 180, 'variable'),
+(7, 24, 150, 'variable'),
+(7, 85, 1, 'variable'),
+(7, 87, 1, 'variable'),
+(7, 93, 1, 'variable'),
+(8, 1, 380, 'fijo'),
+(8, 3, 100, 'fijo'),
+(8, 9, 420, 'fijo'),
+(8, 16, 220, 'fijo'),
+(8, 35, 5, 'fijo'),
+(8, 23, 200, 'fijo'),
+(8, 65, 12, 'fijo'),
+(8, 55, 300, 'variable'),
+(8, 46, 150, 'variable'),
+(8, 31, 300, 'variable'),
+(8, 84, 1, 'variable'),
+(8, 86, 1, 'variable'),
+(8, 93, 1, 'variable'),
+(9, 1, 350, 'fijo'),
+(9, 41, 80, 'fijo'),
+(9, 9, 400, 'fijo'),
+(9, 35, 6, 'fijo'),
+(9, 16, 180, 'fijo'),
+(9, 80, 40, 'fijo'),
+(9, 24, 450, 'variable'),
+(9, 56, 150, 'variable'),
+(9, 38, 100, 'variable'),
+(9, 84, 1, 'variable'),
+(9, 86, 1, 'variable'),
+(9, 93, 1, 'variable'),
+(10, 1, 480, 'fijo'),
+(10, 9, 400, 'fijo'),
+(10, 16, 220, 'fijo'),
+(10, 35, 5, 'fijo'),
+(10, 61, 30, 'fijo'),
+(10, 51, 50, 'fijo'),
+(10, 65, 15, 'fijo'),
+(10, 11, 200, 'variable'),
+(10, 84, 1, 'variable'),
+(10, 86, 1, 'variable'),
+(10, 93, 1, 'variable'),
+(11, 1, 240, 'fijo'),
+(11, 9, 200, 'fijo'),
+(11, 16, 120, 'fijo'),
+(11, 35, 2, 'fijo'),
+(11, 23, 120, 'fijo'),
+(11, 65, 8, 'fijo'),
+(11, 73, 8, 'fijo'),
+(11, 16, 120, 'variable'),
+(11, 11, 240, 'variable'),
+(11, 90, 12, 'variable'),
+(11, 89, 1, 'variable'),
+(11, 93, 1, 'variable'),
+(12, 1, 200, 'fijo'),
+(12, 41, 45, 'fijo'),
+(12, 9, 200, 'fijo'),
+(12, 20, 90, 'fijo'),
+(12, 35, 2, 'fijo'),
+(12, 23, 120, 'fijo'),
+(12, 44, 150, 'variable'),
+(12, 38, 120, 'variable'),
+(12, 90, 12, 'variable'),
+(12, 89, 1, 'variable'),
+(12, 93, 1, 'variable'),
+(13, 1, 220, 'fijo'),
+(13, 9, 180, 'fijo'),
+(13, 20, 100, 'fijo'),
+(13, 35, 2, 'fijo'),
+(13, 30, 120, 'fijo'),
+(13, 41, 10, 'fijo'),
+(13, 82, 5, 'fijo'),
+(13, 25, 180, 'variable'),
+(13, 16, 80, 'variable'),
+(13, 11, 120, 'variable'),
+(13, 90, 12, 'variable'),
+(13, 89, 1, 'variable'),
+(13, 93, 1, 'variable'),
+(14, 1, 120, 'fijo'),
+(14, 9, 100, 'fijo'),
+(14, 16, 60, 'fijo'),
+(14, 35, 1, 'fijo'),
+(14, 23, 60, 'fijo'),
+(14, 16, 60, 'variable'),
+(14, 11, 120, 'variable'),
+(14, 90, 6, 'variable'),
+(14, 88, 1, 'variable'),
+(14, 93, 1, 'variable'),
+(15, 1, 300, 'fijo'),
+(15, 9, 180, 'fijo'),
+(15, 16, 100, 'fijo'),
+(15, 35, 2, 'fijo'),
+(15, 23, 150, 'fijo'),
+(15, 51, 20, 'fijo'),
+(15, 65, 10, 'fijo'),
+(15, 47, 180, 'variable'),
+(15, 90, 12, 'variable'),
+(15, 89, 1, 'variable'),
+(15, 93, 1, 'variable'),
+(16, 1, 200, 'fijo'),
+(16, 5, 100, 'fijo'),
+(16, 10, 150, 'fijo'),
+(16, 20, 90, 'fijo'),
+(16, 35, 2, 'fijo'),
+(16, 76, 8, 'fijo'),
+(16, 52, 200, 'variable'),
+(16, 90, 12, 'variable'),
+(16, 89, 1, 'variable'),
+(16, 93, 1, 'variable'),
+(17, 1, 250, 'fijo'),
+(17, 54, 300, 'fijo'),
+(17, 10, 140, 'fijo'),
+(17, 16, 80, 'fijo'),
+(17, 35, 2, 'fijo'),
+(17, 42, 120, 'variable'),
+(17, 90, 12, 'variable'),
+(17, 89, 1, 'variable'),
+(17, 93, 1, 'variable'),
+(18, 1, 400, 'fijo'),
+(18, 16, 220, 'fijo'),
+(18, 10, 180, 'fijo'),
+(18, 9, 120, 'fijo'),
+(18, 35, 2, 'fijo'),
+(18, 65, 6, 'fijo'),
+(18, 66, 4, 'fijo'),
+(18, 73, 8, 'fijo'),
+(18, 42, 250, 'variable'),
+(18, 57, 100, 'variable'),
+(18, 88, 1, 'variable'),
+(18, 93, 1, 'variable'),
+(19, 4, 250, 'fijo'),
+(19, 1, 150, 'fijo'),
+(19, 16, 180, 'fijo'),
+(19, 11, 120, 'fijo'),
+(19, 37, 40, 'fijo'),
+(19, 65, 8, 'fijo'),
+(19, 51, 5, 'fijo'),
+(19, 29, 350, 'variable'),
+(19, 60, 60, 'variable'),
+(19, 88, 1, 'variable'),
+(19, 93, 1, 'variable'),
+(20, 1, 300, 'fijo'),
+(20, 41, 20, 'fijo'),
+(20, 16, 150, 'fijo'),
+(20, 10, 150, 'fijo'),
+(20, 35, 1, 'fijo'),
+(20, 82, 6, 'fijo'),
+(20, 44, 200, 'variable'),
+(20, 43, 80, 'variable'),
+(20, 88, 1, 'variable'),
+(20, 93, 1, 'variable'),
+(21, 5, 200, 'fijo'),
+(21, 1, 120, 'fijo'),
+(21, 16, 120, 'fijo'),
+(21, 12, 60, 'fijo'),
+(21, 10, 80, 'fijo'),
+(21, 35, 1, 'fijo'),
+(21, 76, 6, 'fijo'),
+(21, 64, 120, 'variable'),
+(21, 88, 1, 'variable'),
+(21, 93, 1, 'variable'),
+(22, 1, 220, 'fijo'),
+(22, 4, 100, 'fijo'),
+(22, 41, 30, 'fijo'),
+(22, 16, 150, 'fijo'),
+(22, 9, 100, 'fijo'),
+(22, 35, 1, 'fijo'),
+(22, 12, 30, 'fijo'),
+(22, 29, 300, 'variable'),
+(22, 38, 250, 'variable'),
+(22, 88, 1, 'variable'),
+(22, 93, 1, 'variable'),
+(23, 1, 300, 'fijo'),
+(23, 16, 200, 'fijo'),
+(23, 11, 100, 'fijo'),
+(23, 73, 6, 'fijo'),
+(23, 69, 3, 'fijo'),
+(23, 88, 1, 'variable'),
+(23, 93, 1, 'variable'),
+(24, 3, 120, 'fijo'),
+(24, 11, 120, 'fijo'),
+(24, 36, 90, 'fijo'),
+(24, 9, 100, 'fijo'),
+(24, 82, 2, 'fijo'),
+(24, 39, 120, 'variable'),
+(24, 48, 80, 'variable'),
+(24, 88, 1, 'variable'),
+(24, 93, 1, 'variable'),
+(25, 1, 180, 'fijo'),
+(25, 41, 60, 'fijo'),
+(25, 9, 180, 'fijo'),
+(25, 20, 70, 'fijo'),
+(25, 35, 2, 'fijo'),
+(25, 65, 6, 'fijo'),
+(25, 11, 100, 'variable'),
+(25, 88, 1, 'variable'),
+(25, 93, 1, 'variable'),
+(26, 38, 250, 'fijo'),
+(26, 16, 180, 'fijo'),
+(26, 9, 200, 'fijo'),
+(26, 10, 100, 'fijo'),
+(26, 35, 4, 'fijo'),
+(26, 1, 120, 'fijo'),
+(26, 41, 30, 'fijo'),
+(26, 57, 100, 'variable'),
+(26, 88, 1, 'variable'),
+(26, 93, 1, 'variable'),
+(27, 38, 220, 'fijo'),
+(27, 16, 160, 'fijo'),
+(27, 9, 220, 'fijo'),
+(27, 35, 4, 'fijo'),
+(27, 1, 120, 'fijo'),
+(27, 41, 25, 'fijo'),
+(27, 29, 180, 'variable'),
+(27, 88, 1, 'variable'),
+(27, 93, 1, 'variable'),
+(28, 16, 160, 'fijo'),
+(28, 10, 220, 'fijo'),
+(28, 35, 3, 'fijo'),
+(28, 73, 10, 'fijo'),
+(28, 1, 200, 'fijo'),
+(28, 39, 150, 'variable'),
+(28, 59, 70, 'variable'),
+(28, 88, 1, 'variable'),
+(28, 93, 1, 'variable'),
+(29, 38, 180, 'fijo'),
+(29, 16, 120, 'fijo'),
+(29, 9, 150, 'fijo'),
+(29, 35, 3, 'fijo'),
+(29, 1, 90, 'fijo'),
+(29, 25, 250, 'variable'),
+(29, 9, 60, 'variable'),
+(29, 35, 1, 'variable'),
+(29, 88, 1, 'variable'),
+(29, 93, 1, 'variable'),
+(30, 38, 250, 'fijo'),
+(30, 16, 180, 'fijo'),
+(30, 9, 250, 'fijo'),
+(30, 35, 4, 'fijo'),
+(30, 1, 120, 'fijo'),
+(30, 42, 100, 'variable'),
+(30, 88, 1, 'variable'),
+(30, 93, 1, 'variable'),
+(31, 1, 200, 'fijo'),
+(31, 9, 180, 'fijo'),
+(31, 35, 6, 'fijo'),
+(31, 65, 6, 'fijo'),
+(31, 73, 8, 'fijo'),
+(31, 27, 395, 'variable'),
+(31, 28, 400, 'variable'),
+(31, 24, 300, 'variable'),
+(31, 31, 250, 'variable'),
+(31, 76, 4, 'variable'),
+(31, 84, 1, 'variable'),
+(31, 93, 1, 'variable'),
+(32, 1, 200, 'fijo'),
+(32, 9, 180, 'fijo'),
+(32, 35, 6, 'fijo'),
+(32, 65, 6, 'fijo'),
+(32, 27, 395, 'variable'),
+(32, 28, 400, 'variable'),
+(32, 24, 250, 'variable'),
+(32, 29, 300, 'variable'),
+(32, 84, 1, 'variable'),
+(32, 93, 1, 'variable'),
+(33, 1, 200, 'fijo'),
+(33, 9, 180, 'fijo'),
+(33, 35, 6, 'fijo'),
+(33, 27, 395, 'variable'),
+(33, 28, 300, 'variable'),
+(33, 24, 250, 'variable'),
+(33, 50, 250, 'variable'),
+(33, 31, 200, 'variable'),
+(33, 84, 1, 'variable'),
+(33, 93, 1, 'variable'),
+(34, 26, 400, 'fijo'),
+(34, 37, 80, 'fijo'),
+(34, 9, 120, 'fijo'),
+(34, 24, 200, 'fijo'),
+(34, 79, 20, 'fijo'),
+(34, 81, 40, 'fijo'),
+(34, 1, 150, 'variable'),
+(34, 41, 25, 'variable'),
+(34, 84, 1, 'variable'),
+(34, 93, 1, 'variable'),
+(35, 38, 200, 'fijo'),
+(35, 24, 300, 'fijo'),
+(35, 36, 80, 'fijo'),
+(35, 9, 60, 'fijo'),
+(35, 91, 6, 'variable'),
+(35, 93, 1, 'variable'),
+(36, 39, 180, 'fijo'),
+(36, 24, 250, 'fijo'),
+(36, 70, 8, 'fijo'),
+(36, 48, 150, 'variable'),
+(36, 91, 6, 'variable'),
+(36, 93, 1, 'variable'),
+(37, 25, 800, 'fijo'),
+(37, 9, 220, 'fijo'),
+(37, 35, 4, 'fijo'),
+(37, 24, 150, 'fijo'),
+(37, 73, 10, 'fijo'),
+(37, 51, 10, 'fijo'),
+(37, 1, 150, 'variable'),
+(37, 16, 80, 'variable'),
+(37, 55, 250, 'variable'),
+(37, 46, 100, 'variable'),
+(37, 84, 1, 'variable'),
+(37, 86, 1, 'variable'),
+(37, 93, 1, 'variable'),
+(38, 25, 500, 'fijo'),
+(38, 27, 300, 'fijo'),
+(38, 24, 250, 'fijo'),
+(38, 70, 15, 'fijo'),
+(38, 50, 200, 'variable'),
+(38, 1, 120, 'variable'),
+(38, 16, 60, 'variable'),
+(38, 84, 1, 'variable'),
+(38, 86, 1, 'variable'),
+(38, 93, 1, 'variable'),
+(39, 1, 250, 'fijo'),
+(39, 16, 130, 'fijo'),
+(39, 9, 50, 'fijo'),
+(39, 35, 1, 'fijo'),
+(39, 52, 600, 'variable'),
+(39, 10, 100, 'variable'),
+(39, 76, 8, 'variable'),
+(39, 16, 30, 'variable'),
+(39, 84, 1, 'variable'),
+(39, 86, 1, 'variable'),
+(39, 93, 1, 'variable'),
+(40, 1, 220, 'fijo'),
+(40, 16, 110, 'fijo'),
+(40, 11, 60, 'fijo'),
+(40, 35, 1, 'fijo'),
+(40, 51, 150, 'variable'),
+(40, 27, 395, 'variable'),
+(40, 37, 60, 'variable'),
+(40, 36, 120, 'variable'),
+(40, 9, 200, 'variable'),
+(40, 84, 1, 'variable'),
+(40, 86, 1, 'variable'),
+(40, 93, 1, 'variable'),
+(41, 25, 750, 'fijo'),
+(41, 24, 350, 'fijo'),
+(41, 9, 200, 'fijo'),
+(41, 35, 5, 'fijo'),
+(41, 1, 25, 'fijo'),
+(41, 73, 8, 'fijo'),
+(41, 84, 1, 'variable'),
+(41, 86, 1, 'variable'),
+(41, 93, 1, 'variable'),
+(42, 1, 200, 'fijo'),
+(42, 41, 30, 'fijo'),
+(42, 16, 100, 'fijo'),
+(42, 35, 1, 'fijo'),
+(42, 9, 150, 'variable'),
+(42, 24, 300, 'variable'),
+(42, 16, 50, 'variable'),
+(42, 69, 4, 'variable'),
+(42, 38, 220, 'variable'),
+(42, 84, 1, 'variable'),
+(42, 86, 1, 'variable'),
+(42, 93, 1, 'variable'),
+(43, 2, 350, 'fijo'),
+(43, 16, 160, 'fijo'),
+(43, 35, 4, 'fijo'),
+(43, 9, 40, 'fijo'),
+(43, 23, 60, 'fijo'),
+(43, 67, 8, 'fijo'),
+(43, 68, 6, 'fijo'),
+(43, 93, 1, 'variable'),
+(44, 2, 400, 'fijo'),
+(44, 67, 6, 'fijo'),
+(44, 68, 8, 'fijo'),
+(44, 12, 10, 'fijo'),
+(44, 21, 80, 'variable'),
+(44, 69, 5, 'variable'),
+(44, 93, 1, 'variable'),
+(45, 7, 250, 'fijo'),
+(45, 4, 50, 'fijo'),
+(45, 34, 250, 'fijo'),
+(45, 16, 50, 'fijo'),
+(45, 35, 2, 'fijo'),
+(45, 23, 50, 'fijo'),
+(45, 9, 15, 'fijo'),
+(45, 88, 1, 'variable'),
+(45, 93, 1, 'variable'),
+(46, 2, 350, 'fijo'),
+(46, 23, 140, 'fijo'),
+(46, 16, 70, 'fijo'),
+(46, 9, 50, 'fijo'),
+(46, 35, 1, 'fijo'),
+(46, 67, 7, 'fijo'),
+(46, 10, 120, 'variable'),
+(46, 16, 60, 'variable'),
+(46, 76, 15, 'variable'),
+(46, 25, 100, 'variable'),
+(46, 11, 100, 'variable'),
+(46, 88, 1, 'variable'),
+(46, 93, 1, 'variable'),
+(47, 2, 300, 'fijo'),
+(47, 23, 120, 'fijo'),
+(47, 9, 35, 'fijo'),
+(47, 67, 7, 'fijo'),
+(47, 68, 5, 'fijo'),
+(47, 16, 180, 'variable'),
+(47, 88, 1, 'variable'),
+(47, 93, 1, 'variable'),
+(48, 2, 450, 'fijo'),
+(48, 6, 50, 'fijo'),
+(48, 68, 10, 'fijo'),
+(48, 93, 1, 'variable'),
+(49, 36, 200, 'fijo'),
+(49, 9, 350, 'fijo'),
+(49, 16, 450, 'fijo'),
+(49, 73, 15, 'fijo'),
+(49, 68, 2, 'fijo'),
+(50, 38, 550, 'fijo'),
+(50, 24, 400, 'fijo'),
+(50, 16, 50, 'fijo'),
+(51, 23, 700, 'fijo'),
+(51, 9, 160, 'fijo'),
+(51, 37, 100, 'fijo'),
+(51, 4, 60, 'fijo'),
+(51, 16, 40, 'fijo'),
+(51, 74, 10, 'fijo'),
+(52, 46, 300, 'fijo'),
+(52, 48, 250, 'fijo'),
+(52, 49, 200, 'fijo'),
+(52, 9, 180, 'fijo'),
+(52, 51, 20, 'fijo'),
+(53, 9, 300, 'fijo'),
+(53, 16, 120, 'fijo'),
+(53, 24, 200, 'fijo'),
+(53, 69, 6, 'fijo');
+
+-- D. Cotizaciones (0 registros ficticios - tabla lista para nuevas cotizaciones)
+
+-- E. Pedidos y Facturas (0 registros ficticios - tabla lista para nuevos pedidos)
+
+-- F. Mermas (0 registros ficticios - tabla lista para registrar desperdicios)
+
+-- G. Configuración Inicial del Taller
+INSERT INTO configuracion_taller (id, nombre_negocio, telefono_whatsapp, direccion_taller, porcentaje_anticipo_default, porcentaje_indirectos_default, porcentaje_operativos_default, porcentaje_reposicion_default, porcentaje_mano_obra_default, porcentaje_margen_default, moneda_simbolo) VALUES
+(1, 'Delicias del Valle', '+18095550142', 'Av. Winston Churchill #105, Santo Domingo, República Dominicana', 50.00, 10.00, 15.00, 10.00, 30.00, 50.00, 'RD$')
+ON CONFLICT (id) DO NOTHING;
+
+-- ==============================================================================
+-- 7. REINICIO Y SINCRONIZACIÓN DE SECUENCIAS AUTO-INCREMENTABLES
+-- ==============================================================================
+SELECT setval('usuarios_id_seq', (SELECT COALESCE(MAX(id), 1) FROM usuarios));
+SELECT setval('insumos_id_seq', (SELECT COALESCE(MAX(id), 1) FROM insumos));
+SELECT setval('recetas_id_seq', (SELECT COALESCE(MAX(id), 1) FROM recetas));
+SELECT setval('receta_ingredientes_id_seq', (SELECT COALESCE(MAX(id), 1) FROM receta_ingredientes));
+SELECT setval('cotizaciones_id_seq', (SELECT COALESCE(MAX(id), 1) FROM cotizaciones));
+SELECT setval('cotizacion_items_id_seq', (SELECT COALESCE(MAX(id), 1) FROM cotizacion_items));
+SELECT setval('pedidos_id_seq', (SELECT COALESCE(MAX(id), 1) FROM pedidos));
+SELECT setval('pedido_items_id_seq', (SELECT COALESCE(MAX(id), 1) FROM pedido_items));
+SELECT setval('pagos_id_seq', (SELECT COALESCE(MAX(id), 1) FROM pagos));
+SELECT setval('mermas_id_seq', (SELECT COALESCE(MAX(id), 1) FROM mermas));
+SELECT setval('configuracion_taller_id_seq', (SELECT COALESCE(MAX(id), 1) FROM configuracion_taller));
+
+-- ==============================================================================
+-- FIN DEL SCRIPT DE SEED - DELICIAS DEL VALLE
+-- ==============================================================================
