@@ -9,7 +9,7 @@ import {
 import { Modal } from '../ui/Modal';
 import { formatCurrency } from '../../utils/formatters';
 import { calcularCostosReceta } from '../../utils/calculations';
-import { Plus, Trash2, Cake, Gift, Search, ChevronDown, Check } from 'lucide-react';
+import { Plus, Trash2, Cake, Gift, Search, ChevronDown, Check, Sparkles } from 'lucide-react';
 
 interface QuoteBuilderModalProps {
   isOpen: boolean;
@@ -20,43 +20,50 @@ interface QuoteBuilderModalProps {
   initialCotizacion?: Cotizacion | null;
 }
 
-export const OPCIONES_MASA = [
-  'Ninguna / Estándar de la Receta',
-  'Vainilla Francesa Tradicional',
-  'Red Velvet Aterciopelado',
-  'Chocolate Suizo 56% Belga',
-  'Zanahoria, Nuez y Especias de Ceilán',
-  'Almendras y Frutos del Bosque',
-  'Naranja y Semillas de Amapola',
-  'Masa Tradicional de Tres Leches',
-  'Masa Húmeda de Brownie Fudgy',
-  'Masa de Galleta Choco-Chips',
-  'Masa Hojaldrada / Brioche',
+export interface OpcionConfigurable {
+  id: string;
+  nombre: string;
+  precio_adicional_base: number; // en RD$ (para tamaño estándar 1 LB / 1x)
+  descripcion?: string;
+}
+
+export const OPCIONES_MASA_DETALLADAS: OpcionConfigurable[] = [
+  { id: 'masa_estandar', nombre: 'Ninguna / Estándar de la Receta', precio_adicional_base: 0, descripcion: 'Masa base incluida en la receta original' },
+  { id: 'masa_vainilla', nombre: 'Vainilla Francesa Tradicional', precio_adicional_base: 0, descripcion: 'Bizcochuelo clásico con vainilla pura' },
+  { id: 'masa_red_velvet', nombre: 'Red Velvet Aterciopelado', precio_adicional_base: 250, descripcion: 'Cacao holandés, buttermilk y colorante carmín' },
+  { id: 'masa_chocolate', nombre: 'Chocolate Suizo 56% Belga', precio_adicional_base: 350, descripcion: 'Bizcocho intenso con chocolate puro fundido' },
+  { id: 'masa_zanahoria', nombre: 'Zanahoria, Nuez y Especias de Ceilán', precio_adicional_base: 300, descripcion: 'Zanahoria fresca, nueces de nogal y canela fina' },
+  { id: 'masa_almendras', nombre: 'Almendras y Frutos del Bosque', precio_adicional_base: 400, descripcion: 'Harina de almendras extra fina y arándanos silvestres' },
+  { id: 'masa_naranja', nombre: 'Naranja y Semillas de Amapola', precio_adicional_base: 200, descripcion: 'Zumo y ralladura de naranja natural con semillas' },
+  { id: 'masa_tres_leches', nombre: 'Masa Tradicional de Tres Leches', precio_adicional_base: 150, descripcion: 'Bizcochuelo absorbente ultra aireado' },
+  { id: 'masa_brownie', nombre: 'Masa Húmeda de Brownie Fudgy', precio_adicional_base: 350, descripcion: 'Base densa y melcochuda de chocolate real' },
+  { id: 'masa_galleta', nombre: 'Masa de Galleta Choco-Chips', precio_adicional_base: 200, descripcion: 'Masa estilo galletera con trozos de chocolate' },
+  { id: 'masa_brioche', nombre: 'Masa Hojaldrada / Brioche Francés', precio_adicional_base: 250, descripcion: 'Masa enriquecida con mantequilla pura' },
 ];
 
-export const OPCIONES_RELLENO = [
-  'Ninguno / Sin Relleno',
-  'Dulce de Leche / Arequipe Artesanal Repostero',
-  'Frosting de Queso Crema Philadelphia',
-  'Ganache Sedoso de Chocolate Semiamargo 56%',
-  'Compota Rústica de Frutos Rojos Silvestres',
-  'Crema Pastelera Artesanal de Vainilla',
-  'Nutella Pura y Avellanas',
-  'Caramelo Salado / Toffee Artesanal',
-  'Reducción de Maracuyá Cítrico',
-  'Buttercream Suizo de Vainilla',
+export const OPCIONES_RELLENO_DETALLADAS: OpcionConfigurable[] = [
+  { id: 'relleno_ninguno', nombre: 'Ninguno / Sin Relleno', precio_adicional_base: 0, descripcion: 'Sin capas de relleno' },
+  { id: 'relleno_arequipe', nombre: 'Dulce de Leche / Arequipe Repostero', precio_adicional_base: 250, descripcion: 'Arequipe artesanal denso y cremoso' },
+  { id: 'relleno_queso_crema', nombre: 'Frosting de Queso Crema Philadelphia', precio_adicional_base: 350, descripcion: 'Queso crema auténtico, suave y equilibrado' },
+  { id: 'relleno_ganache', nombre: 'Ganache Sedoso de Chocolate 56%', precio_adicional_base: 380, descripcion: 'Emulsión de chocolate amargo con crema 35%' },
+  { id: 'relleno_frutos_rojos', nombre: 'Compota Rústica de Frutos Rojos Silvestres', precio_adicional_base: 320, descripcion: 'Fresas, moras y frambuesas reducidas al fuego' },
+  { id: 'relleno_crema_pastelera', nombre: 'Crema Pastelera Artesanal de Vainilla', precio_adicional_base: 200, descripcion: 'Leche entera, yemas frescas y vainilla de Madagascar' },
+  { id: 'relleno_nutella', nombre: 'Nutella Pura y Avellanas Tostadas', precio_adicional_base: 450, descripcion: 'Crema original de cacao y avellanas' },
+  { id: 'relleno_toffee', nombre: 'Caramelo Salado / Toffee Artesanal', precio_adicional_base: 220, descripcion: 'Caramelo cocido con mantequilla y flor de sal' },
+  { id: 'relleno_maracuya', nombre: 'Reducción de Maracuyá Cítrico', precio_adicional_base: 260, descripcion: 'Pulpas de chinola fresca con notas ácidas balanceadas' },
+  { id: 'relleno_buttercream', nombre: 'Buttercream Suizo de Vainilla', precio_adicional_base: 220, descripcion: 'Merengue suizo emulsionado con mantequilla' },
 ];
 
-export const OPCIONES_DECORACION = [
-  'Ninguna / Acabado Rústico Natural (Sin Decorar)',
-  'Baño de Caramelo Dorado al Punto Ámbar',
-  'Drip Dorado Artesanal con Macarons y Fresas',
-  'Naked Cake Rústico con Flores Naturales Comestibles',
-  'Chantilly Suave con Virutas de Chocolate',
-  'Buttercream Alisado Perfecto Bicolor',
-  'Fondant Temático Personalizado con Figuras 3D',
-  'Cubierta Espejo Brillante de Chocolate Belga',
-  'Glaseado Real / Azúcar Glass Espolvoreado',
+export const OPCIONES_DECORACION_DETALLADAS: OpcionConfigurable[] = [
+  { id: 'deco_ninguna', nombre: 'Ninguna / Acabado Rústico Natural (Sin Decorar)', precio_adicional_base: 0, descripcion: 'Presentación natural de horneado' },
+  { id: 'deco_caramelo', nombre: 'Baño de Caramelo Dorado al Punto Ámbar', precio_adicional_base: 150, descripcion: 'Caramelo fluido y brillante para quesillos y flanes' },
+  { id: 'deco_azucar', nombre: 'Glaseado Real / Azúcar Glass Espolvoreado', precio_adicional_base: 100, descripcion: 'Fina lluvia de azúcar micropulverizada' },
+  { id: 'deco_chantilly', nombre: 'Chantilly Suave con Virutas de Chocolate', precio_adicional_base: 250, descripcion: 'Crema batida fresca y ralladura de chocolate' },
+  { id: 'deco_buttercream_alisado', nombre: 'Buttercream Alisado Perfecto Bicolor', precio_adicional_base: 350, descripcion: 'Alisado profesional en bordes rectos y degradé' },
+  { id: 'deco_drip_macarons', nombre: 'Drip Dorado Artesanal con Macarons y Fresas', precio_adicional_base: 550, descripcion: 'Goteo de chocolate dorado, macarons franceses y fresas' },
+  { id: 'deco_naked_flores', nombre: 'Naked Cake Rústico con Flores Naturales Comestibles', precio_adicional_base: 450, descripcion: 'Acabado semi-desnudo con flores orgánicas' },
+  { id: 'deco_espejo', nombre: 'Cubierta Espejo Brillante de Chocolate Belga', precio_adicional_base: 500, descripcion: 'Glaseado espejo ultra reflectivo de alta pastelería' },
+  { id: 'deco_fondant_3d', nombre: 'Fondant Temático Personalizado con Figuras 3D', precio_adicional_base: 850, descripcion: 'Modelado artesanal manual en pasta de azúcar' },
 ];
 
 const EXTRAS_DISPONIBLES: CotizacionExtra[] = [
@@ -93,9 +100,9 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
 
   const [tamanoPorciones, setTamanoPorciones] = useState('1 LB (16-20 porciones)');
   const [factorReceta, setFactorReceta] = useState<number>(1);
-  const [masaBase, setMasaBase] = useState(OPCIONES_MASA[0]);
-  const [relleno, setRelleno] = useState(OPCIONES_RELLENO[0]);
-  const [decoracion, setDecoracion] = useState(OPCIONES_DECORACION[0]);
+  const [masaBase, setMasaBase] = useState(OPCIONES_MASA_DETALLADAS[0].nombre);
+  const [relleno, setRelleno] = useState(OPCIONES_RELLENO_DETALLADAS[0].nombre);
+  const [decoracion, setDecoracion] = useState(OPCIONES_DECORACION_DETALLADAS[0].nombre);
   const [dedicatoria, setDedicatoria] = useState('');
   const [selectedExtras, setSelectedExtras] = useState<string[]>([]);
   const [cantidad, setCantidad] = useState<number>(1);
@@ -147,7 +154,7 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
     return recetas.find((r) => r.id === selectedRecetaId) || recetas[0];
   }, [recetas, selectedRecetaId]);
 
-  // Inicializar nombre del producto en el input
+  // Inicializar nombre del producto en el buscador
   useEffect(() => {
     if (currentReceta && !searchProductTerm) {
       setSearchProductTerm(currentReceta.nombre);
@@ -175,21 +182,45 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
     }
   };
 
-  // Cálculo de precio sugerido automático para el item
+  // =========================================================================
+  // CÁLCULO DINÁMICO DE COSTO BOM + MASA + RELLENO + DECORACIÓN ESCALADOS
+  // =========================================================================
   const calcReceta = currentReceta
     ? calcularCostosReceta(currentReceta, insumosMap, factorReceta)
     : null;
-  const precioSugeridoCalculado = calcReceta ? calcReceta.precio_sugerido_margen_venta : 1500;
+  const precioBaseRecetaCalculado = calcReceta ? calcReceta.precio_sugerido_margen_venta : 1500;
 
-  const precioUnitarioFinal =
-    precioBaseManual !== '' && typeof precioBaseManual === 'number'
-      ? precioBaseManual
-      : precioSugeridoCalculado;
+  // Costo adicional dinámico de la Masa
+  const opcionMasaObj =
+    OPCIONES_MASA_DETALLADAS.find((m) => m.nombre === masaBase) || OPCIONES_MASA_DETALLADAS[0];
+  const costoMasa = (opcionMasaObj.precio_adicional_base || 0) * factorReceta;
 
+  // Costo adicional dinámico del Relleno
+  const opcionRellenoObj =
+    OPCIONES_RELLENO_DETALLADAS.find((r) => r.nombre === relleno) || OPCIONES_RELLENO_DETALLADAS[0];
+  const costoRelleno = (opcionRellenoObj.precio_adicional_base || 0) * factorReceta;
+
+  // Costo adicional dinámico de la Decoración
+  const opcionDecoObj =
+    OPCIONES_DECORACION_DETALLADAS.find((d) => d.nombre === decoracion) || OPCIONES_DECORACION_DETALLADAS[0];
+  const factorDeco = factorReceta >= 1 ? Math.min(2.5, factorReceta) : 0.7;
+  const costoDecoracion = (opcionDecoObj.precio_adicional_base || 0) * factorDeco;
+
+  // Extras adicionales por unidad
   const totalExtrasUnitario = selectedExtras.reduce((sum, extId) => {
     const ext = EXTRAS_DISPONIBLES.find((e) => e.id === extId);
     return sum + (ext ? ext.precio : 0);
   }, 0);
+
+  // Precio Sugerido Total con todas las personalizaciones
+  const precioSugeridoConPersonalizacion =
+    precioBaseRecetaCalculado + costoMasa + costoRelleno + costoDecoracion;
+
+  // Precio Unitario Final (manual o calculado)
+  const precioUnitarioFinal =
+    precioBaseManual !== '' && typeof precioBaseManual === 'number'
+      ? precioBaseManual
+      : precioSugeridoConPersonalizacion;
 
   const subtotalItemActual = (precioUnitarioFinal + totalExtrasUnitario) * cantidad;
 
@@ -265,7 +296,7 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
       isOpen={isOpen}
       onClose={onClose}
       title={initialCotizacion ? 'Editar Cotización' : 'Generador Interactivo de Cotizaciones'}
-      subtitle="Configurador rápido: Búsqueda de Producto + Porciones + Relleno/Masa Opcional + Extras"
+      subtitle="Configurador dinámico: Producto + Masa + Relleno + Decoración con actualización de precio en vivo"
       maxWidth="5xl"
     >
       <form onSubmit={handleSubmit} className="space-y-6">
@@ -339,8 +370,8 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
               <Cake className="w-4 h-4 text-frambuesa-500" />
               <span>2. Personalizar Producto Gastronómico</span>
             </h3>
-            <span className="text-xs text-chocolate-600 font-medium">
-              Cálculo de costo BOM en tiempo real
+            <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
+              ⚡ Precios y Costos Actualizados en Vivo
             </span>
           </div>
 
@@ -348,7 +379,7 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
             {/* Buscador & Selector de Producto / Receta */}
             <div className="sm:col-span-2 md:col-span-3 relative" ref={productDropdownRef}>
               <label className="block font-bold text-chocolate-700 mb-1">
-                Buscar o Seleccionar Producto / Receta *
+                Buscar o Seleccionar Producto / Receta Base *
               </label>
               <div className="relative">
                 <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-chocolate-400" />
@@ -434,69 +465,78 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
                 }}
                 className="w-full px-3 py-2.5 rounded-xl border border-trigo-300 focus:ring-2 focus:ring-frambuesa-400 focus:outline-none bg-white font-medium text-chocolate-900"
               >
-                <option value="1 Molde 22cm (10-12 porciones)">1 Molde 22cm (10-12 porciones) [Estándar]</option>
-                <option value="1 Molde Bundt 24cm (12-14 porciones)">1 Molde Bundt 24cm (12-14 porciones)</option>
+                <option value="1 Molde 22cm (10-12 porciones)">1 Molde 22cm (10-12 porciones) [Estándar 1x]</option>
+                <option value="1 Molde Bundt 24cm (12-14 porciones)">1 Molde Bundt 24cm (12-14 porciones) [1x]</option>
                 <option value="½ LB (8-10 porciones)">½ LB (8-10 porciones) [0.5x]</option>
                 <option value="1 LB (16-20 porciones)">1 LB (16-20 porciones) [1x]</option>
                 <option value="2 LB (30-40 porciones)">2 LB (30-40 porciones) [2x]</option>
                 <option value="3 LB (50+ porciones)">3 LB (50+ porciones) [3x]</option>
-                <option value="12 unidades (Caja / Docena)">12 unidades (Caja / Docena)</option>
-                <option value="24 unidades (Caja)">24 unidades (Caja)</option>
-                <option value="Bandeja 12 porciones">Bandeja 12 porciones</option>
+                <option value="12 unidades (Caja / Docena)">12 unidades (Caja / Docena) [1x]</option>
+                <option value="24 unidades (Caja)">24 unidades (Caja) [2x]</option>
+                <option value="Bandeja 12 porciones">Bandeja 12 porciones [1x]</option>
               </select>
             </div>
 
-            {/* Masa Base (con opción Ninguna) */}
+            {/* Tipo de Masa con Precio Dinámico */}
             <div>
               <label className="block font-bold text-chocolate-700 mb-1">
-                Tipo de Masa / Bizcocho (Opcional)
+                Tipo de Masa / Bizcocho
               </label>
               <select
                 value={masaBase}
                 onChange={(e) => setMasaBase(e.target.value)}
                 className="w-full px-3 py-2.5 rounded-xl border border-trigo-300 focus:ring-2 focus:ring-frambuesa-400 focus:outline-none bg-white font-medium text-chocolate-900"
               >
-                {OPCIONES_MASA.map((m) => (
-                  <option key={m} value={m}>
-                    {m}
-                  </option>
-                ))}
+                {OPCIONES_MASA_DETALLADAS.map((m) => {
+                  const addPrice = m.precio_adicional_base * factorReceta;
+                  return (
+                    <option key={m.id} value={m.nombre}>
+                      {m.nombre} {addPrice > 0 ? `(+${formatCurrency(addPrice)})` : ''}
+                    </option>
+                  );
+                })}
               </select>
             </div>
 
-            {/* Relleno (con opción Ninguno) */}
+            {/* Relleno Artesanal con Precio Dinámico */}
             <div>
               <label className="block font-bold text-chocolate-700 mb-1">
-                Relleno Artesanal (Opcional)
+                Relleno Artesanal
               </label>
               <select
                 value={relleno}
                 onChange={(e) => setRelleno(e.target.value)}
                 className="w-full px-3 py-2.5 rounded-xl border border-trigo-300 focus:ring-2 focus:ring-frambuesa-400 focus:outline-none bg-white font-medium text-chocolate-900"
               >
-                {OPCIONES_RELLENO.map((r) => (
-                  <option key={r} value={r}>
-                    {r}
-                  </option>
-                ))}
+                {OPCIONES_RELLENO_DETALLADAS.map((r) => {
+                  const addPrice = r.precio_adicional_base * factorReceta;
+                  return (
+                    <option key={r.id} value={r.nombre}>
+                      {r.nombre} {addPrice > 0 ? `(+${formatCurrency(addPrice)})` : ''}
+                    </option>
+                  );
+                })}
               </select>
             </div>
 
-            {/* Decoración (con opción Ninguna) */}
+            {/* Estilo de Decoración con Precio Dinámico */}
             <div>
               <label className="block font-bold text-chocolate-700 mb-1">
-                Estilo de Decoración (Opcional)
+                Estilo de Decoración & Cobertura
               </label>
               <select
                 value={decoracion}
                 onChange={(e) => setDecoracion(e.target.value)}
                 className="w-full px-3 py-2.5 rounded-xl border border-trigo-300 focus:ring-2 focus:ring-frambuesa-400 focus:outline-none bg-white font-medium text-chocolate-900"
               >
-                {OPCIONES_DECORACION.map((d) => (
-                  <option key={d} value={d}>
-                    {d}
-                  </option>
-                ))}
+                {OPCIONES_DECORACION_DETALLADAS.map((d) => {
+                  const addPrice = d.precio_adicional_base * factorDeco;
+                  return (
+                    <option key={d.id} value={d.nombre}>
+                      {d.nombre} {addPrice > 0 ? `(+${formatCurrency(addPrice)})` : ''}
+                    </option>
+                  );
+                })}
               </select>
             </div>
 
@@ -515,15 +555,15 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
               />
             </div>
 
-            {/* Precio Base Manual (Opcional) */}
+            {/* Precio Unitario Personalizado (Opcional) */}
             <div>
               <label className="block font-bold text-chocolate-700 mb-1">
-                Precio Unitario Personalizado (RD$)
+                Precio Unitario Personalizado (Opcional)
               </label>
               <input
                 type="number"
                 step="1"
-                placeholder={`Sugerido: ${formatCurrency(precioSugeridoCalculado)}`}
+                placeholder={`Calculado: ${formatCurrency(precioSugeridoConPersonalizacion)}`}
                 value={precioBaseManual}
                 onChange={(e) =>
                   setPrecioBaseManual(e.target.value === '' ? '' : parseFloat(e.target.value))
@@ -588,25 +628,28 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
             </div>
           </div>
 
-          {/* Barra de Subtotal del Item y Botón Agregar */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3 border-t border-trigo-200 bg-crema/40 p-3.5 rounded-xl">
-            <div className="text-xs text-chocolate-700">
-              <span>Precio Base Unitario: </span>
-              <span className="font-bold text-chocolate-900">
-                {formatCurrency(precioUnitarioFinal)}
-              </span>
-              {totalExtrasUnitario > 0 && (
-                <span> + Extras: {formatCurrency(totalExtrasUnitario)}</span>
-              )}
-              <span className="text-sm font-extrabold text-frambuesa-600 ml-2">
-                = {formatCurrency(subtotalItemActual)} (x{cantidad})
-              </span>
+          {/* Desglose Dinámico en Tiempo Real y Botón Agregar */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3 border-t border-trigo-200 bg-crema/50 p-4 rounded-2xl">
+            <div className="text-xs text-chocolate-700 space-y-1">
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-1 font-medium text-[11px]">
+                <span>Base Receta: <b className="text-chocolate-900">{formatCurrency(precioBaseRecetaCalculado)}</b></span>
+                {costoMasa > 0 && <span className="text-amber-800">+ Masa: <b>+{formatCurrency(costoMasa)}</b></span>}
+                {costoRelleno > 0 && <span className="text-indigo-800">+ Relleno: <b>+{formatCurrency(costoRelleno)}</b></span>}
+                {costoDecoracion > 0 && <span className="text-purple-800">+ Deco: <b>+{formatCurrency(costoDecoracion)}</b></span>}
+                {totalExtrasUnitario > 0 && <span className="text-emerald-800">+ Extras: <b>+{formatCurrency(totalExtrasUnitario)}</b></span>}
+              </div>
+              <div className="text-sm font-extrabold text-frambuesa-600 flex items-center gap-2">
+                <Sparkles className="w-4 h-4" />
+                <span>
+                  Precio Unitario: {formatCurrency(precioUnitarioFinal + totalExtrasUnitario)} • Subtotal ({cantidad} ud): {formatCurrency(subtotalItemActual)}
+                </span>
+              </div>
             </div>
 
             <button
               type="button"
               onClick={handleAddItem}
-              className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-chocolate-700 hover:bg-chocolate-800 text-white font-bold text-xs shadow-warm transition-all transform hover:scale-105 active:scale-95"
+              className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-chocolate-700 hover:bg-chocolate-800 text-white font-bold text-xs shadow-warm transition-all transform hover:scale-105 active:scale-95 shrink-0"
             >
               <Plus className="w-4 h-4" />
               <span>Añadir Producto a Cotización</span>
@@ -622,7 +665,7 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
 
           {items.length === 0 ? (
             <div className="bg-canvas border-2 border-dashed border-trigo-300 rounded-2xl p-6 text-center text-xs text-chocolate-500">
-              Aún no has añadido ningún producto. Selecciona o busca uno arriba y presiona "Añadir Producto a Cotización".
+              Aún no has añadido ningún producto. Configura uno arriba y presiona "Añadir Producto a Cotización".
             </div>
           ) : (
             <div className="border border-trigo-200 rounded-2xl overflow-hidden shadow-sm">
