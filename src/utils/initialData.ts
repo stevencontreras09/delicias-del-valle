@@ -5303,7 +5303,7 @@ export const INITIAL_PEDIDOS: Pedido[] = [];
 export const INITIAL_MERMAS: Merma[] = [];
 
 // ==============================================================================
-// USUARIOS DEL TALLER (2 USUARIOS: ADMIN MAESTRO Y PERSONAL DEL TALLER)
+// USUARIOS OFICIALES DEL TALLER (ADMIN MAESTRO Y CO-ADMINISTRADOR RMARPA)
 // ==============================================================================
 export const INITIAL_USUARIOS: Usuario[] = [
   {
@@ -5320,14 +5320,14 @@ export const INITIAL_USUARIOS: Usuario[] = [
   },
   {
     id: 2,
-    username: 'taller_delicias',
-    password: 'Delicias2026*',
-    nombre_completo: 'Equipo del Taller (Acceso Operativo)',
-    email: 'taller@deliciasdelvalle.com',
+    username: 'Rmarpa',
+    password: '010203aaa',
+    nombre_completo: 'Rmarpa (Co-Administrador)',
+    email: 'rmarpa@deliciasdelvalle.com',
     telefono: '+1 (809) 555-0142',
-    rol: 'operador',
+    rol: 'coadmin',
     activo: true,
     created_at: '2026-08-10T08:00:00Z',
-    ultimo_acceso: '2026-08-31T15:30:00Z',
+    ultimo_acceso: '2026-08-31T18:00:00Z',
   },
 ];

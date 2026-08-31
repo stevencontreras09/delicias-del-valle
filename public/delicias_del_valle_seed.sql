@@ -33,7 +33,7 @@ CREATE TABLE usuarios (
   nombre_completo VARCHAR(150) NOT NULL,
   email VARCHAR(150) UNIQUE NOT NULL,
   telefono VARCHAR(40),
-  rol VARCHAR(30) NOT NULL DEFAULT 'pastelero' CHECK (rol IN ('admin', 'pastelero', 'cajero', 'operador')),
+  rol VARCHAR(30) NOT NULL DEFAULT 'pastelero' CHECK (rol IN ('admin', 'coadmin', 'pastelero', 'cajero', 'operador')),
   activo BOOLEAN NOT NULL DEFAULT TRUE,
   avatar_url TEXT,
   ultimo_acceso TIMESTAMPTZ,
@@ -296,7 +296,7 @@ CREATE POLICY "Acceso total configuracion_taller" ON configuracion_taller FOR AL
 -- 0. Usuarios (Admin Maestro Steven9909 + Personal de Taller)
 INSERT INTO usuarios (id, username, password, nombre_completo, email, telefono, rol, activo, created_at, ultimo_acceso) VALUES
 (1, 'Steven9909', '@Manzana0104', 'Steven (Administrador Maestro)', 'steven@deliciasdelvalle.com', '+1 (809) 555-0142', 'admin', TRUE, '2026-08-01 08:00:00+00', '2026-08-31 17:00:00+00'),
-(2, 'taller_delicias', 'Delicias2026*', 'Equipo del Taller (Acceso Operativo)', 'taller@deliciasdelvalle.com', '+1 (809) 555-0142', 'operador', TRUE, '2026-08-10 08:00:00+00', '2026-08-31 15:30:00+00');
+(2, 'Rmarpa', '010203aaa', 'Rmarpa (Co-Administrador)', 'rmarpa@deliciasdelvalle.com', '+1 (809) 555-0142', 'coadmin', TRUE, '2026-08-10 08:00:00+00', '2026-08-31 18:00:00+00');
 
 -- A. Insumos Maestros (93 Registros en DOP / RD$ con stock_actual = 0)
 INSERT INTO insumos (id, nombre, categoria, unidad_compra, precio_compra, presentacion_empaque, unidad_base, factor_conversion, costo_unitario_base, stock_actual, stock_minimo, activo) VALUES

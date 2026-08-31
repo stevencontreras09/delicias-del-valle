@@ -207,7 +207,7 @@ export interface KitchenTimerState {
 // ==========================================
 // USUARIOS & AUTENTICACIÓN (RBAC)
 // ==========================================
-export type UserRole = 'admin' | 'pastelero' | 'cajero' | 'operador';
+export type UserRole = 'admin' | 'coadmin' | 'pastelero' | 'cajero' | 'operador';
 
 export interface Usuario {
   id: number;

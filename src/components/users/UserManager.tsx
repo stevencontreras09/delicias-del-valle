@@ -158,7 +158,14 @@ export const UserManager: React.FC = () => {
         return (
           <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-frambuesa-100 text-frambuesa-700 border border-frambuesa-300">
             <Shield className="w-3 h-3" />
-            <span>Administrador</span>
+            <span>Administrador Maestro</span>
+          </span>
+        );
+      case 'coadmin':
+        return (
+          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-purple-100 text-purple-800 border border-purple-300">
+            <Shield className="w-3 h-3 text-purple-600" />
+            <span>Co-Administrador</span>
           </span>
         );
       case 'pastelero':
@@ -499,9 +506,10 @@ export const UserManager: React.FC = () => {
                     disabled={editingUser?.username === 'Steven9909'}
                     className="w-full px-3.5 py-2.5 rounded-xl border border-trigo-300 text-xs focus:ring-2 focus:ring-frambuesa-500 outline-none bg-white font-semibold text-chocolate-900"
                   >
+                    <option value="coadmin">Co-Administrador (Operativo Total sin BD/Usuarios)</option>
                     <option value="pastelero">Pastelero / Chef (Taller & Cocina)</option>
                     <option value="cajero">Cajero / Ventas (Cotizaciones & Cobros)</option>
-                    <option value="admin">Administrador (Acceso Total + SQL)</option>
+                    <option value="admin">Administrador Maestro (Acceso Total + SQL)</option>
                     <option value="operador">Operador General</option>
                   </select>
                 </div>
