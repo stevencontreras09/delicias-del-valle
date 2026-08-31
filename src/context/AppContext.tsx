@@ -125,7 +125,7 @@ interface PedidosContextActions {
   verificarStockParaPedido: (pedido: Pedido) => { tieneSuficiente: boolean; faltantes: { insumoNombre: string; requerido: number; disponible: number; unidad: string }[] };
 }
 
-const STORAGE_KEY = 'delicias_del_valle_abastecido_v9';
+const STORAGE_KEY = 'delicias_del_valle_quesillos_v10';
 
 // Limpieza proactiva de versiones anteriores con datos ficticios o stock en 0
 try {
@@ -136,6 +136,7 @@ try {
     'delicias_del_valle_clean_v4',
     'delicias_del_valle_clean_v6',
     'delicias_del_valle_fullstock_v7',
+    'delicias_del_valle_abastecido_v9',
     'delicias_del_valle_v1',
   ];
   oldPrefixes.forEach((prefix) => {

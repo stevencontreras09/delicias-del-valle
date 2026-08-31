@@ -448,7 +448,12 @@ INSERT INTO recetas (id, nombre, categoria, descripcion, rendimiento_base, rendi
 (50, 'Ganache de Chocolate Semiamargo 56% (Lote 1 kg)', 'Rellenos y Coberturas', 'Emulsión perfecta de chocolate belga y crema de leche para relleno o cobertura lisa.', 1, '1 kg', 15, 45, 180, 8.00, 10.00, 10.00, 25.00, 50.00, TRUE, '[]'::jsonb),
 (51, 'Crema Pastelera Artesanal de Vainilla (Lote 1 kg)', 'Rellenos y Coberturas', 'Crema cocida tradicional con leche entera, yemas, maicena y vainilla natural en vaina.', 1, '1 kg', 20, 45, 180, 8.00, 12.00, 10.00, 25.00, 50.00, TRUE, '[]'::jsonb),
 (52, 'Compota Rústica de Frutos Rojos Silvestres (Lote 800g)', 'Rellenos y Coberturas', 'Reducción artesanal de fresas, moras y frambuesas con toque de zumo de limón natural.', 1, '800g', 25, 45, 180, 8.00, 12.00, 10.00, 25.00, 50.00, TRUE, '[]'::jsonb),
-(53, 'Caramelo Salado Artesanal / Toffee (Lote 600g)', 'Rellenos y Coberturas', 'Caramelo dorado cremoso con mantequilla pura, crema y escamas de flor de sal marina.', 1, '600g', 20, 45, 180, 8.00, 12.00, 10.00, 25.00, 50.00, TRUE, '[]'::jsonb);
+(53, 'Caramelo Salado Artesanal / Toffee (Lote 600g)', 'Rellenos y Coberturas', 'Caramelo dorado cremoso con mantequilla pura, crema y escamas de flor de sal marina.', 1, '600g', 20, 45, 180, 8.00, 12.00, 10.00, 25.00, 50.00, TRUE, '[]'::jsonb),
+(54, 'Quesillo Tradicional Casero de Caramelo Dorado (Molde 22cm)', 'Tres Leches y Postres Fríos', 'Clásico quesillo artesanal de textura sedosa con agujeritos característicos, elaborado a base de leche condensada, leche evaporada y baño generoso de caramelo dorado al punto ámbar.', 1, '1 Molde 22cm (10-12 porciones)', 20, 60, 175, 10.00, 15.00, 10.00, 30.00, 50.00, TRUE, '["1. Elaborar el caramelo en el molde fundiendo el azúcar a fuego medio hasta obtener un color ámbar dorado parejo. Cubrir paredes del molde y dejar enfriar.","2. Licuar la leche condensada, leche evaporada, los huevos enteros y el extracto de vainilla a velocidad baja por 1 minuto.","3. Colar la mezcla y verter dentro del molde caramelizado.","4. Hornear a baño de María tapado con papel aluminio a 175°C durante 60 minutos.","5. Dejar enfriar a temperatura ambiente y refrigerar mínimo 6 horas antes de desmoldar con cuidado."]'::jsonb),
+(55, 'Quesillo Cremoso de Coco Caribeño (Molde 22cm)', 'Tres Leches y Postres Fríos', 'Quesillo tropical infusionado con leche de coco, leche condensada y corona de coco rallado tostado sobre caramelo ámbar brillante.', 1, '1 Molde 22cm (10-12 porciones)', 25, 60, 175, 10.00, 15.00, 10.00, 30.00, 50.00, TRUE, '["1. Caramelizar el molde con azúcar hasta tono ámbar.","2. Licuar leche condensada, evaporada, leche entera, coco rallado, huevos y vainilla.","3. Verter en el molde y hornear a baño de María a 175°C durante 60 minutos.","4. Refrigerar durante la noche y desmoldar decorando con coco tostado."]'::jsonb),
+(56, 'Flan / Quesillo de Queso Crema y Vainilla Bourbon (Molde 22cm)', 'Tres Leches y Postres Fríos', 'Fusión irresistible entre flan de queso y quesillo tradicional: textura ultra cremosa y densa con queso crema Philadelphia y caramelo fundido.', 1, '1 Molde 22cm (10-12 porciones)', 20, 65, 170, 10.00, 15.00, 10.00, 30.00, 50.00, TRUE, '["1. Preparar el caramelo en el molde y dejar enfriar.","2. Batir primero el queso crema con la leche condensada hasta disolver grumos.","3. Añadir leche evaporada, huevos uno a uno y vainilla.","4. Colar la mezcla y hornear a baño de María a 170°C por 65 minutos.","5. Refrigerar 8 horas antes de desmoldar."]'::jsonb),
+(57, 'Chocoflan / Torta Imposible Artesanal (Molde Bundt 24cm)', 'Tortas y Pasteles', 'La legendaria torta imposible: base húmeda de torta de chocolate con cacao puro alcalino y capa superior de suave quesillo de vainilla con caramelo fluido.', 1, '1 Molde Bundt 24cm (12-14 porciones)', 35, 75, 175, 10.00, 15.00, 10.00, 30.00, 50.00, TRUE, '["1. Caramelizar el molde Bundt con 120g de azúcar y dejar enfriar.","2. Preparar el batido de torta de chocolate: cremar mantequilla con azúcar, huevos, alternar harina y cacao con leche.","3. Verter la mezcla de torta en el fondo del molde.","4. Licuar condensada, evaporada, huevos y vainilla para el quesillo. Verter suavemente sobre la masa de chocolate con una espátula.","5. Hornear a baño de María a 175°C por 75 min (durante el horneado las capas se invierten mágicamente).","6. Enfriar completamente y desmoldar frío."]'::jsonb),
+(58, 'Quesillo de Dulce de Leche / Arequipe Artesanal (Molde 22cm)', 'Tres Leches y Postres Fríos', 'Quesillo enriquecido con arequipe repostero integrado en la mezcla cremosa y bañado en caramelo toffee.', 1, '1 Molde 22cm (10-12 porciones)', 20, 60, 175, 10.00, 15.00, 10.00, 30.00, 50.00, TRUE, '["1. Caramelizar el molde con azúcar.","2. Licuar arequipe, leche condensada, leche evaporada, huevos y vainilla.","3. Colar y verter en el molde caramelizado.","4. Hornear a baño de María a 175°C por 60 minutos.","5. Dejar enfriar y desmoldar bien frío."]'::jsonb);
 
 -- C. Ingredientes de Recetas (BOM Fijos y Variables)
 INSERT INTO receta_ingredientes (receta_id, insumo_id, cantidad, tipo) VALUES
@@ -978,7 +983,44 @@ INSERT INTO receta_ingredientes (receta_id, insumo_id, cantidad, tipo) VALUES
 (53, 9, 300, 'fijo'),
 (53, 16, 120, 'fijo'),
 (53, 24, 200, 'fijo'),
-(53, 69, 6, 'fijo');
+(53, 69, 6, 'fijo'),
+(54, 9, 180, 'fijo'),
+(54, 27, 395, 'fijo'),
+(54, 28, 350, 'fijo'),
+(54, 35, 5, 'fijo'),
+(54, 73, 10, 'fijo'),
+(54, 85, 1, 'variable'),
+(55, 9, 180, 'fijo'),
+(55, 27, 395, 'fijo'),
+(55, 28, 250, 'fijo'),
+(55, 23, 100, 'fijo'),
+(55, 60, 100, 'fijo'),
+(55, 35, 5, 'fijo'),
+(55, 73, 8, 'fijo'),
+(55, 85, 1, 'variable'),
+(56, 9, 180, 'fijo'),
+(56, 25, 225, 'fijo'),
+(56, 27, 395, 'fijo'),
+(56, 28, 350, 'fijo'),
+(56, 35, 5, 'fijo'),
+(56, 73, 12, 'fijo'),
+(56, 85, 1, 'variable'),
+(57, 9, 250, 'fijo'),
+(57, 1, 180, 'fijo'),
+(57, 41, 50, 'fijo'),
+(57, 23, 150, 'fijo'),
+(57, 27, 395, 'fijo'),
+(57, 28, 350, 'fijo'),
+(57, 35, 7, 'fijo'),
+(57, 73, 15, 'fijo'),
+(57, 85, 1, 'variable'),
+(58, 9, 160, 'fijo'),
+(58, 29, 250, 'fijo'),
+(58, 27, 250, 'fijo'),
+(58, 28, 350, 'fijo'),
+(58, 35, 5, 'fijo'),
+(58, 73, 8, 'fijo'),
+(58, 85, 1, 'variable');
 
 -- D. Cotizaciones (0 registros ficticios - tabla lista para nuevas cotizaciones)
 

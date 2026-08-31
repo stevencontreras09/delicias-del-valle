@@ -2,7 +2,6 @@ import { Insumo, Receta, Cotizacion, Pedido, Merma, Usuario } from '../types';
 
 // ==============================================================================
 // 93 INSUMOS ÚNICOS NORMALIZADOS DE PASTELERÍA Y PANADERÍA ARTESANAL (DOP / RD$)
-// Stock actual completo y abastecido para toda la producción artesanal
 // ==============================================================================
 export const INITIAL_INSUMOS: Insumo[] = [
   {
@@ -1310,27 +1309,27 @@ export const INITIAL_INSUMOS: Insumo[] = [
 ];
 
 // ==============================================================================
-// 53 RECETAS MAESTRAS DE PASTELERÍA CON ESTRUCTURA BOM COMPLETA
+// 58 RECETAS MAESTRAS DE PASTELERÍA CON ESTRUCTURA BOM COMPLETA
+// Incluye Quesillo Tradicional, Quesillo de Coco, Flan de Queso Crema, Chocoflan y Arequipe
 // ==============================================================================
 export const INITIAL_RECETAS: Receta[] = [
-  // --- TORTAS Y PASTELES (10 recetas) ---
   {
-    id: 1,
-    nombre: "Torta Tradicional de Vainilla Francesa (1 LB)",
-    categoria: "Tortas y Pasteles",
-    descripcion: "Bizcocho húmedo y esponjoso con extracto puro de vainilla de Madagascar y mantequilla 82%.",
-    rendimiento_base: 1,
-    rendimiento_unidad: "1 LB (16-20 porciones)",
-    tiempo_preparacion_min: 35,
-    tiempo_horneado_min: 50,
-    temperatura_horno_c: 175,
-    materiales_indirectos_pct: 10,
-    costos_operativos_pct: 15,
-    reposicion_equipos_pct: 10,
-    mano_obra_pct: 30,
-    margen_beneficio_pct: 50,
-    activa: true,
-    instrucciones: [
+    "id": 1,
+    "nombre": "Torta Tradicional de Vainilla Francesa (1 LB)",
+    "categoria": "Tortas y Pasteles",
+    "descripcion": "Bizcocho húmedo y esponjoso con extracto puro de vainilla de Madagascar y mantequilla 82%.",
+    "rendimiento_base": 1,
+    "rendimiento_unidad": "1 LB (16-20 porciones)",
+    "tiempo_preparacion_min": 35,
+    "tiempo_horneado_min": 50,
+    "temperatura_horno_c": 175,
+    "materiales_indirectos_pct": 10,
+    "costos_operativos_pct": 15,
+    "reposicion_equipos_pct": 10,
+    "mano_obra_pct": 30,
+    "margen_beneficio_pct": 50,
+    "activa": true,
+    "instrucciones": [
       "Batir la mantequilla pomada con el azúcar blanco hasta blanquear y lograr textura cremosa (8-10 min).",
       "Agregar los huevos uno a uno batiendo bien después de cada adición.",
       "Incorporar la vainilla de Madagascar y la sal marina.",
@@ -1338,1593 +1337,3952 @@ export const INITIAL_RECETAS: Receta[] = [
       "Hornear a 175°C por 45-50 min hasta que el palillo salga limpio.",
       "Dejar enfriar completamente antes de desmoldar, rellenar y decorar."
     ],
-    ingredientes: [
-      // Fijos (Masa)
-      { insumo_id: 1, cantidad: 500, tipo: "fijo" }, // Harina
-      { insumo_id: 9, cantidad: 450, tipo: "fijo" }, // Azúcar
-      { insumo_id: 16, cantidad: 250, tipo: "fijo" }, // Mantequilla
-      { insumo_id: 35, cantidad: 6, tipo: "fijo" }, // Huevos (6 uds)
-      { insumo_id: 23, cantidad: 250, tipo: "fijo" }, // Leche
-      { insumo_id: 65, cantidad: 15, tipo: "fijo" }, // Polvo de hornear
-      { insumo_id: 73, cantidad: 15, tipo: "fijo" }, // Vainilla
-      { insumo_id: 68, cantidad: 3, tipo: "fijo" }, // Sal
-      // Variables (Relleno, Cobertura y Empaque)
-      { insumo_id: 29, cantidad: 250, tipo: "variable" }, // Arequipe relleno
-      { insumo_id: 31, cantidad: 350, tipo: "variable" }, // Chantilly cobertura
-      { insumo_id: 84, cantidad: 1, tipo: "variable" }, // Caja 1 LB
-      { insumo_id: 86, cantidad: 1, tipo: "variable" }, // Base 25cm
-      { insumo_id: 92, cantidad: 1, tipo: "variable" }, // Cinta
-      { insumo_id: 93, cantidad: 1, tipo: "variable" }  // Sticker
+    "ingredientes": [
+      {
+        "insumo_id": 1,
+        "cantidad": 500,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 9,
+        "cantidad": 450,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 16,
+        "cantidad": 250,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 35,
+        "cantidad": 6,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 23,
+        "cantidad": 250,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 65,
+        "cantidad": 15,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 73,
+        "cantidad": 15,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 68,
+        "cantidad": 3,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 29,
+        "cantidad": 250,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 31,
+        "cantidad": 350,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 84,
+        "cantidad": 1,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 86,
+        "cantidad": 1,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 92,
+        "cantidad": 1,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 93,
+        "cantidad": 1,
+        "tipo": "variable"
+      }
     ]
   },
   {
-    id: 2,
-    nombre: "Torta Red Velvet Terciopelo Rojo (1 LB)",
-    categoria: "Tortas y Pasteles",
-    descripcion: "Elegante bizcocho rojo aterciopelado con un toque sutil de cacao, buttermilk y buttercream de queso crema Philadelphia.",
-    rendimiento_base: 1,
-    rendimiento_unidad: "1 LB (16-20 porciones)",
-    tiempo_preparacion_min: 40,
-    tiempo_horneado_min: 45,
-    temperatura_horno_c: 175,
-    materiales_indirectos_pct: 10,
-    costos_operativos_pct: 15,
-    reposicion_equipos_pct: 10,
-    mano_obra_pct: 30,
-    margen_beneficio_pct: 50,
-    activa: true,
-    instrucciones: [
+    "id": 2,
+    "nombre": "Torta Red Velvet Terciopelo Rojo (1 LB)",
+    "categoria": "Tortas y Pasteles",
+    "descripcion": "Elegante bizcocho rojo aterciopelado con un toque sutil de cacao, buttermilk y buttercream de queso crema Philadelphia.",
+    "rendimiento_base": 1,
+    "rendimiento_unidad": "1 LB (16-20 porciones)",
+    "tiempo_preparacion_min": 40,
+    "tiempo_horneado_min": 45,
+    "temperatura_horno_c": 175,
+    "materiales_indirectos_pct": 10,
+    "costos_operativos_pct": 15,
+    "reposicion_equipos_pct": 10,
+    "mano_obra_pct": 30,
+    "margen_beneficio_pct": 50,
+    "activa": true,
+    "instrucciones": [
       "Mezclar el aceite con el azúcar blanco y los huevos hasta emulsionar.",
       "Añadir el colorante rojo en gel, la vainilla y el cacao tamizado.",
       "Incorporar la harina alternando con el buttermilk.",
       "Al final activar el bicarbonato con vinagre e incorporar de inmediato.",
       "Hornear a 175°C por 40-45 min. Enfriar y rellenar con frosting de queso crema."
     ],
-    ingredientes: [
-      // Fijos
-      { insumo_id: 1, cantidad: 450, tipo: "fijo" }, // Harina
-      { insumo_id: 9, cantidad: 400, tipo: "fijo" }, // Azúcar
-      { insumo_id: 20, cantidad: 220, tipo: "fijo" }, // Aceite
-      { insumo_id: 35, cantidad: 4, tipo: "fijo" }, // Huevos
-      { insumo_id: 30, cantidad: 250, tipo: "fijo" }, // Buttermilk
-      { insumo_id: 41, cantidad: 25, tipo: "fijo" }, // Cacao
-      { insumo_id: 66, cantidad: 8, tipo: "fijo" }, // Bicarbonato
-      { insumo_id: 82, cantidad: 12, tipo: "fijo" }, // Colorante rojo
-      { insumo_id: 73, cantidad: 10, tipo: "fijo" }, // Vainilla
-      // Variables
-      { insumo_id: 25, cantidad: 400, tipo: "variable" }, // Queso Crema
-      { insumo_id: 16, cantidad: 150, tipo: "variable" }, // Mantequilla para frosting
-      { insumo_id: 11, cantidad: 250, tipo: "variable" }, // Azúcar glass
-      { insumo_id: 84, cantidad: 1, tipo: "variable" }, // Caja
-      { insumo_id: 86, cantidad: 1, tipo: "variable" }, // Base
-      { insumo_id: 93, cantidad: 1, tipo: "variable" }
+    "ingredientes": [
+      {
+        "insumo_id": 1,
+        "cantidad": 450,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 9,
+        "cantidad": 400,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 20,
+        "cantidad": 220,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 35,
+        "cantidad": 4,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 30,
+        "cantidad": 250,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 41,
+        "cantidad": 25,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 66,
+        "cantidad": 8,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 82,
+        "cantidad": 12,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 73,
+        "cantidad": 10,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 25,
+        "cantidad": 400,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 16,
+        "cantidad": 150,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 11,
+        "cantidad": 250,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 84,
+        "cantidad": 1,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 86,
+        "cantidad": 1,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 93,
+        "cantidad": 1,
+        "tipo": "variable"
+      }
     ]
   },
   {
-    id: 3,
-    nombre: "Torta Suprema de Chocolate Suizo 56% (1 LB)",
-    categoria: "Tortas y Pasteles",
-    descripcion: "Para verdaderos amantes del chocolate. Masa húmeda de cacao holandés, rellena de ganache semiamargo y frutos rojos.",
-    rendimiento_base: 1,
-    rendimiento_unidad: "1 LB (16-20 porciones)",
-    tiempo_preparacion_min: 40,
-    tiempo_horneado_min: 50,
-    temperatura_horno_c: 170,
-    materiales_indirectos_pct: 12,
-    costos_operativos_pct: 15,
-    reposicion_equipos_pct: 10,
-    mano_obra_pct: 30,
-    margen_beneficio_pct: 50,
-    activa: true,
-    ingredientes: [
-      { insumo_id: 1, cantidad: 400, tipo: "fijo" },
-      { insumo_id: 41, cantidad: 90, tipo: "fijo" },
-      { insumo_id: 9, cantidad: 450, tipo: "fijo" },
-      { insumo_id: 35, cantidad: 5, tipo: "fijo" },
-      { insumo_id: 20, cantidad: 200, tipo: "fijo" },
-      { insumo_id: 23, cantidad: 200, tipo: "fijo" },
-      { insumo_id: 79, cantidad: 10, tipo: "fijo" }, // Café
-      { insumo_id: 65, cantidad: 12, tipo: "fijo" },
-      { insumo_id: 66, cantidad: 6, tipo: "fijo" },
-      // Variables
-      { insumo_id: 38, cantidad: 350, tipo: "variable" }, // Chocolate 56%
-      { insumo_id: 24, cantidad: 300, tipo: "variable" }, // Crema para ganache
-      { insumo_id: 55, cantidad: 150, tipo: "variable" }, // Frutos rojos
-      { insumo_id: 84, cantidad: 1, tipo: "variable" },
-      { insumo_id: 86, cantidad: 1, tipo: "variable" },
-      { insumo_id: 93, cantidad: 1, tipo: "variable" }
+    "id": 3,
+    "nombre": "Torta Suprema de Chocolate Suizo 56% (1 LB)",
+    "categoria": "Tortas y Pasteles",
+    "descripcion": "Para verdaderos amantes del chocolate. Masa húmeda de cacao holandés, rellena de ganache semiamargo y frutos rojos.",
+    "rendimiento_base": 1,
+    "rendimiento_unidad": "1 LB (16-20 porciones)",
+    "tiempo_preparacion_min": 40,
+    "tiempo_horneado_min": 50,
+    "temperatura_horno_c": 170,
+    "materiales_indirectos_pct": 12,
+    "costos_operativos_pct": 15,
+    "reposicion_equipos_pct": 10,
+    "mano_obra_pct": 30,
+    "margen_beneficio_pct": 50,
+    "activa": true,
+    "ingredientes": [
+      {
+        "insumo_id": 1,
+        "cantidad": 400,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 41,
+        "cantidad": 90,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 9,
+        "cantidad": 450,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 35,
+        "cantidad": 5,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 20,
+        "cantidad": 200,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 23,
+        "cantidad": 200,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 79,
+        "cantidad": 10,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 65,
+        "cantidad": 12,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 66,
+        "cantidad": 6,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 38,
+        "cantidad": 350,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 24,
+        "cantidad": 300,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 55,
+        "cantidad": 150,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 84,
+        "cantidad": 1,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 86,
+        "cantidad": 1,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 93,
+        "cantidad": 1,
+        "tipo": "variable"
+      }
     ]
   },
   {
-    id: 4,
-    nombre: "Torta de Zanahoria, Nuez y Especias de Ceilán (1 LB)",
-    categoria: "Tortas y Pasteles",
-    descripcion: "Esponjosa y aromática con canela de Ceilán, nuez del nogal crocante y relleno cremoso de queso Philadelphia.",
-    rendimiento_base: 1,
-    rendimiento_unidad: "1 LB (16-20 porciones)",
-    tiempo_preparacion_min: 45,
-    tiempo_horneado_min: 55,
-    temperatura_horno_c: 175,
-    materiales_indirectos_pct: 10,
-    costos_operativos_pct: 15,
-    reposicion_equipos_pct: 10,
-    mano_obra_pct: 30,
-    margen_beneficio_pct: 50,
-    activa: true,
-    ingredientes: [
-      { insumo_id: 1, cantidad: 450, tipo: "fijo" },
-      { insumo_id: 53, cantidad: 400, tipo: "fijo" }, // Zanahoria
-      { insumo_id: 10, cantidad: 300, tipo: "fijo" }, // Azúcar morena
-      { insumo_id: 9, cantidad: 150, tipo: "fijo" },
-      { insumo_id: 20, cantidad: 220, tipo: "fijo" },
-      { insumo_id: 35, cantidad: 5, tipo: "fijo" },
-      { insumo_id: 57, cantidad: 120, tipo: "fijo" }, // Nueces
-      { insumo_id: 76, cantidad: 10, tipo: "fijo" }, // Canela
-      { insumo_id: 77, cantidad: 2, tipo: "fijo" }, // Nuez moscada
-      { insumo_id: 65, cantidad: 12, tipo: "fijo" },
-      // Variables
-      { insumo_id: 25, cantidad: 350, tipo: "variable" }, // Queso crema
-      { insumo_id: 11, cantidad: 200, tipo: "variable" }, // Azúcar glass
-      { insumo_id: 84, cantidad: 1, tipo: "variable" },
-      { insumo_id: 86, cantidad: 1, tipo: "variable" },
-      { insumo_id: 93, cantidad: 1, tipo: "variable" }
+    "id": 4,
+    "nombre": "Torta de Zanahoria, Nuez y Especias de Ceilán (1 LB)",
+    "categoria": "Tortas y Pasteles",
+    "descripcion": "Esponjosa y aromática con canela de Ceilán, nuez del nogal crocante y relleno cremoso de queso Philadelphia.",
+    "rendimiento_base": 1,
+    "rendimiento_unidad": "1 LB (16-20 porciones)",
+    "tiempo_preparacion_min": 45,
+    "tiempo_horneado_min": 55,
+    "temperatura_horno_c": 175,
+    "materiales_indirectos_pct": 10,
+    "costos_operativos_pct": 15,
+    "reposicion_equipos_pct": 10,
+    "mano_obra_pct": 30,
+    "margen_beneficio_pct": 50,
+    "activa": true,
+    "ingredientes": [
+      {
+        "insumo_id": 1,
+        "cantidad": 450,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 53,
+        "cantidad": 400,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 10,
+        "cantidad": 300,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 9,
+        "cantidad": 150,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 20,
+        "cantidad": 220,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 35,
+        "cantidad": 5,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 57,
+        "cantidad": 120,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 76,
+        "cantidad": 10,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 77,
+        "cantidad": 2,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 65,
+        "cantidad": 12,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 25,
+        "cantidad": 350,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 11,
+        "cantidad": 200,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 84,
+        "cantidad": 1,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 86,
+        "cantidad": 1,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 93,
+        "cantidad": 1,
+        "tipo": "variable"
+      }
     ]
   },
   {
-    id: 5,
-    nombre: "Torta Tradicional de Vainilla (½ LB)",
-    categoria: "Tortas y Pasteles",
-    descripcion: "Presentación mediana ideal para reuniones familiares de 8 a 10 personas.",
-    rendimiento_base: 0.5,
-    rendimiento_unidad: "½ LB (8-10 porciones)",
-    tiempo_preparacion_min: 25,
-    tiempo_horneado_min: 40,
-    temperatura_horno_c: 175,
-    materiales_indirectos_pct: 10,
-    costos_operativos_pct: 15,
-    reposicion_equipos_pct: 10,
-    mano_obra_pct: 30,
-    margen_beneficio_pct: 50,
-    activa: true,
-    ingredientes: [
-      { insumo_id: 1, cantidad: 250, tipo: "fijo" },
-      { insumo_id: 9, cantidad: 225, tipo: "fijo" },
-      { insumo_id: 16, cantidad: 125, tipo: "fijo" },
-      { insumo_id: 35, cantidad: 3, tipo: "fijo" },
-      { insumo_id: 23, cantidad: 125, tipo: "fijo" },
-      { insumo_id: 65, cantidad: 8, tipo: "fijo" },
-      { insumo_id: 73, cantidad: 8, tipo: "fijo" },
-      { insumo_id: 68, cantidad: 2, tipo: "fijo" },
-      // Variables
-      { insumo_id: 29, cantidad: 140, tipo: "variable" },
-      { insumo_id: 31, cantidad: 200, tipo: "variable" },
-      { insumo_id: 85, cantidad: 1, tipo: "variable" }, // Caja 1/2 LB
-      { insumo_id: 87, cantidad: 1, tipo: "variable" }, // Base 18cm
-      { insumo_id: 93, cantidad: 1, tipo: "variable" }
+    "id": 5,
+    "nombre": "Torta Tradicional de Vainilla (½ LB)",
+    "categoria": "Tortas y Pasteles",
+    "descripcion": "Presentación mediana ideal para reuniones familiares de 8 a 10 personas.",
+    "rendimiento_base": 0.5,
+    "rendimiento_unidad": "½ LB (8-10 porciones)",
+    "tiempo_preparacion_min": 25,
+    "tiempo_horneado_min": 40,
+    "temperatura_horno_c": 175,
+    "materiales_indirectos_pct": 10,
+    "costos_operativos_pct": 15,
+    "reposicion_equipos_pct": 10,
+    "mano_obra_pct": 30,
+    "margen_beneficio_pct": 50,
+    "activa": true,
+    "ingredientes": [
+      {
+        "insumo_id": 1,
+        "cantidad": 250,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 9,
+        "cantidad": 225,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 16,
+        "cantidad": 125,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 35,
+        "cantidad": 3,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 23,
+        "cantidad": 125,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 65,
+        "cantidad": 8,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 73,
+        "cantidad": 8,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 68,
+        "cantidad": 2,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 29,
+        "cantidad": 140,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 31,
+        "cantidad": 200,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 85,
+        "cantidad": 1,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 87,
+        "cantidad": 1,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 93,
+        "cantidad": 1,
+        "tipo": "variable"
+      }
     ]
   },
   {
-    id: 6,
-    nombre: "Torta Red Velvet (½ LB)",
-    categoria: "Tortas y Pasteles",
-    descripcion: "Versión ½ LB con bizcocho aterciopelado y crema de queso.",
-    rendimiento_base: 0.5,
-    rendimiento_unidad: "½ LB (8-10 porciones)",
-    tiempo_preparacion_min: 30,
-    tiempo_horneado_min: 38,
-    temperatura_horno_c: 175,
-    materiales_indirectos_pct: 10,
-    costos_operativos_pct: 15,
-    reposicion_equipos_pct: 10,
-    mano_obra_pct: 30,
-    margen_beneficio_pct: 50,
-    activa: true,
-    ingredientes: [
-      { insumo_id: 1, cantidad: 225, tipo: "fijo" },
-      { insumo_id: 9, cantidad: 200, tipo: "fijo" },
-      { insumo_id: 20, cantidad: 110, tipo: "fijo" },
-      { insumo_id: 35, cantidad: 2, tipo: "fijo" },
-      { insumo_id: 30, cantidad: 130, tipo: "fijo" },
-      { insumo_id: 41, cantidad: 13, tipo: "fijo" },
-      { insumo_id: 66, cantidad: 4, tipo: "fijo" },
-      { insumo_id: 82, cantidad: 6, tipo: "fijo" },
-      // Variables
-      { insumo_id: 25, cantidad: 200, tipo: "variable" },
-      { insumo_id: 16, cantidad: 80, tipo: "variable" },
-      { insumo_id: 11, cantidad: 130, tipo: "variable" },
-      { insumo_id: 85, cantidad: 1, tipo: "variable" },
-      { insumo_id: 87, cantidad: 1, tipo: "variable" },
-      { insumo_id: 93, cantidad: 1, tipo: "variable" }
+    "id": 6,
+    "nombre": "Torta Red Velvet (½ LB)",
+    "categoria": "Tortas y Pasteles",
+    "descripcion": "Versión ½ LB con bizcocho aterciopelado y crema de queso.",
+    "rendimiento_base": 0.5,
+    "rendimiento_unidad": "½ LB (8-10 porciones)",
+    "tiempo_preparacion_min": 30,
+    "tiempo_horneado_min": 38,
+    "temperatura_horno_c": 175,
+    "materiales_indirectos_pct": 10,
+    "costos_operativos_pct": 15,
+    "reposicion_equipos_pct": 10,
+    "mano_obra_pct": 30,
+    "margen_beneficio_pct": 50,
+    "activa": true,
+    "ingredientes": [
+      {
+        "insumo_id": 1,
+        "cantidad": 225,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 9,
+        "cantidad": 200,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 20,
+        "cantidad": 110,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 35,
+        "cantidad": 2,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 30,
+        "cantidad": 130,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 41,
+        "cantidad": 13,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 66,
+        "cantidad": 4,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 82,
+        "cantidad": 6,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 25,
+        "cantidad": 200,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 16,
+        "cantidad": 80,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 11,
+        "cantidad": 130,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 85,
+        "cantidad": 1,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 87,
+        "cantidad": 1,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 93,
+        "cantidad": 1,
+        "tipo": "variable"
+      }
     ]
   },
   {
-    id: 7,
-    nombre: "Torta Suprema de Chocolate (½ LB)",
-    categoria: "Tortas y Pasteles",
-    descripcion: "Presentación ½ LB con ganache de chocolate semiamargo.",
-    rendimiento_base: 0.5,
-    rendimiento_unidad: "½ LB (8-10 porciones)",
-    tiempo_preparacion_min: 30,
-    tiempo_horneado_min: 40,
-    temperatura_horno_c: 170,
-    materiales_indirectos_pct: 10,
-    costos_operativos_pct: 15,
-    reposicion_equipos_pct: 10,
-    mano_obra_pct: 30,
-    margen_beneficio_pct: 50,
-    activa: true,
-    ingredientes: [
-      { insumo_id: 1, cantidad: 200, tipo: "fijo" },
-      { insumo_id: 41, cantidad: 45, tipo: "fijo" },
-      { insumo_id: 9, cantidad: 225, tipo: "fijo" },
-      { insumo_id: 35, cantidad: 3, tipo: "fijo" },
-      { insumo_id: 20, cantidad: 100, tipo: "fijo" },
-      { insumo_id: 23, cantidad: 100, tipo: "fijo" },
-      // Variables
-      { insumo_id: 38, cantidad: 180, tipo: "variable" },
-      { insumo_id: 24, cantidad: 150, tipo: "variable" },
-      { insumo_id: 85, cantidad: 1, tipo: "variable" },
-      { insumo_id: 87, cantidad: 1, tipo: "variable" },
-      { insumo_id: 93, cantidad: 1, tipo: "variable" }
+    "id": 7,
+    "nombre": "Torta Suprema de Chocolate (½ LB)",
+    "categoria": "Tortas y Pasteles",
+    "descripcion": "Presentación ½ LB con ganache de chocolate semiamargo.",
+    "rendimiento_base": 0.5,
+    "rendimiento_unidad": "½ LB (8-10 porciones)",
+    "tiempo_preparacion_min": 30,
+    "tiempo_horneado_min": 40,
+    "temperatura_horno_c": 170,
+    "materiales_indirectos_pct": 10,
+    "costos_operativos_pct": 15,
+    "reposicion_equipos_pct": 10,
+    "mano_obra_pct": 30,
+    "margen_beneficio_pct": 50,
+    "activa": true,
+    "ingredientes": [
+      {
+        "insumo_id": 1,
+        "cantidad": 200,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 41,
+        "cantidad": 45,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 9,
+        "cantidad": 225,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 35,
+        "cantidad": 3,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 20,
+        "cantidad": 100,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 23,
+        "cantidad": 100,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 38,
+        "cantidad": 180,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 24,
+        "cantidad": 150,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 85,
+        "cantidad": 1,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 87,
+        "cantidad": 1,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 93,
+        "cantidad": 1,
+        "tipo": "variable"
+      }
     ]
   },
   {
-    id: 8,
-    nombre: "Torta de Frutos del Bosque y Almendras (1 LB)",
-    categoria: "Tortas y Pasteles",
-    descripcion: "Bizcocho suave de almendras con compota rústica de fresas, moras y frambuesas.",
-    rendimiento_base: 1,
-    rendimiento_unidad: "1 LB (16-20 porciones)",
-    tiempo_preparacion_min: 40,
-    tiempo_horneado_min: 48,
-    temperatura_horno_c: 175,
-    materiales_indirectos_pct: 10,
-    costos_operativos_pct: 15,
-    reposicion_equipos_pct: 10,
-    mano_obra_pct: 30,
-    margen_beneficio_pct: 50,
-    activa: true,
-    ingredientes: [
-      { insumo_id: 1, cantidad: 380, tipo: "fijo" },
-      { insumo_id: 3, cantidad: 100, tipo: "fijo" }, // Almendras
-      { insumo_id: 9, cantidad: 420, tipo: "fijo" },
-      { insumo_id: 16, cantidad: 220, tipo: "fijo" },
-      { insumo_id: 35, cantidad: 5, tipo: "fijo" },
-      { insumo_id: 23, cantidad: 200, tipo: "fijo" },
-      { insumo_id: 65, cantidad: 12, tipo: "fijo" },
-      // Variables
-      { insumo_id: 55, cantidad: 300, tipo: "variable" },
-      { insumo_id: 46, cantidad: 150, tipo: "variable" }, // Fresas
-      { insumo_id: 31, cantidad: 300, tipo: "variable" },
-      { insumo_id: 84, cantidad: 1, tipo: "variable" },
-      { insumo_id: 86, cantidad: 1, tipo: "variable" },
-      { insumo_id: 93, cantidad: 1, tipo: "variable" }
+    "id": 8,
+    "nombre": "Torta de Frutos del Bosque y Almendras (1 LB)",
+    "categoria": "Tortas y Pasteles",
+    "descripcion": "Bizcocho suave de almendras con compota rústica de fresas, moras y frambuesas.",
+    "rendimiento_base": 1,
+    "rendimiento_unidad": "1 LB (16-20 porciones)",
+    "tiempo_preparacion_min": 40,
+    "tiempo_horneado_min": 48,
+    "temperatura_horno_c": 175,
+    "materiales_indirectos_pct": 10,
+    "costos_operativos_pct": 15,
+    "reposicion_equipos_pct": 10,
+    "mano_obra_pct": 30,
+    "margen_beneficio_pct": 50,
+    "activa": true,
+    "ingredientes": [
+      {
+        "insumo_id": 1,
+        "cantidad": 380,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 3,
+        "cantidad": 100,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 9,
+        "cantidad": 420,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 16,
+        "cantidad": 220,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 35,
+        "cantidad": 5,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 23,
+        "cantidad": 200,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 65,
+        "cantidad": 12,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 55,
+        "cantidad": 300,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 46,
+        "cantidad": 150,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 31,
+        "cantidad": 300,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 84,
+        "cantidad": 1,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 86,
+        "cantidad": 1,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 93,
+        "cantidad": 1,
+        "tipo": "variable"
+      }
     ]
   },
   {
-    id: 9,
-    nombre: "Torta Selva Negra Tradicional (1 LB)",
-    categoria: "Tortas y Pasteles",
-    descripcion: "Bizcocho de chocolate humedecido con licor de cerezas, chantilly fresca y cerezas al marrasquino.",
-    rendimiento_base: 1,
-    rendimiento_unidad: "1 LB (16-20 porciones)",
-    tiempo_preparacion_min: 45,
-    tiempo_horneado_min: 45,
-    temperatura_horno_c: 175,
-    materiales_indirectos_pct: 10,
-    costos_operativos_pct: 15,
-    reposicion_equipos_pct: 10,
-    mano_obra_pct: 30,
-    margen_beneficio_pct: 50,
-    activa: true,
-    ingredientes: [
-      { insumo_id: 1, cantidad: 350, tipo: "fijo" },
-      { insumo_id: 41, cantidad: 80, tipo: "fijo" },
-      { insumo_id: 9, cantidad: 400, tipo: "fijo" },
-      { insumo_id: 35, cantidad: 6, tipo: "fijo" },
-      { insumo_id: 16, cantidad: 180, tipo: "fijo" },
-      { insumo_id: 80, cantidad: 40, tipo: "fijo" }, // Ron
-      // Variables
-      { insumo_id: 24, cantidad: 450, tipo: "variable" },
-      { insumo_id: 56, cantidad: 150, tipo: "variable" }, // Cerezas
-      { insumo_id: 38, cantidad: 100, tipo: "variable" }, // Virutas de chocolate
-      { insumo_id: 84, cantidad: 1, tipo: "variable" },
-      { insumo_id: 86, cantidad: 1, tipo: "variable" },
-      { insumo_id: 93, cantidad: 1, tipo: "variable" }
+    "id": 9,
+    "nombre": "Torta Selva Negra Tradicional (1 LB)",
+    "categoria": "Tortas y Pasteles",
+    "descripcion": "Bizcocho de chocolate humedecido con licor de cerezas, chantilly fresca y cerezas al marrasquino.",
+    "rendimiento_base": 1,
+    "rendimiento_unidad": "1 LB (16-20 porciones)",
+    "tiempo_preparacion_min": 45,
+    "tiempo_horneado_min": 45,
+    "temperatura_horno_c": 175,
+    "materiales_indirectos_pct": 10,
+    "costos_operativos_pct": 15,
+    "reposicion_equipos_pct": 10,
+    "mano_obra_pct": 30,
+    "margen_beneficio_pct": 50,
+    "activa": true,
+    "ingredientes": [
+      {
+        "insumo_id": 1,
+        "cantidad": 350,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 41,
+        "cantidad": 80,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 9,
+        "cantidad": 400,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 35,
+        "cantidad": 6,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 16,
+        "cantidad": 180,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 80,
+        "cantidad": 40,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 24,
+        "cantidad": 450,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 56,
+        "cantidad": 150,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 38,
+        "cantidad": 100,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 84,
+        "cantidad": 1,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 86,
+        "cantidad": 1,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 93,
+        "cantidad": 1,
+        "tipo": "variable"
+      }
     ]
   },
   {
-    id: 10,
-    nombre: "Torta de Naranja y Semillas de Amapola (1 LB)",
-    categoria: "Tortas y Pasteles",
-    descripcion: "Bizcocho aromático con ralladura de cítricos naturales, semillas de amapola y glaseado brillante.",
-    rendimiento_base: 1,
-    rendimiento_unidad: "1 LB (16-20 porciones)",
-    tiempo_preparacion_min: 30,
-    tiempo_horneado_min: 45,
-    temperatura_horno_c: 175,
-    materiales_indirectos_pct: 10,
-    costos_operativos_pct: 15,
-    reposicion_equipos_pct: 10,
-    mano_obra_pct: 30,
-    margen_beneficio_pct: 50,
-    activa: true,
-    ingredientes: [
-      { insumo_id: 1, cantidad: 480, tipo: "fijo" },
-      { insumo_id: 9, cantidad: 400, tipo: "fijo" },
-      { insumo_id: 16, cantidad: 220, tipo: "fijo" },
-      { insumo_id: 35, cantidad: 5, tipo: "fijo" },
-      { insumo_id: 61, cantidad: 30, tipo: "fijo" }, // Amapola
-      { insumo_id: 51, cantidad: 50, tipo: "fijo" }, // Cítricos
-      { insumo_id: 65, cantidad: 15, tipo: "fijo" },
-      // Variables
-      { insumo_id: 11, cantidad: 200, tipo: "variable" },
-      { insumo_id: 84, cantidad: 1, tipo: "variable" },
-      { insumo_id: 86, cantidad: 1, tipo: "variable" },
-      { insumo_id: 93, cantidad: 1, tipo: "variable" }
-    ]
-  },
-
-  // --- CUPCAKES Y MUFFINS (7 recetas) ---
-  {
-    id: 11,
-    nombre: "Cupcakes de Vainilla Clásicos (Caja x 12)",
-    categoria: "Cupcakes y Muffins",
-    descripcion: "Suaves ponquecitos individuales coronados con buttercream de vainilla y perlas artesanales.",
-    rendimiento_base: 1,
-    rendimiento_unidad: "12 unidades",
-    tiempo_preparacion_min: 20,
-    tiempo_horneado_min: 22,
-    temperatura_horno_c: 180,
-    materiales_indirectos_pct: 10,
-    costos_operativos_pct: 15,
-    reposicion_equipos_pct: 10,
-    mano_obra_pct: 30,
-    margen_beneficio_pct: 50,
-    activa: true,
-    ingredientes: [
-      { insumo_id: 1, cantidad: 240, tipo: "fijo" },
-      { insumo_id: 9, cantidad: 200, tipo: "fijo" },
-      { insumo_id: 16, cantidad: 120, tipo: "fijo" },
-      { insumo_id: 35, cantidad: 2, tipo: "fijo" },
-      { insumo_id: 23, cantidad: 120, tipo: "fijo" },
-      { insumo_id: 65, cantidad: 8, tipo: "fijo" },
-      { insumo_id: 73, cantidad: 8, tipo: "fijo" },
-      // Variables
-      { insumo_id: 16, cantidad: 120, tipo: "variable" }, // Mantequilla buttercream
-      { insumo_id: 11, cantidad: 240, tipo: "variable" }, // Azúcar glass
-      { insumo_id: 90, cantidad: 12, tipo: "variable" }, // Capacillos (12)
-      { insumo_id: 89, cantidad: 1, tipo: "variable" }, // Caja x12
-      { insumo_id: 93, cantidad: 1, tipo: "variable" }
-    ]
-  },
-  {
-    id: 12,
-    nombre: "Cupcakes de Chocolate y Nutella (Caja x 12)",
-    categoria: "Cupcakes y Muffins",
-    descripcion: "Bizcocho húmedo de cacao relleno de Nutella pura y frosting de chocolate semiamargo.",
-    rendimiento_base: 1,
-    rendimiento_unidad: "12 unidades",
-    tiempo_preparacion_min: 25,
-    tiempo_horneado_min: 22,
-    temperatura_horno_c: 180,
-    materiales_indirectos_pct: 10,
-    costos_operativos_pct: 15,
-    reposicion_equipos_pct: 10,
-    mano_obra_pct: 30,
-    margen_beneficio_pct: 50,
-    activa: true,
-    ingredientes: [
-      { insumo_id: 1, cantidad: 200, tipo: "fijo" },
-      { insumo_id: 41, cantidad: 45, tipo: "fijo" },
-      { insumo_id: 9, cantidad: 200, tipo: "fijo" },
-      { insumo_id: 20, cantidad: 90, tipo: "fijo" },
-      { insumo_id: 35, cantidad: 2, tipo: "fijo" },
-      { insumo_id: 23, cantidad: 120, tipo: "fijo" },
-      // Variables
-      { insumo_id: 44, cantidad: 150, tipo: "variable" }, // Nutella
-      { insumo_id: 38, cantidad: 120, tipo: "variable" }, // Cobertura
-      { insumo_id: 90, cantidad: 12, tipo: "variable" },
-      { insumo_id: 89, cantidad: 1, tipo: "variable" },
-      { insumo_id: 93, cantidad: 1, tipo: "variable" }
+    "id": 10,
+    "nombre": "Torta de Naranja y Semillas de Amapola (1 LB)",
+    "categoria": "Tortas y Pasteles",
+    "descripcion": "Bizcocho aromático con ralladura de cítricos naturales, semillas de amapola y glaseado brillante.",
+    "rendimiento_base": 1,
+    "rendimiento_unidad": "1 LB (16-20 porciones)",
+    "tiempo_preparacion_min": 30,
+    "tiempo_horneado_min": 45,
+    "temperatura_horno_c": 175,
+    "materiales_indirectos_pct": 10,
+    "costos_operativos_pct": 15,
+    "reposicion_equipos_pct": 10,
+    "mano_obra_pct": 30,
+    "margen_beneficio_pct": 50,
+    "activa": true,
+    "ingredientes": [
+      {
+        "insumo_id": 1,
+        "cantidad": 480,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 9,
+        "cantidad": 400,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 16,
+        "cantidad": 220,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 35,
+        "cantidad": 5,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 61,
+        "cantidad": 30,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 51,
+        "cantidad": 50,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 65,
+        "cantidad": 15,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 11,
+        "cantidad": 200,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 84,
+        "cantidad": 1,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 86,
+        "cantidad": 1,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 93,
+        "cantidad": 1,
+        "tipo": "variable"
+      }
     ]
   },
   {
-    id: 13,
-    nombre: "Cupcakes Red Velvet con Frosting de Queso (Caja x 12)",
-    categoria: "Cupcakes y Muffins",
-    descripcion: "Terciopelo rojo individual con generoso copete de queso Philadelphia.",
-    rendimiento_base: 1,
-    rendimiento_unidad: "12 unidades",
-    tiempo_preparacion_min: 25,
-    tiempo_horneado_min: 22,
-    temperatura_horno_c: 175,
-    materiales_indirectos_pct: 10,
-    costos_operativos_pct: 15,
-    reposicion_equipos_pct: 10,
-    mano_obra_pct: 30,
-    margen_beneficio_pct: 50,
-    activa: true,
-    ingredientes: [
-      { insumo_id: 1, cantidad: 220, tipo: "fijo" },
-      { insumo_id: 9, cantidad: 180, tipo: "fijo" },
-      { insumo_id: 20, cantidad: 100, tipo: "fijo" },
-      { insumo_id: 35, cantidad: 2, tipo: "fijo" },
-      { insumo_id: 30, cantidad: 120, tipo: "fijo" },
-      { insumo_id: 41, cantidad: 10, tipo: "fijo" },
-      { insumo_id: 82, cantidad: 5, tipo: "fijo" },
-      // Variables
-      { insumo_id: 25, cantidad: 180, tipo: "variable" },
-      { insumo_id: 16, cantidad: 80, tipo: "variable" },
-      { insumo_id: 11, cantidad: 120, tipo: "variable" },
-      { insumo_id: 90, cantidad: 12, tipo: "variable" },
-      { insumo_id: 89, cantidad: 1, tipo: "variable" },
-      { insumo_id: 93, cantidad: 1, tipo: "variable" }
+    "id": 11,
+    "nombre": "Cupcakes de Vainilla Clásicos (Caja x 12)",
+    "categoria": "Cupcakes y Muffins",
+    "descripcion": "Suaves ponquecitos individuales coronados con buttercream de vainilla y perlas artesanales.",
+    "rendimiento_base": 1,
+    "rendimiento_unidad": "12 unidades",
+    "tiempo_preparacion_min": 20,
+    "tiempo_horneado_min": 22,
+    "temperatura_horno_c": 180,
+    "materiales_indirectos_pct": 10,
+    "costos_operativos_pct": 15,
+    "reposicion_equipos_pct": 10,
+    "mano_obra_pct": 30,
+    "margen_beneficio_pct": 50,
+    "activa": true,
+    "ingredientes": [
+      {
+        "insumo_id": 1,
+        "cantidad": 240,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 9,
+        "cantidad": 200,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 16,
+        "cantidad": 120,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 35,
+        "cantidad": 2,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 23,
+        "cantidad": 120,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 65,
+        "cantidad": 8,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 73,
+        "cantidad": 8,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 16,
+        "cantidad": 120,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 11,
+        "cantidad": 240,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 90,
+        "cantidad": 12,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 89,
+        "cantidad": 1,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 93,
+        "cantidad": 1,
+        "tipo": "variable"
+      }
     ]
   },
   {
-    id: 14,
-    nombre: "Cupcakes de Vainilla Clásicos (Caja x 6)",
-    categoria: "Cupcakes y Muffins",
-    descripcion: "Presentación de media docena en caja con ventana.",
-    rendimiento_base: 1,
-    rendimiento_unidad: "6 unidades",
-    tiempo_preparacion_min: 15,
-    tiempo_horneado_min: 22,
-    temperatura_horno_c: 180,
-    materiales_indirectos_pct: 10,
-    costos_operativos_pct: 15,
-    reposicion_equipos_pct: 10,
-    mano_obra_pct: 30,
-    margen_beneficio_pct: 50,
-    activa: true,
-    ingredientes: [
-      { insumo_id: 1, cantidad: 120, tipo: "fijo" },
-      { insumo_id: 9, cantidad: 100, tipo: "fijo" },
-      { insumo_id: 16, cantidad: 60, tipo: "fijo" },
-      { insumo_id: 35, cantidad: 1, tipo: "fijo" },
-      { insumo_id: 23, cantidad: 60, tipo: "fijo" },
-      // Variables
-      { insumo_id: 16, cantidad: 60, tipo: "variable" },
-      { insumo_id: 11, cantidad: 120, tipo: "variable" },
-      { insumo_id: 90, cantidad: 6, tipo: "variable" },
-      { insumo_id: 88, cantidad: 1, tipo: "variable" }, // Caja x6
-      { insumo_id: 93, cantidad: 1, tipo: "variable" }
+    "id": 12,
+    "nombre": "Cupcakes de Chocolate y Nutella (Caja x 12)",
+    "categoria": "Cupcakes y Muffins",
+    "descripcion": "Bizcocho húmedo de cacao relleno de Nutella pura y frosting de chocolate semiamargo.",
+    "rendimiento_base": 1,
+    "rendimiento_unidad": "12 unidades",
+    "tiempo_preparacion_min": 25,
+    "tiempo_horneado_min": 22,
+    "temperatura_horno_c": 180,
+    "materiales_indirectos_pct": 10,
+    "costos_operativos_pct": 15,
+    "reposicion_equipos_pct": 10,
+    "mano_obra_pct": 30,
+    "margen_beneficio_pct": 50,
+    "activa": true,
+    "ingredientes": [
+      {
+        "insumo_id": 1,
+        "cantidad": 200,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 41,
+        "cantidad": 45,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 9,
+        "cantidad": 200,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 20,
+        "cantidad": 90,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 35,
+        "cantidad": 2,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 23,
+        "cantidad": 120,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 44,
+        "cantidad": 150,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 38,
+        "cantidad": 120,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 90,
+        "cantidad": 12,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 89,
+        "cantidad": 1,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 93,
+        "cantidad": 1,
+        "tipo": "variable"
+      }
     ]
   },
   {
-    id: 15,
-    nombre: "Muffins de Arándanos y Limón (Docena)",
-    categoria: "Cupcakes y Muffins",
-    descripcion: "Muffins esponjosos con arándanos frescos enteros y crumble crocante en la superficie.",
-    rendimiento_base: 1,
-    rendimiento_unidad: "12 unidades",
-    tiempo_preparacion_min: 20,
-    tiempo_horneado_min: 25,
-    temperatura_horno_c: 190,
-    materiales_indirectos_pct: 10,
-    costos_operativos_pct: 15,
-    reposicion_equipos_pct: 10,
-    mano_obra_pct: 30,
-    margen_beneficio_pct: 50,
-    activa: true,
-    ingredientes: [
-      { insumo_id: 1, cantidad: 300, tipo: "fijo" },
-      { insumo_id: 9, cantidad: 180, tipo: "fijo" },
-      { insumo_id: 16, cantidad: 100, tipo: "fijo" },
-      { insumo_id: 35, cantidad: 2, tipo: "fijo" },
-      { insumo_id: 23, cantidad: 150, tipo: "fijo" },
-      { insumo_id: 51, cantidad: 20, tipo: "fijo" },
-      { insumo_id: 65, cantidad: 10, tipo: "fijo" },
-      // Variables
-      { insumo_id: 47, cantidad: 180, tipo: "variable" }, // Arándanos
-      { insumo_id: 90, cantidad: 12, tipo: "variable" },
-      { insumo_id: 89, cantidad: 1, tipo: "variable" },
-      { insumo_id: 93, cantidad: 1, tipo: "variable" }
+    "id": 13,
+    "nombre": "Cupcakes Red Velvet con Frosting de Queso (Caja x 12)",
+    "categoria": "Cupcakes y Muffins",
+    "descripcion": "Terciopelo rojo individual con generoso copete de queso Philadelphia.",
+    "rendimiento_base": 1,
+    "rendimiento_unidad": "12 unidades",
+    "tiempo_preparacion_min": 25,
+    "tiempo_horneado_min": 22,
+    "temperatura_horno_c": 175,
+    "materiales_indirectos_pct": 10,
+    "costos_operativos_pct": 15,
+    "reposicion_equipos_pct": 10,
+    "mano_obra_pct": 30,
+    "margen_beneficio_pct": 50,
+    "activa": true,
+    "ingredientes": [
+      {
+        "insumo_id": 1,
+        "cantidad": 220,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 9,
+        "cantidad": 180,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 20,
+        "cantidad": 100,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 35,
+        "cantidad": 2,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 30,
+        "cantidad": 120,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 41,
+        "cantidad": 10,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 82,
+        "cantidad": 5,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 25,
+        "cantidad": 180,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 16,
+        "cantidad": 80,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 11,
+        "cantidad": 120,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 90,
+        "cantidad": 12,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 89,
+        "cantidad": 1,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 93,
+        "cantidad": 1,
+        "tipo": "variable"
+      }
     ]
   },
   {
-    id: 16,
-    nombre: "Muffins de Manzana, Canela y Avena (Docena)",
-    categoria: "Cupcakes y Muffins",
-    descripcion: "Muffins saludables con trozos de manzana verde y avena integral.",
-    rendimiento_base: 1,
-    rendimiento_unidad: "12 unidades",
-    tiempo_preparacion_min: 20,
-    tiempo_horneado_min: 25,
-    temperatura_horno_c: 185,
-    materiales_indirectos_pct: 10,
-    costos_operativos_pct: 15,
-    reposicion_equipos_pct: 10,
-    mano_obra_pct: 30,
-    margen_beneficio_pct: 50,
-    activa: true,
-    ingredientes: [
-      { insumo_id: 1, cantidad: 200, tipo: "fijo" },
-      { insumo_id: 5, cantidad: 100, tipo: "fijo" }, // Avena
-      { insumo_id: 10, cantidad: 150, tipo: "fijo" }, // Azúcar morena
-      { insumo_id: 20, cantidad: 90, tipo: "fijo" },
-      { insumo_id: 35, cantidad: 2, tipo: "fijo" },
-      { insumo_id: 76, cantidad: 8, tipo: "fijo" },
-      // Variables
-      { insumo_id: 52, cantidad: 200, tipo: "variable" }, // Manzanas
-      { insumo_id: 90, cantidad: 12, tipo: "variable" },
-      { insumo_id: 89, cantidad: 1, tipo: "variable" },
-      { insumo_id: 93, cantidad: 1, tipo: "variable" }
+    "id": 14,
+    "nombre": "Cupcakes de Vainilla Clásicos (Caja x 6)",
+    "categoria": "Cupcakes y Muffins",
+    "descripcion": "Presentación de media docena en caja con ventana.",
+    "rendimiento_base": 1,
+    "rendimiento_unidad": "6 unidades",
+    "tiempo_preparacion_min": 15,
+    "tiempo_horneado_min": 22,
+    "temperatura_horno_c": 180,
+    "materiales_indirectos_pct": 10,
+    "costos_operativos_pct": 15,
+    "reposicion_equipos_pct": 10,
+    "mano_obra_pct": 30,
+    "margen_beneficio_pct": 50,
+    "activa": true,
+    "ingredientes": [
+      {
+        "insumo_id": 1,
+        "cantidad": 120,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 9,
+        "cantidad": 100,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 16,
+        "cantidad": 60,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 35,
+        "cantidad": 1,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 23,
+        "cantidad": 60,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 16,
+        "cantidad": 60,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 11,
+        "cantidad": 120,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 90,
+        "cantidad": 6,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 88,
+        "cantidad": 1,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 93,
+        "cantidad": 1,
+        "tipo": "variable"
+      }
     ]
   },
   {
-    id: 17,
-    nombre: "Muffins de Banano y Chispas de Chocolate (Docena)",
-    categoria: "Cupcakes y Muffins",
-    descripcion: "Masa ultra tierna de banano maduro con gotas de chocolate horneable.",
-    rendimiento_base: 1,
-    rendimiento_unidad: "12 unidades",
-    tiempo_preparacion_min: 20,
-    tiempo_horneado_min: 25,
-    temperatura_horno_c: 180,
-    materiales_indirectos_pct: 10,
-    costos_operativos_pct: 15,
-    reposicion_equipos_pct: 10,
-    mano_obra_pct: 30,
-    margen_beneficio_pct: 50,
-    activa: true,
-    ingredientes: [
-      { insumo_id: 1, cantidad: 250, tipo: "fijo" },
-      { insumo_id: 54, cantidad: 300, tipo: "fijo" }, // Banano
-      { insumo_id: 10, cantidad: 140, tipo: "fijo" },
-      { insumo_id: 16, cantidad: 80, tipo: "fijo" },
-      { insumo_id: 35, cantidad: 2, tipo: "fijo" },
-      // Variables
-      { insumo_id: 42, cantidad: 120, tipo: "variable" }, // Chispas
-      { insumo_id: 90, cantidad: 12, tipo: "variable" },
-      { insumo_id: 89, cantidad: 1, tipo: "variable" },
-      { insumo_id: 93, cantidad: 1, tipo: "variable" }
-    ]
-  },
-
-  // --- GALLETAS Y ALFAJORES (8 recetas) ---
-  {
-    id: 18,
-    nombre: "Galletas Choco-Chips estilo New York (Docena)",
-    categoria: "Galletas y Alfajores",
-    descripcion: "Galletas grandes y gruesas: crujientes por fuera y centro chicloso y derretido con nueces y chocolate semiamargo.",
-    rendimiento_base: 1,
-    rendimiento_unidad: "12 unidades (100g c/u)",
-    tiempo_preparacion_min: 25,
-    tiempo_horneado_min: 14,
-    temperatura_horno_c: 190,
-    materiales_indirectos_pct: 10,
-    costos_operativos_pct: 15,
-    reposicion_equipos_pct: 10,
-    mano_obra_pct: 30,
-    margen_beneficio_pct: 50,
-    activa: true,
-    ingredientes: [
-      { insumo_id: 1, cantidad: 400, tipo: "fijo" },
-      { insumo_id: 16, cantidad: 220, tipo: "fijo" },
-      { insumo_id: 10, cantidad: 180, tipo: "fijo" },
-      { insumo_id: 9, cantidad: 120, tipo: "fijo" },
-      { insumo_id: 35, cantidad: 2, tipo: "fijo" },
-      { insumo_id: 65, cantidad: 6, tipo: "fijo" },
-      { insumo_id: 66, cantidad: 4, tipo: "fijo" },
-      { insumo_id: 73, cantidad: 8, tipo: "fijo" },
-      // Variables
-      { insumo_id: 42, cantidad: 250, tipo: "variable" }, // Gotas chocolate
-      { insumo_id: 57, cantidad: 100, tipo: "variable" }, // Nueces
-      { insumo_id: 88, cantidad: 1, tipo: "variable" }, // Caja empaque
-      { insumo_id: 93, cantidad: 1, tipo: "variable" }
-    ]
-  },
-  {
-    id: 19,
-    nombre: "Alfajores de Maicena Tradicionales con Dulce de Leche (Docena)",
-    categoria: "Galletas y Alfajores",
-    descripcion: "Masa ultra suave que se deshace en la boca, rellena de abundante dulce de leche y coco rallado.",
-    rendimiento_base: 1,
-    rendimiento_unidad: "12 unidades grandes",
-    tiempo_preparacion_min: 35,
-    tiempo_horneado_min: 12,
-    temperatura_horno_c: 160,
-    materiales_indirectos_pct: 10,
-    costos_operativos_pct: 15,
-    reposicion_equipos_pct: 10,
-    mano_obra_pct: 30,
-    margen_beneficio_pct: 50,
-    activa: true,
-    ingredientes: [
-      { insumo_id: 4, cantidad: 250, tipo: "fijo" }, // Maicena
-      { insumo_id: 1, cantidad: 150, tipo: "fijo" }, // Harina
-      { insumo_id: 16, cantidad: 180, tipo: "fijo" }, // Mantequilla
-      { insumo_id: 11, cantidad: 120, tipo: "fijo" }, // Azúcar glass
-      { insumo_id: 37, cantidad: 40, tipo: "fijo" }, // Yemas
-      { insumo_id: 65, cantidad: 8, tipo: "fijo" },
-      { insumo_id: 51, cantidad: 5, tipo: "fijo" }, // Ralladura
-      // Variables
-      { insumo_id: 29, cantidad: 350, tipo: "variable" }, // Arequipe
-      { insumo_id: 60, cantidad: 60, tipo: "variable" }, // Coco
-      { insumo_id: 88, cantidad: 1, tipo: "variable" },
-      { insumo_id: 93, cantidad: 1, tipo: "variable" }
+    "id": 15,
+    "nombre": "Muffins de Arándanos y Limón (Docena)",
+    "categoria": "Cupcakes y Muffins",
+    "descripcion": "Muffins esponjosos con arándanos frescos enteros y crumble crocante en la superficie.",
+    "rendimiento_base": 1,
+    "rendimiento_unidad": "12 unidades",
+    "tiempo_preparacion_min": 20,
+    "tiempo_horneado_min": 25,
+    "temperatura_horno_c": 190,
+    "materiales_indirectos_pct": 10,
+    "costos_operativos_pct": 15,
+    "reposicion_equipos_pct": 10,
+    "mano_obra_pct": 30,
+    "margen_beneficio_pct": 50,
+    "activa": true,
+    "ingredientes": [
+      {
+        "insumo_id": 1,
+        "cantidad": 300,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 9,
+        "cantidad": 180,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 16,
+        "cantidad": 100,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 35,
+        "cantidad": 2,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 23,
+        "cantidad": 150,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 51,
+        "cantidad": 20,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 65,
+        "cantidad": 10,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 47,
+        "cantidad": 180,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 90,
+        "cantidad": 12,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 89,
+        "cantidad": 1,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 93,
+        "cantidad": 1,
+        "tipo": "variable"
+      }
     ]
   },
   {
-    id: 20,
-    nombre: "Galletas Red Velvet Rellenas de Nutella (Docena)",
-    categoria: "Galletas y Alfajores",
-    descripcion: "Masa aterciopelada roja rellena en el centro con un corazón de Nutella derretida.",
-    rendimiento_base: 1,
-    rendimiento_unidad: "12 unidades",
-    tiempo_preparacion_min: 30,
-    tiempo_horneado_min: 12,
-    temperatura_horno_c: 180,
-    materiales_indirectos_pct: 10,
-    costos_operativos_pct: 15,
-    reposicion_equipos_pct: 10,
-    mano_obra_pct: 30,
-    margen_beneficio_pct: 50,
-    activa: true,
-    ingredientes: [
-      { insumo_id: 1, cantidad: 300, tipo: "fijo" },
-      { insumo_id: 41, cantidad: 20, tipo: "fijo" },
-      { insumo_id: 16, cantidad: 150, tipo: "fijo" },
-      { insumo_id: 10, cantidad: 150, tipo: "fijo" },
-      { insumo_id: 35, cantidad: 1, tipo: "fijo" },
-      { insumo_id: 82, cantidad: 6, tipo: "fijo" },
-      // Variables
-      { insumo_id: 44, cantidad: 200, tipo: "variable" }, // Nutella
-      { insumo_id: 43, cantidad: 80, tipo: "variable" }, // Gotas blancas
-      { insumo_id: 88, cantidad: 1, tipo: "variable" },
-      { insumo_id: 93, cantidad: 1, tipo: "variable" }
+    "id": 16,
+    "nombre": "Muffins de Manzana, Canela y Avena (Docena)",
+    "categoria": "Cupcakes y Muffins",
+    "descripcion": "Muffins saludables con trozos de manzana verde y avena integral.",
+    "rendimiento_base": 1,
+    "rendimiento_unidad": "12 unidades",
+    "tiempo_preparacion_min": 20,
+    "tiempo_horneado_min": 25,
+    "temperatura_horno_c": 185,
+    "materiales_indirectos_pct": 10,
+    "costos_operativos_pct": 15,
+    "reposicion_equipos_pct": 10,
+    "mano_obra_pct": 30,
+    "margen_beneficio_pct": 50,
+    "activa": true,
+    "ingredientes": [
+      {
+        "insumo_id": 1,
+        "cantidad": 200,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 5,
+        "cantidad": 100,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 10,
+        "cantidad": 150,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 20,
+        "cantidad": 90,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 35,
+        "cantidad": 2,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 76,
+        "cantidad": 8,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 52,
+        "cantidad": 200,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 90,
+        "cantidad": 12,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 89,
+        "cantidad": 1,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 93,
+        "cantidad": 1,
+        "tipo": "variable"
+      }
     ]
   },
   {
-    id: 21,
-    nombre: "Galletas de Avena, Miel y Pasas (Docena)",
-    categoria: "Galletas y Alfajores",
-    descripcion: "Galletas crocantes y saludables con miel de abejas y canela.",
-    rendimiento_base: 1,
-    rendimiento_unidad: "12 unidades",
-    tiempo_preparacion_min: 20,
-    tiempo_horneado_min: 15,
-    temperatura_horno_c: 175,
-    materiales_indirectos_pct: 10,
-    costos_operativos_pct: 15,
-    reposicion_equipos_pct: 10,
-    mano_obra_pct: 30,
-    margen_beneficio_pct: 50,
-    activa: true,
-    ingredientes: [
-      { insumo_id: 5, cantidad: 200, tipo: "fijo" },
-      { insumo_id: 1, cantidad: 120, tipo: "fijo" },
-      { insumo_id: 16, cantidad: 120, tipo: "fijo" },
-      { insumo_id: 12, cantidad: 60, tipo: "fijo" }, // Miel
-      { insumo_id: 10, cantidad: 80, tipo: "fijo" },
-      { insumo_id: 35, cantidad: 1, tipo: "fijo" },
-      { insumo_id: 76, cantidad: 6, tipo: "fijo" },
-      // Variables
-      { insumo_id: 64, cantidad: 120, tipo: "variable" }, // Pasas
-      { insumo_id: 88, cantidad: 1, tipo: "variable" },
-      { insumo_id: 93, cantidad: 1, tipo: "variable" }
+    "id": 17,
+    "nombre": "Muffins de Banano y Chispas de Chocolate (Docena)",
+    "categoria": "Cupcakes y Muffins",
+    "descripcion": "Masa ultra tierna de banano maduro con gotas de chocolate horneable.",
+    "rendimiento_base": 1,
+    "rendimiento_unidad": "12 unidades",
+    "tiempo_preparacion_min": 20,
+    "tiempo_horneado_min": 25,
+    "temperatura_horno_c": 180,
+    "materiales_indirectos_pct": 10,
+    "costos_operativos_pct": 15,
+    "reposicion_equipos_pct": 10,
+    "mano_obra_pct": 30,
+    "margen_beneficio_pct": 50,
+    "activa": true,
+    "ingredientes": [
+      {
+        "insumo_id": 1,
+        "cantidad": 250,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 54,
+        "cantidad": 300,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 10,
+        "cantidad": 140,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 16,
+        "cantidad": 80,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 35,
+        "cantidad": 2,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 42,
+        "cantidad": 120,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 90,
+        "cantidad": 12,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 89,
+        "cantidad": 1,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 93,
+        "cantidad": 1,
+        "tipo": "variable"
+      }
     ]
   },
   {
-    id: 22,
-    nombre: "Alfajores Marplatenses Bañados en Chocolate 56% (Docena)",
-    categoria: "Galletas y Alfajores",
-    descripcion: "Galletas de cacao y especias, rellenas de abundante arequipe y bañadas en chocolate semiamargo.",
-    rendimiento_base: 1,
-    rendimiento_unidad: "12 unidades",
-    tiempo_preparacion_min: 45,
-    tiempo_horneado_min: 12,
-    temperatura_horno_c: 170,
-    materiales_indirectos_pct: 10,
-    costos_operativos_pct: 15,
-    reposicion_equipos_pct: 10,
-    mano_obra_pct: 30,
-    margen_beneficio_pct: 50,
-    activa: true,
-    ingredientes: [
-      { insumo_id: 1, cantidad: 220, tipo: "fijo" },
-      { insumo_id: 4, cantidad: 100, tipo: "fijo" },
-      { insumo_id: 41, cantidad: 30, tipo: "fijo" },
-      { insumo_id: 16, cantidad: 150, tipo: "fijo" },
-      { insumo_id: 9, cantidad: 100, tipo: "fijo" },
-      { insumo_id: 35, cantidad: 1, tipo: "fijo" },
-      { insumo_id: 12, cantidad: 30, tipo: "fijo" },
-      // Variables
-      { insumo_id: 29, cantidad: 300, tipo: "variable" },
-      { insumo_id: 38, cantidad: 250, tipo: "variable" }, // Cobertura 56%
-      { insumo_id: 88, cantidad: 1, tipo: "variable" },
-      { insumo_id: 93, cantidad: 1, tipo: "variable" }
+    "id": 18,
+    "nombre": "Galletas Choco-Chips estilo New York (Docena)",
+    "categoria": "Galletas y Alfajores",
+    "descripcion": "Galletas grandes y gruesas: crujientes por fuera y centro chicloso y derretido con nueces y chocolate semiamargo.",
+    "rendimiento_base": 1,
+    "rendimiento_unidad": "12 unidades (100g c/u)",
+    "tiempo_preparacion_min": 25,
+    "tiempo_horneado_min": 14,
+    "temperatura_horno_c": 190,
+    "materiales_indirectos_pct": 10,
+    "costos_operativos_pct": 15,
+    "reposicion_equipos_pct": 10,
+    "mano_obra_pct": 30,
+    "margen_beneficio_pct": 50,
+    "activa": true,
+    "ingredientes": [
+      {
+        "insumo_id": 1,
+        "cantidad": 400,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 16,
+        "cantidad": 220,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 10,
+        "cantidad": 180,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 9,
+        "cantidad": 120,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 35,
+        "cantidad": 2,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 65,
+        "cantidad": 6,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 66,
+        "cantidad": 4,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 73,
+        "cantidad": 8,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 42,
+        "cantidad": 250,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 57,
+        "cantidad": 100,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 88,
+        "cantidad": 1,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 93,
+        "cantidad": 1,
+        "tipo": "variable"
+      }
     ]
   },
   {
-    id: 23,
-    nombre: "Galletas de Mantequilla Danesas / Shortbread (Caja x 24)",
-    categoria: "Galletas y Alfajores",
-    descripcion: "Galletitas finas con 100% mantequilla pura y un toque de flor de sal marina.",
-    rendimiento_base: 1,
-    rendimiento_unidad: "24 unidades",
-    tiempo_preparacion_min: 25,
-    tiempo_horneado_min: 15,
-    temperatura_horno_c: 165,
-    materiales_indirectos_pct: 10,
-    costos_operativos_pct: 15,
-    reposicion_equipos_pct: 10,
-    mano_obra_pct: 30,
-    margen_beneficio_pct: 50,
-    activa: true,
-    ingredientes: [
-      { insumo_id: 1, cantidad: 300, tipo: "fijo" },
-      { insumo_id: 16, cantidad: 200, tipo: "fijo" },
-      { insumo_id: 11, cantidad: 100, tipo: "fijo" },
-      { insumo_id: 73, cantidad: 6, tipo: "fijo" },
-      { insumo_id: 69, cantidad: 3, tipo: "fijo" }, // Flor de sal
-      // Variables
-      { insumo_id: 88, cantidad: 1, tipo: "variable" },
-      { insumo_id: 93, cantidad: 1, tipo: "variable" }
+    "id": 19,
+    "nombre": "Alfajores de Maicena Tradicionales con Dulce de Leche (Docena)",
+    "categoria": "Galletas y Alfajores",
+    "descripcion": "Masa ultra suave que se deshace en la boca, rellena de abundante dulce de leche y coco rallado.",
+    "rendimiento_base": 1,
+    "rendimiento_unidad": "12 unidades grandes",
+    "tiempo_preparacion_min": 35,
+    "tiempo_horneado_min": 12,
+    "temperatura_horno_c": 160,
+    "materiales_indirectos_pct": 10,
+    "costos_operativos_pct": 15,
+    "reposicion_equipos_pct": 10,
+    "mano_obra_pct": 30,
+    "margen_beneficio_pct": 50,
+    "activa": true,
+    "ingredientes": [
+      {
+        "insumo_id": 4,
+        "cantidad": 250,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 1,
+        "cantidad": 150,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 16,
+        "cantidad": 180,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 11,
+        "cantidad": 120,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 37,
+        "cantidad": 40,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 65,
+        "cantidad": 8,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 51,
+        "cantidad": 5,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 29,
+        "cantidad": 350,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 60,
+        "cantidad": 60,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 88,
+        "cantidad": 1,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 93,
+        "cantidad": 1,
+        "tipo": "variable"
+      }
     ]
   },
   {
-    id: 24,
-    nombre: "Macarons Franceses de Almendra y Frambuesa (Caja x 8)",
-    categoria: "Galletas y Alfajores",
-    descripcion: "Conchas crujientes de harina de almendra con ganache montada de chocolate blanco y frambuesa.",
-    rendimiento_base: 1,
-    rendimiento_unidad: "8 unidades",
-    tiempo_preparacion_min: 50,
-    tiempo_horneado_min: 16,
-    temperatura_horno_c: 150,
-    materiales_indirectos_pct: 12,
-    costos_operativos_pct: 15,
-    reposicion_equipos_pct: 10,
-    mano_obra_pct: 35,
-    margen_beneficio_pct: 50,
-    activa: true,
-    ingredientes: [
-      { insumo_id: 3, cantidad: 120, tipo: "fijo" }, // Harina almendras
-      { insumo_id: 11, cantidad: 120, tipo: "fijo" }, // Azúcar glass
-      { insumo_id: 36, cantidad: 90, tipo: "fijo" }, // Claras
-      { insumo_id: 9, cantidad: 100, tipo: "fijo" },
-      { insumo_id: 82, cantidad: 2, tipo: "fijo" },
-      // Variables
-      { insumo_id: 39, cantidad: 120, tipo: "variable" }, // Chocolate blanco
-      { insumo_id: 48, cantidad: 80, tipo: "variable" }, // Frambuesas
-      { insumo_id: 88, cantidad: 1, tipo: "variable" },
-      { insumo_id: 93, cantidad: 1, tipo: "variable" }
+    "id": 20,
+    "nombre": "Galletas Red Velvet Rellenas de Nutella (Docena)",
+    "categoria": "Galletas y Alfajores",
+    "descripcion": "Masa aterciopelada roja rellena en el centro con un corazón de Nutella derretida.",
+    "rendimiento_base": 1,
+    "rendimiento_unidad": "12 unidades",
+    "tiempo_preparacion_min": 30,
+    "tiempo_horneado_min": 12,
+    "temperatura_horno_c": 180,
+    "materiales_indirectos_pct": 10,
+    "costos_operativos_pct": 15,
+    "reposicion_equipos_pct": 10,
+    "mano_obra_pct": 30,
+    "margen_beneficio_pct": 50,
+    "activa": true,
+    "ingredientes": [
+      {
+        "insumo_id": 1,
+        "cantidad": 300,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 41,
+        "cantidad": 20,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 16,
+        "cantidad": 150,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 10,
+        "cantidad": 150,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 35,
+        "cantidad": 1,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 82,
+        "cantidad": 6,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 44,
+        "cantidad": 200,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 43,
+        "cantidad": 80,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 88,
+        "cantidad": 1,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 93,
+        "cantidad": 1,
+        "tipo": "variable"
+      }
     ]
   },
   {
-    id: 25,
-    nombre: "Galletas Craqueladas de Chocolate Fudgy (Docena)",
-    categoria: "Galletas y Alfajores",
-    descripcion: "Galletas tipo brownie con costra azucarada blanca y craquelado perfecto.",
-    rendimiento_base: 1,
-    rendimiento_unidad: "12 unidades",
-    tiempo_preparacion_min: 25,
-    tiempo_horneado_min: 12,
-    temperatura_horno_c: 175,
-    materiales_indirectos_pct: 10,
-    costos_operativos_pct: 15,
-    reposicion_equipos_pct: 10,
-    mano_obra_pct: 30,
-    margen_beneficio_pct: 50,
-    activa: true,
-    ingredientes: [
-      { insumo_id: 1, cantidad: 180, tipo: "fijo" },
-      { insumo_id: 41, cantidad: 60, tipo: "fijo" },
-      { insumo_id: 9, cantidad: 180, tipo: "fijo" },
-      { insumo_id: 20, cantidad: 70, tipo: "fijo" },
-      { insumo_id: 35, cantidad: 2, tipo: "fijo" },
-      { insumo_id: 65, cantidad: 6, tipo: "fijo" },
-      // Variables
-      { insumo_id: 11, cantidad: 100, tipo: "variable" }, // Azúcar glass rebozado
-      { insumo_id: 88, cantidad: 1, tipo: "variable" },
-      { insumo_id: 93, cantidad: 1, tipo: "variable" }
-    ]
-  },
-
-  // --- BROWNIES Y BLONDIES (5 recetas) ---
-  {
-    id: 26,
-    nombre: "Brownie Fudgy de Chocolate Belga y Nuez (Molde 9 porciones)",
-    categoria: "Brownies y Blondies",
-    descripcion: "Brownie denso y melcochudo con 56% chocolate real, mantequilla francesa y nueces crujientes.",
-    rendimiento_base: 1,
-    rendimiento_unidad: "9 porciones (cuadros)",
-    tiempo_preparacion_min: 25,
-    tiempo_horneado_min: 30,
-    temperatura_horno_c: 170,
-    materiales_indirectos_pct: 10,
-    costos_operativos_pct: 15,
-    reposicion_equipos_pct: 10,
-    mano_obra_pct: 30,
-    margen_beneficio_pct: 50,
-    activa: true,
-    ingredientes: [
-      { insumo_id: 38, cantidad: 250, tipo: "fijo" }, // Chocolate 56%
-      { insumo_id: 16, cantidad: 180, tipo: "fijo" }, // Mantequilla
-      { insumo_id: 9, cantidad: 200, tipo: "fijo" },
-      { insumo_id: 10, cantidad: 100, tipo: "fijo" },
-      { insumo_id: 35, cantidad: 4, tipo: "fijo" },
-      { insumo_id: 1, cantidad: 120, tipo: "fijo" },
-      { insumo_id: 41, cantidad: 30, tipo: "fijo" },
-      // Variables
-      { insumo_id: 57, cantidad: 100, tipo: "variable" }, // Nueces
-      { insumo_id: 88, cantidad: 1, tipo: "variable" },
-      { insumo_id: 93, cantidad: 1, tipo: "variable" }
-    ]
-  },
-  {
-    id: 27,
-    nombre: "Brownie con Remolino de Arequipe Artesanal (Molde 9 porciones)",
-    categoria: "Brownies y Blondies",
-    descripcion: "Base fudgy de chocolate coronada con remolinos dorados de arequipe repostero.",
-    rendimiento_base: 1,
-    rendimiento_unidad: "9 porciones",
-    tiempo_preparacion_min: 25,
-    tiempo_horneado_min: 32,
-    temperatura_horno_c: 170,
-    materiales_indirectos_pct: 10,
-    costos_operativos_pct: 15,
-    reposicion_equipos_pct: 10,
-    mano_obra_pct: 30,
-    margen_beneficio_pct: 50,
-    activa: true,
-    ingredientes: [
-      { insumo_id: 38, cantidad: 220, tipo: "fijo" },
-      { insumo_id: 16, cantidad: 160, tipo: "fijo" },
-      { insumo_id: 9, cantidad: 220, tipo: "fijo" },
-      { insumo_id: 35, cantidad: 4, tipo: "fijo" },
-      { insumo_id: 1, cantidad: 120, tipo: "fijo" },
-      { insumo_id: 41, cantidad: 25, tipo: "fijo" },
-      // Variables
-      { insumo_id: 29, cantidad: 180, tipo: "variable" }, // Arequipe
-      { insumo_id: 88, cantidad: 1, tipo: "variable" },
-      { insumo_id: 93, cantidad: 1, tipo: "variable" }
+    "id": 21,
+    "nombre": "Galletas de Avena, Miel y Pasas (Docena)",
+    "categoria": "Galletas y Alfajores",
+    "descripcion": "Galletas crocantes y saludables con miel de abejas y canela.",
+    "rendimiento_base": 1,
+    "rendimiento_unidad": "12 unidades",
+    "tiempo_preparacion_min": 20,
+    "tiempo_horneado_min": 15,
+    "temperatura_horno_c": 175,
+    "materiales_indirectos_pct": 10,
+    "costos_operativos_pct": 15,
+    "reposicion_equipos_pct": 10,
+    "mano_obra_pct": 30,
+    "margen_beneficio_pct": 50,
+    "activa": true,
+    "ingredientes": [
+      {
+        "insumo_id": 5,
+        "cantidad": 200,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 1,
+        "cantidad": 120,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 16,
+        "cantidad": 120,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 12,
+        "cantidad": 60,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 10,
+        "cantidad": 80,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 35,
+        "cantidad": 1,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 76,
+        "cantidad": 6,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 64,
+        "cantidad": 120,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 88,
+        "cantidad": 1,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 93,
+        "cantidad": 1,
+        "tipo": "variable"
+      }
     ]
   },
   {
-    id: 28,
-    nombre: "Blondie de Vainilla y Chocolate Blanco con Pistachos (Molde 9 porciones)",
-    categoria: "Brownies y Blondies",
-    descripcion: "El primo dorado del brownie: elaborado con azúcar morena, chocolate blanco y pistachos.",
-    rendimiento_base: 1,
-    rendimiento_unidad: "9 porciones",
-    tiempo_preparacion_min: 25,
-    tiempo_horneado_min: 28,
-    temperatura_horno_c: 175,
-    materiales_indirectos_pct: 10,
-    costos_operativos_pct: 15,
-    reposicion_equipos_pct: 10,
-    mano_obra_pct: 30,
-    margen_beneficio_pct: 50,
-    activa: true,
-    ingredientes: [
-      { insumo_id: 16, cantidad: 160, tipo: "fijo" },
-      { insumo_id: 10, cantidad: 220, tipo: "fijo" },
-      { insumo_id: 35, cantidad: 3, tipo: "fijo" },
-      { insumo_id: 73, cantidad: 10, tipo: "fijo" },
-      { insumo_id: 1, cantidad: 200, tipo: "fijo" },
-      // Variables
-      { insumo_id: 39, cantidad: 150, tipo: "variable" }, // Choc blanco
-      { insumo_id: 59, cantidad: 70, tipo: "variable" }, // Pistachos
-      { insumo_id: 88, cantidad: 1, tipo: "variable" },
-      { insumo_id: 93, cantidad: 1, tipo: "variable" }
+    "id": 22,
+    "nombre": "Alfajores Marplatenses Bañados en Chocolate 56% (Docena)",
+    "categoria": "Galletas y Alfajores",
+    "descripcion": "Galletas de cacao y especias, rellenas de abundante arequipe y bañadas en chocolate semiamargo.",
+    "rendimiento_base": 1,
+    "rendimiento_unidad": "12 unidades",
+    "tiempo_preparacion_min": 45,
+    "tiempo_horneado_min": 12,
+    "temperatura_horno_c": 170,
+    "materiales_indirectos_pct": 10,
+    "costos_operativos_pct": 15,
+    "reposicion_equipos_pct": 10,
+    "mano_obra_pct": 30,
+    "margen_beneficio_pct": 50,
+    "activa": true,
+    "ingredientes": [
+      {
+        "insumo_id": 1,
+        "cantidad": 220,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 4,
+        "cantidad": 100,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 41,
+        "cantidad": 30,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 16,
+        "cantidad": 150,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 9,
+        "cantidad": 100,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 35,
+        "cantidad": 1,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 12,
+        "cantidad": 30,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 29,
+        "cantidad": 300,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 38,
+        "cantidad": 250,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 88,
+        "cantidad": 1,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 93,
+        "cantidad": 1,
+        "tipo": "variable"
+      }
     ]
   },
   {
-    id: 29,
-    nombre: "Brownie Cheesecake (Molde 9 porciones)",
-    categoria: "Brownies y Blondies",
-    descripcion: "Doble capa sublime: base de brownie húmedo y cubierta horneada de cheesecake cremoso.",
-    rendimiento_base: 1,
-    rendimiento_unidad: "9 porciones",
-    tiempo_preparacion_min: 30,
-    tiempo_horneado_min: 35,
-    temperatura_horno_c: 165,
-    materiales_indirectos_pct: 10,
-    costos_operativos_pct: 15,
-    reposicion_equipos_pct: 10,
-    mano_obra_pct: 30,
-    margen_beneficio_pct: 50,
-    activa: true,
-    ingredientes: [
-      { insumo_id: 38, cantidad: 180, tipo: "fijo" },
-      { insumo_id: 16, cantidad: 120, tipo: "fijo" },
-      { insumo_id: 9, cantidad: 150, tipo: "fijo" },
-      { insumo_id: 35, cantidad: 3, tipo: "fijo" },
-      { insumo_id: 1, cantidad: 90, tipo: "fijo" },
-      // Variables (Capa Cheesecake)
-      { insumo_id: 25, cantidad: 250, tipo: "variable" }, // Queso crema
-      { insumo_id: 9, cantidad: 60, tipo: "variable" },
-      { insumo_id: 35, cantidad: 1, tipo: "variable" },
-      { insumo_id: 88, cantidad: 1, tipo: "variable" },
-      { insumo_id: 93, cantidad: 1, tipo: "variable" }
+    "id": 23,
+    "nombre": "Galletas de Mantequilla Danesas / Shortbread (Caja x 24)",
+    "categoria": "Galletas y Alfajores",
+    "descripcion": "Galletitas finas con 100% mantequilla pura y un toque de flor de sal marina.",
+    "rendimiento_base": 1,
+    "rendimiento_unidad": "24 unidades",
+    "tiempo_preparacion_min": 25,
+    "tiempo_horneado_min": 15,
+    "temperatura_horno_c": 165,
+    "materiales_indirectos_pct": 10,
+    "costos_operativos_pct": 15,
+    "reposicion_equipos_pct": 10,
+    "mano_obra_pct": 30,
+    "margen_beneficio_pct": 50,
+    "activa": true,
+    "ingredientes": [
+      {
+        "insumo_id": 1,
+        "cantidad": 300,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 16,
+        "cantidad": 200,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 11,
+        "cantidad": 100,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 73,
+        "cantidad": 6,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 69,
+        "cantidad": 3,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 88,
+        "cantidad": 1,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 93,
+        "cantidad": 1,
+        "tipo": "variable"
+      }
     ]
   },
   {
-    id: 30,
-    nombre: "Brownie Bites para Eventos (Caja x 24 mini cuadros)",
-    categoria: "Brownies y Blondies",
-    descripcion: "Bocaditos de brownie tamaño bocado decorados con topping variado.",
-    rendimiento_base: 1,
-    rendimiento_unidad: "24 mini porciones",
-    tiempo_preparacion_min: 30,
-    tiempo_horneado_min: 25,
-    temperatura_horno_c: 170,
-    materiales_indirectos_pct: 10,
-    costos_operativos_pct: 15,
-    reposicion_equipos_pct: 10,
-    mano_obra_pct: 30,
-    margen_beneficio_pct: 50,
-    activa: true,
-    ingredientes: [
-      { insumo_id: 38, cantidad: 250, tipo: "fijo" },
-      { insumo_id: 16, cantidad: 180, tipo: "fijo" },
-      { insumo_id: 9, cantidad: 250, tipo: "fijo" },
-      { insumo_id: 35, cantidad: 4, tipo: "fijo" },
-      { insumo_id: 1, cantidad: 120, tipo: "fijo" },
-      // Variables
-      { insumo_id: 42, cantidad: 100, tipo: "variable" },
-      { insumo_id: 88, cantidad: 1, tipo: "variable" },
-      { insumo_id: 93, cantidad: 1, tipo: "variable" }
-    ]
-  },
-
-  // --- TRES LECHES Y POSTRES FRÍOS (6 recetas) ---
-  {
-    id: 31,
-    nombre: "Postre Tres Leches Tradicional Artesanal (Bandeja 12 porciones)",
-    categoria: "Tres Leches y Postres Fríos",
-    descripcion: "Bizcochuelo esponjoso embebido en mezcla de 3 leches premium con canela y merengue tostado.",
-    rendimiento_base: 1,
-    rendimiento_unidad: "Bandeja (12 porciones)",
-    tiempo_preparacion_min: 35,
-    tiempo_horneado_min: 30,
-    temperatura_horno_c: 175,
-    materiales_indirectos_pct: 10,
-    costos_operativos_pct: 15,
-    reposicion_equipos_pct: 10,
-    mano_obra_pct: 30,
-    margen_beneficio_pct: 50,
-    activa: true,
-    ingredientes: [
-      { insumo_id: 1, cantidad: 200, tipo: "fijo" },
-      { insumo_id: 9, cantidad: 180, tipo: "fijo" },
-      { insumo_id: 35, cantidad: 6, tipo: "fijo" }, // Huevos batidos a punto nieve
-      { insumo_id: 65, cantidad: 6, tipo: "fijo" },
-      { insumo_id: 73, cantidad: 8, tipo: "fijo" },
-      // Variables (Tres Leches + Cubierta)
-      { insumo_id: 27, cantidad: 395, tipo: "variable" }, // Leche condensada
-      { insumo_id: 28, cantidad: 400, tipo: "variable" }, // Leche evaporada
-      { insumo_id: 24, cantidad: 300, tipo: "variable" }, // Crema de leche
-      { insumo_id: 31, cantidad: 250, tipo: "variable" }, // Chantilly merengue
-      { insumo_id: 76, cantidad: 4, tipo: "variable" }, // Canela
-      { insumo_id: 84, cantidad: 1, tipo: "variable" },
-      { insumo_id: 93, cantidad: 1, tipo: "variable" }
-    ]
-  },
-  {
-    id: 32,
-    nombre: "Postre Cuatro Leches con Arequipe (Bandeja 12 porciones)",
-    categoria: "Tres Leches y Postres Fríos",
-    descripcion: "Variación con arequipe artesanal integrado a la mezcla de leches y cobertura.",
-    rendimiento_base: 1,
-    rendimiento_unidad: "Bandeja (12 porciones)",
-    tiempo_preparacion_min: 35,
-    tiempo_horneado_min: 30,
-    temperatura_horno_c: 175,
-    materiales_indirectos_pct: 10,
-    costos_operativos_pct: 15,
-    reposicion_equipos_pct: 10,
-    mano_obra_pct: 30,
-    margen_beneficio_pct: 50,
-    activa: true,
-    ingredientes: [
-      { insumo_id: 1, cantidad: 200, tipo: "fijo" },
-      { insumo_id: 9, cantidad: 180, tipo: "fijo" },
-      { insumo_id: 35, cantidad: 6, tipo: "fijo" },
-      { insumo_id: 65, cantidad: 6, tipo: "fijo" },
-      // Variables
-      { insumo_id: 27, cantidad: 395, tipo: "variable" },
-      { insumo_id: 28, cantidad: 400, tipo: "variable" },
-      { insumo_id: 24, cantidad: 250, tipo: "variable" },
-      { insumo_id: 29, cantidad: 300, tipo: "variable" }, // Arequipe
-      { insumo_id: 84, cantidad: 1, tipo: "variable" },
-      { insumo_id: 93, cantidad: 1, tipo: "variable" }
+    "id": 24,
+    "nombre": "Macarons Franceses de Almendra y Frambuesa (Caja x 8)",
+    "categoria": "Galletas y Alfajores",
+    "descripcion": "Conchas crujientes de harina de almendra con ganache montada de chocolate blanco y frambuesa.",
+    "rendimiento_base": 1,
+    "rendimiento_unidad": "8 unidades",
+    "tiempo_preparacion_min": 50,
+    "tiempo_horneado_min": 16,
+    "temperatura_horno_c": 150,
+    "materiales_indirectos_pct": 12,
+    "costos_operativos_pct": 15,
+    "reposicion_equipos_pct": 10,
+    "mano_obra_pct": 35,
+    "margen_beneficio_pct": 50,
+    "activa": true,
+    "ingredientes": [
+      {
+        "insumo_id": 3,
+        "cantidad": 120,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 11,
+        "cantidad": 120,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 36,
+        "cantidad": 90,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 9,
+        "cantidad": 100,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 82,
+        "cantidad": 2,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 39,
+        "cantidad": 120,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 48,
+        "cantidad": 80,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 88,
+        "cantidad": 1,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 93,
+        "cantidad": 1,
+        "tipo": "variable"
+      }
     ]
   },
   {
-    id: 33,
-    nombre: "Tres Leches de Maracuyá Frío (Bandeja 12 porciones)",
-    categoria: "Tres Leches y Postres Fríos",
-    descripcion: "Equilibrio cítrico perfecto con reducción artesanal de pulpa de maracuyá pura.",
-    rendimiento_base: 1,
-    rendimiento_unidad: "Bandeja (12 porciones)",
-    tiempo_preparacion_min: 40,
-    tiempo_horneado_min: 30,
-    temperatura_horno_c: 175,
-    materiales_indirectos_pct: 10,
-    costos_operativos_pct: 15,
-    reposicion_equipos_pct: 10,
-    mano_obra_pct: 30,
-    margen_beneficio_pct: 50,
-    activa: true,
-    ingredientes: [
-      { insumo_id: 1, cantidad: 200, tipo: "fijo" },
-      { insumo_id: 9, cantidad: 180, tipo: "fijo" },
-      { insumo_id: 35, cantidad: 6, tipo: "fijo" },
-      // Variables
-      { insumo_id: 27, cantidad: 395, tipo: "variable" },
-      { insumo_id: 28, cantidad: 300, tipo: "variable" },
-      { insumo_id: 24, cantidad: 250, tipo: "variable" },
-      { insumo_id: 50, cantidad: 250, tipo: "variable" }, // Maracuyá
-      { insumo_id: 31, cantidad: 200, tipo: "variable" },
-      { insumo_id: 84, cantidad: 1, tipo: "variable" },
-      { insumo_id: 93, cantidad: 1, tipo: "variable" }
+    "id": 25,
+    "nombre": "Galletas Craqueladas de Chocolate Fudgy (Docena)",
+    "categoria": "Galletas y Alfajores",
+    "descripcion": "Galletas tipo brownie con costra azucarada blanca y craquelado perfecto.",
+    "rendimiento_base": 1,
+    "rendimiento_unidad": "12 unidades",
+    "tiempo_preparacion_min": 25,
+    "tiempo_horneado_min": 12,
+    "temperatura_horno_c": 175,
+    "materiales_indirectos_pct": 10,
+    "costos_operativos_pct": 15,
+    "reposicion_equipos_pct": 10,
+    "mano_obra_pct": 30,
+    "margen_beneficio_pct": 50,
+    "activa": true,
+    "ingredientes": [
+      {
+        "insumo_id": 1,
+        "cantidad": 180,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 41,
+        "cantidad": 60,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 9,
+        "cantidad": 180,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 20,
+        "cantidad": 70,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 35,
+        "cantidad": 2,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 65,
+        "cantidad": 6,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 11,
+        "cantidad": 100,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 88,
+        "cantidad": 1,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 93,
+        "cantidad": 1,
+        "tipo": "variable"
+      }
     ]
   },
   {
-    id: 34,
-    nombre: "Tiramisú Clásico Italiano con Mascarpone (Bandeja 8 porciones)",
-    categoria: "Tres Leches y Postres Fríos",
-    descripcion: "Capas de bizcochos savoiardi humedecidos en espresso y Kahlúa, crema sedosa de queso mascarpone y cacao holandés.",
-    rendimiento_base: 1,
-    rendimiento_unidad: "Bandeja (8 porciones)",
-    tiempo_preparacion_min: 40,
-    tiempo_horneado_min: 0,
-    temperatura_horno_c: 0,
-    materiales_indirectos_pct: 10,
-    costos_operativos_pct: 15,
-    reposicion_equipos_pct: 10,
-    mano_obra_pct: 30,
-    margen_beneficio_pct: 50,
-    activa: true,
-    ingredientes: [
-      { insumo_id: 26, cantidad: 400, tipo: "fijo" }, // Mascarpone
-      { insumo_id: 37, cantidad: 80, tipo: "fijo" }, // Yemas
-      { insumo_id: 9, cantidad: 120, tipo: "fijo" },
-      { insumo_id: 24, cantidad: 200, tipo: "fijo" },
-      { insumo_id: 79, cantidad: 20, tipo: "fijo" }, // Café
-      { insumo_id: 81, cantidad: 40, tipo: "fijo" }, // Kahlúa
-      // Variables
-      { insumo_id: 1, cantidad: 150, tipo: "variable" }, // Bizcochos base
-      { insumo_id: 41, cantidad: 25, tipo: "variable" }, // Cacao espolvoreado
-      { insumo_id: 84, cantidad: 1, tipo: "variable" },
-      { insumo_id: 93, cantidad: 1, tipo: "variable" }
+    "id": 26,
+    "nombre": "Brownie Fudgy de Chocolate Belga y Nuez (Molde 9 porciones)",
+    "categoria": "Brownies y Blondies",
+    "descripcion": "Brownie denso y melcochudo con 56% chocolate real, mantequilla francesa y nueces crujientes.",
+    "rendimiento_base": 1,
+    "rendimiento_unidad": "9 porciones (cuadros)",
+    "tiempo_preparacion_min": 25,
+    "tiempo_horneado_min": 30,
+    "temperatura_horno_c": 170,
+    "materiales_indirectos_pct": 10,
+    "costos_operativos_pct": 15,
+    "reposicion_equipos_pct": 10,
+    "mano_obra_pct": 30,
+    "margen_beneficio_pct": 50,
+    "activa": true,
+    "ingredientes": [
+      {
+        "insumo_id": 38,
+        "cantidad": 250,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 16,
+        "cantidad": 180,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 9,
+        "cantidad": 200,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 10,
+        "cantidad": 100,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 35,
+        "cantidad": 4,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 1,
+        "cantidad": 120,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 41,
+        "cantidad": 30,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 57,
+        "cantidad": 100,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 88,
+        "cantidad": 1,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 93,
+        "cantidad": 1,
+        "tipo": "variable"
+      }
     ]
   },
   {
-    id: 35,
-    nombre: "Mousse de Chocolate Belga 56% en Vasitos (Pack x 6)",
-    categoria: "Tres Leches y Postres Fríos",
-    descripcion: "Postre frío individual aireado y ligero con chocolate belga y avellanas.",
-    rendimiento_base: 1,
-    rendimiento_unidad: "6 vasitos",
-    tiempo_preparacion_min: 30,
-    tiempo_horneado_min: 0,
-    temperatura_horno_c: 0,
-    materiales_indirectos_pct: 10,
-    costos_operativos_pct: 15,
-    reposicion_equipos_pct: 10,
-    mano_obra_pct: 30,
-    margen_beneficio_pct: 50,
-    activa: true,
-    ingredientes: [
-      { insumo_id: 38, cantidad: 200, tipo: "fijo" }, // Chocolate 56%
-      { insumo_id: 24, cantidad: 300, tipo: "fijo" }, // Crema
-      { insumo_id: 36, cantidad: 80, tipo: "fijo" }, // Claras
-      { insumo_id: 9, cantidad: 60, tipo: "fijo" },
-      // Variables
-      { insumo_id: 91, cantidad: 6, tipo: "variable" }, // Vasos domo
-      { insumo_id: 93, cantidad: 1, tipo: "variable" }
+    "id": 27,
+    "nombre": "Brownie con Remolino de Arequipe Artesanal (Molde 9 porciones)",
+    "categoria": "Brownies y Blondies",
+    "descripcion": "Base fudgy de chocolate coronada con remolinos dorados de arequipe repostero.",
+    "rendimiento_base": 1,
+    "rendimiento_unidad": "9 porciones",
+    "tiempo_preparacion_min": 25,
+    "tiempo_horneado_min": 32,
+    "temperatura_horno_c": 170,
+    "materiales_indirectos_pct": 10,
+    "costos_operativos_pct": 15,
+    "reposicion_equipos_pct": 10,
+    "mano_obra_pct": 30,
+    "margen_beneficio_pct": 50,
+    "activa": true,
+    "ingredientes": [
+      {
+        "insumo_id": 38,
+        "cantidad": 220,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 16,
+        "cantidad": 160,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 9,
+        "cantidad": 220,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 35,
+        "cantidad": 4,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 1,
+        "cantidad": 120,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 41,
+        "cantidad": 25,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 29,
+        "cantidad": 180,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 88,
+        "cantidad": 1,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 93,
+        "cantidad": 1,
+        "tipo": "variable"
+      }
     ]
   },
   {
-    id: 36,
-    nombre: "Mousse de Frutos Rojos y Chocolate Blanco (Pack x 6)",
-    categoria: "Tres Leches y Postres Fríos",
-    descripcion: "Vasitos individuales con crema de chocolate blanco y coulis de frambuesa.",
-    rendimiento_base: 1,
-    rendimiento_unidad: "6 vasitos",
-    tiempo_preparacion_min: 30,
-    tiempo_horneado_min: 0,
-    temperatura_horno_c: 0,
-    materiales_indirectos_pct: 10,
-    costos_operativos_pct: 15,
-    reposicion_equipos_pct: 10,
-    mano_obra_pct: 30,
-    margen_beneficio_pct: 50,
-    activa: true,
-    ingredientes: [
-      { insumo_id: 39, cantidad: 180, tipo: "fijo" }, // Choc blanco
-      { insumo_id: 24, cantidad: 250, tipo: "fijo" },
-      { insumo_id: 70, cantidad: 8, tipo: "fijo" }, // Gelatina
-      // Variables
-      { insumo_id: 48, cantidad: 150, tipo: "variable" }, // Frambuesas
-      { insumo_id: 91, cantidad: 6, tipo: "variable" },
-      { insumo_id: 93, cantidad: 1, tipo: "variable" }
-    ]
-  },
-
-  // --- CHEESECAKES Y TARTAS (6 recetas) ---
-  {
-    id: 37,
-    nombre: "New York Cheesecake Horneado con Frutos Rojos (Molde 24cm)",
-    categoria: "Cheesecakes y Tartas",
-    descripcion: "Cheesecake horneado a baño maría, textura densa y cremosa, base de galleta y compota de frutos rojos.",
-    rendimiento_base: 1,
-    rendimiento_unidad: "1 molde 24cm (12 porciones)",
-    tiempo_preparacion_min: 40,
-    tiempo_horneado_min: 75,
-    temperatura_horno_c: 150,
-    materiales_indirectos_pct: 10,
-    costos_operativos_pct: 18,
-    reposicion_equipos_pct: 10,
-    mano_obra_pct: 30,
-    margen_beneficio_pct: 50,
-    activa: true,
-    ingredientes: [
-      { insumo_id: 25, cantidad: 800, tipo: "fijo" }, // Queso crema Philadelphia
-      { insumo_id: 9, cantidad: 220, tipo: "fijo" },
-      { insumo_id: 35, cantidad: 4, tipo: "fijo" },
-      { insumo_id: 24, cantidad: 150, tipo: "fijo" },
-      { insumo_id: 73, cantidad: 10, tipo: "fijo" },
-      { insumo_id: 51, cantidad: 10, tipo: "fijo" },
-      // Variables (Base y Cubierta)
-      { insumo_id: 1, cantidad: 150, tipo: "variable" }, // Base galleta
-      { insumo_id: 16, cantidad: 80, tipo: "variable" },
-      { insumo_id: 55, cantidad: 250, tipo: "variable" }, // Mermelada frutos rojos
-      { insumo_id: 46, cantidad: 100, tipo: "variable" }, // Fresas decorado
-      { insumo_id: 84, cantidad: 1, tipo: "variable" },
-      { insumo_id: 86, cantidad: 1, tipo: "variable" },
-      { insumo_id: 93, cantidad: 1, tipo: "variable" }
-    ]
-  },
-  {
-    id: 38,
-    nombre: "Cheesecake de Maracuyá Frío Sin Horno (Molde 22cm)",
-    categoria: "Cheesecakes y Tartas",
-    descripcion: "Postre refrescante con suave crema de queso y espejo brillante de maracuyá.",
-    rendimiento_base: 1,
-    rendimiento_unidad: "1 molde 22cm (10 porciones)",
-    tiempo_preparacion_min: 35,
-    tiempo_horneado_min: 0,
-    temperatura_horno_c: 0,
-    materiales_indirectos_pct: 10,
-    costos_operativos_pct: 12,
-    reposicion_equipos_pct: 10,
-    mano_obra_pct: 30,
-    margen_beneficio_pct: 50,
-    activa: true,
-    ingredientes: [
-      { insumo_id: 25, cantidad: 500, tipo: "fijo" },
-      { insumo_id: 27, cantidad: 300, tipo: "fijo" }, // Leche condensada
-      { insumo_id: 24, cantidad: 250, tipo: "fijo" },
-      { insumo_id: 70, cantidad: 15, tipo: "fijo" }, // Gelatina
-      // Variables
-      { insumo_id: 50, cantidad: 200, tipo: "variable" }, // Maracuyá
-      { insumo_id: 1, cantidad: 120, tipo: "variable" },
-      { insumo_id: 16, cantidad: 60, tipo: "variable" },
-      { insumo_id: 84, cantidad: 1, tipo: "variable" },
-      { insumo_id: 86, cantidad: 1, tipo: "variable" },
-      { insumo_id: 93, cantidad: 1, tipo: "variable" }
+    "id": 28,
+    "nombre": "Blondie de Vainilla y Chocolate Blanco con Pistachos (Molde 9 porciones)",
+    "categoria": "Brownies y Blondies",
+    "descripcion": "El primo dorado del brownie: elaborado con azúcar morena, chocolate blanco y pistachos.",
+    "rendimiento_base": 1,
+    "rendimiento_unidad": "9 porciones",
+    "tiempo_preparacion_min": 25,
+    "tiempo_horneado_min": 28,
+    "temperatura_horno_c": 175,
+    "materiales_indirectos_pct": 10,
+    "costos_operativos_pct": 15,
+    "reposicion_equipos_pct": 10,
+    "mano_obra_pct": 30,
+    "margen_beneficio_pct": 50,
+    "activa": true,
+    "ingredientes": [
+      {
+        "insumo_id": 16,
+        "cantidad": 160,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 10,
+        "cantidad": 220,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 35,
+        "cantidad": 3,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 73,
+        "cantidad": 10,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 1,
+        "cantidad": 200,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 39,
+        "cantidad": 150,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 59,
+        "cantidad": 70,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 88,
+        "cantidad": 1,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 93,
+        "cantidad": 1,
+        "tipo": "variable"
+      }
     ]
   },
   {
-    id: 39,
-    nombre: "Tarta de Manzana Caramelizada Rústica (Molde 26cm)",
-    categoria: "Cheesecakes y Tartas",
-    descripcion: "Masa quebrada de mantequilla rellena de manzanas salteadas en canela y azúcar morena.",
-    rendimiento_base: 1,
-    rendimiento_unidad: "1 molde 26cm (8-10 porciones)",
-    tiempo_preparacion_min: 40,
-    tiempo_horneado_min: 45,
-    temperatura_horno_c: 180,
-    materiales_indirectos_pct: 10,
-    costos_operativos_pct: 15,
-    reposicion_equipos_pct: 10,
-    mano_obra_pct: 30,
-    margen_beneficio_pct: 50,
-    activa: true,
-    ingredientes: [
-      { insumo_id: 1, cantidad: 250, tipo: "fijo" }, // Harina masa
-      { insumo_id: 16, cantidad: 130, tipo: "fijo" }, // Mantequilla
-      { insumo_id: 9, cantidad: 50, tipo: "fijo" },
-      { insumo_id: 35, cantidad: 1, tipo: "fijo" },
-      // Variables (Relleno Manzana)
-      { insumo_id: 52, cantidad: 600, tipo: "variable" }, // Manzanas
-      { insumo_id: 10, cantidad: 100, tipo: "variable" },
-      { insumo_id: 76, cantidad: 8, tipo: "variable" },
-      { insumo_id: 16, cantidad: 30, tipo: "variable" },
-      { insumo_id: 84, cantidad: 1, tipo: "variable" },
-      { insumo_id: 86, cantidad: 1, tipo: "variable" },
-      { insumo_id: 93, cantidad: 1, tipo: "variable" }
+    "id": 29,
+    "nombre": "Brownie Cheesecake (Molde 9 porciones)",
+    "categoria": "Brownies y Blondies",
+    "descripcion": "Doble capa sublime: base de brownie húmedo y cubierta horneada de cheesecake cremoso.",
+    "rendimiento_base": 1,
+    "rendimiento_unidad": "9 porciones",
+    "tiempo_preparacion_min": 30,
+    "tiempo_horneado_min": 35,
+    "temperatura_horno_c": 165,
+    "materiales_indirectos_pct": 10,
+    "costos_operativos_pct": 15,
+    "reposicion_equipos_pct": 10,
+    "mano_obra_pct": 30,
+    "margen_beneficio_pct": 50,
+    "activa": true,
+    "ingredientes": [
+      {
+        "insumo_id": 38,
+        "cantidad": 180,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 16,
+        "cantidad": 120,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 9,
+        "cantidad": 150,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 35,
+        "cantidad": 3,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 1,
+        "cantidad": 90,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 25,
+        "cantidad": 250,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 9,
+        "cantidad": 60,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 35,
+        "cantidad": 1,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 88,
+        "cantidad": 1,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 93,
+        "cantidad": 1,
+        "tipo": "variable"
+      }
     ]
   },
   {
-    id: 40,
-    nombre: "Tarta de Limón y Merengue Suizo / Lemon Pie (Molde 24cm)",
-    categoria: "Cheesecakes y Tartas",
-    descripcion: "Masa sablé crujiente con cuajada ácida de limón natural y copas de merengue suizo flambeado.",
-    rendimiento_base: 1,
-    rendimiento_unidad: "1 molde 24cm (10 porciones)",
-    tiempo_preparacion_min: 45,
-    tiempo_horneado_min: 25,
-    temperatura_horno_c: 175,
-    materiales_indirectos_pct: 10,
-    costos_operativos_pct: 15,
-    reposicion_equipos_pct: 10,
-    mano_obra_pct: 30,
-    margen_beneficio_pct: 50,
-    activa: true,
-    ingredientes: [
-      { insumo_id: 1, cantidad: 220, tipo: "fijo" },
-      { insumo_id: 16, cantidad: 110, tipo: "fijo" },
-      { insumo_id: 11, cantidad: 60, tipo: "fijo" },
-      { insumo_id: 35, cantidad: 1, tipo: "fijo" },
-      // Variables (Curd de limón + Merengue)
-      { insumo_id: 51, cantidad: 150, tipo: "variable" }, // Limón
-      { insumo_id: 27, cantidad: 395, tipo: "variable" }, // Leche condensada
-      { insumo_id: 37, cantidad: 60, tipo: "variable" }, // Yemas
-      { insumo_id: 36, cantidad: 120, tipo: "variable" }, // Claras merengue
-      { insumo_id: 9, cantidad: 200, tipo: "variable" }, // Azúcar merengue
-      { insumo_id: 84, cantidad: 1, tipo: "variable" },
-      { insumo_id: 86, cantidad: 1, tipo: "variable" },
-      { insumo_id: 93, cantidad: 1, tipo: "variable" }
+    "id": 30,
+    "nombre": "Brownie Bites para Eventos (Caja x 24 mini cuadros)",
+    "categoria": "Brownies y Blondies",
+    "descripcion": "Bocaditos de brownie tamaño bocado decorados con topping variado.",
+    "rendimiento_base": 1,
+    "rendimiento_unidad": "24 mini porciones",
+    "tiempo_preparacion_min": 30,
+    "tiempo_horneado_min": 25,
+    "temperatura_horno_c": 170,
+    "materiales_indirectos_pct": 10,
+    "costos_operativos_pct": 15,
+    "reposicion_equipos_pct": 10,
+    "mano_obra_pct": 30,
+    "margen_beneficio_pct": 50,
+    "activa": true,
+    "ingredientes": [
+      {
+        "insumo_id": 38,
+        "cantidad": 250,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 16,
+        "cantidad": 180,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 9,
+        "cantidad": 250,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 35,
+        "cantidad": 4,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 1,
+        "cantidad": 120,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 42,
+        "cantidad": 100,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 88,
+        "cantidad": 1,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 93,
+        "cantidad": 1,
+        "tipo": "variable"
+      }
     ]
   },
   {
-    id: 41,
-    nombre: "Cheesecake Vasco Tostado / San Sebastián (Molde 22cm)",
-    categoria: "Cheesecakes y Tartas",
-    descripcion: "El icónico cheesecake tostado por fuera con centro cremoso que fluye suavemente.",
-    rendimiento_base: 1,
-    rendimiento_unidad: "1 molde 22cm (10 porciones)",
-    tiempo_preparacion_min: 25,
-    tiempo_horneado_min: 40,
-    temperatura_horno_c: 210,
-    materiales_indirectos_pct: 10,
-    costos_operativos_pct: 18,
-    reposicion_equipos_pct: 10,
-    mano_obra_pct: 30,
-    margen_beneficio_pct: 50,
-    activa: true,
-    ingredientes: [
-      { insumo_id: 25, cantidad: 750, tipo: "fijo" },
-      { insumo_id: 24, cantidad: 350, tipo: "fijo" },
-      { insumo_id: 9, cantidad: 200, tipo: "fijo" },
-      { insumo_id: 35, cantidad: 5, tipo: "fijo" },
-      { insumo_id: 1, cantidad: 25, tipo: "fijo" },
-      { insumo_id: 73, cantidad: 8, tipo: "fijo" },
-      // Variables
-      { insumo_id: 84, cantidad: 1, tipo: "variable" },
-      { insumo_id: 86, cantidad: 1, tipo: "variable" },
-      { insumo_id: 93, cantidad: 1, tipo: "variable" }
+    "id": 31,
+    "nombre": "Postre Tres Leches Tradicional Artesanal (Bandeja 12 porciones)",
+    "categoria": "Tres Leches y Postres Fríos",
+    "descripcion": "Bizcochuelo esponjoso embebido en mezcla de 3 leches premium con canela y merengue tostado.",
+    "rendimiento_base": 1,
+    "rendimiento_unidad": "Bandeja (12 porciones)",
+    "tiempo_preparacion_min": 35,
+    "tiempo_horneado_min": 30,
+    "temperatura_horno_c": 175,
+    "materiales_indirectos_pct": 10,
+    "costos_operativos_pct": 15,
+    "reposicion_equipos_pct": 10,
+    "mano_obra_pct": 30,
+    "margen_beneficio_pct": 50,
+    "activa": true,
+    "ingredientes": [
+      {
+        "insumo_id": 1,
+        "cantidad": 200,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 9,
+        "cantidad": 180,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 35,
+        "cantidad": 6,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 65,
+        "cantidad": 6,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 73,
+        "cantidad": 8,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 27,
+        "cantidad": 395,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 28,
+        "cantidad": 400,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 24,
+        "cantidad": 300,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 31,
+        "cantidad": 250,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 76,
+        "cantidad": 4,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 84,
+        "cantidad": 1,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 93,
+        "cantidad": 1,
+        "tipo": "variable"
+      }
     ]
   },
   {
-    id: 42,
-    nombre: "Tarta de Ganache de Chocolate y Caramelo Salado (Molde 24cm)",
-    categoria: "Cheesecakes y Tartas",
-    descripcion: "Base de chocolate, toffee salado artesanal y ganache sedoso de chocolate belga.",
-    rendimiento_base: 1,
-    rendimiento_unidad: "1 molde 24cm (10 porciones)",
-    tiempo_preparacion_min: 45,
-    tiempo_horneado_min: 20,
-    temperatura_horno_c: 175,
-    materiales_indirectos_pct: 10,
-    costos_operativos_pct: 15,
-    reposicion_equipos_pct: 10,
-    mano_obra_pct: 30,
-    margen_beneficio_pct: 50,
-    activa: true,
-    ingredientes: [
-      { insumo_id: 1, cantidad: 200, tipo: "fijo" },
-      { insumo_id: 41, cantidad: 30, tipo: "fijo" },
-      { insumo_id: 16, cantidad: 100, tipo: "fijo" },
-      { insumo_id: 35, cantidad: 1, tipo: "fijo" },
-      // Variables
-      { insumo_id: 9, cantidad: 150, tipo: "variable" }, // Caramelo
-      { insumo_id: 24, cantidad: 300, tipo: "variable" },
-      { insumo_id: 16, cantidad: 50, tipo: "variable" },
-      { insumo_id: 69, cantidad: 4, tipo: "variable" }, // Sal en escamas
-      { insumo_id: 38, cantidad: 220, tipo: "variable" }, // Ganache 56%
-      { insumo_id: 84, cantidad: 1, tipo: "variable" },
-      { insumo_id: 86, cantidad: 1, tipo: "variable" },
-      { insumo_id: 93, cantidad: 1, tipo: "variable" }
-    ]
-  },
-
-  // --- PANES Y MASAS SALADAS (6 recetas) ---
-  {
-    id: 43,
-    nombre: "Pan Brioche Francés Artesanal de Mantequilla (Molde 600g)",
-    categoria: "Panes y Masas Saladas",
-    descripcion: "Pan enriquecido con 40% mantequilla de alta calidad, miga algodonosa dorada.",
-    rendimiento_base: 1,
-    rendimiento_unidad: "1 molde 600g (12 rebanadas)",
-    tiempo_preparacion_min: 45,
-    tiempo_horneado_min: 32,
-    temperatura_horno_c: 175,
-    materiales_indirectos_pct: 8,
-    costos_operativos_pct: 15,
-    reposicion_equipos_pct: 10,
-    mano_obra_pct: 35,
-    margen_beneficio_pct: 50,
-    activa: true,
-    ingredientes: [
-      { insumo_id: 2, cantidad: 350, tipo: "fijo" }, // Harina fuerza
-      { insumo_id: 16, cantidad: 160, tipo: "fijo" }, // Mantequilla
-      { insumo_id: 35, cantidad: 4, tipo: "fijo" }, // Huevos
-      { insumo_id: 9, cantidad: 40, tipo: "fijo" },
-      { insumo_id: 23, cantidad: 60, tipo: "fijo" },
-      { insumo_id: 67, cantidad: 8, tipo: "fijo" }, // Levadura
-      { insumo_id: 68, cantidad: 6, tipo: "fijo" }, // Sal
-      // Variables
-      { insumo_id: 93, cantidad: 1, tipo: "variable" }
-    ]
-  },
-  {
-    id: 44,
-    nombre: "Focaccia Artesanal al Romero, Oliva y Sal Marina (Bandeja 6 porciones)",
-    categoria: "Panes y Masas Saladas",
-    descripcion: "Pan plano italiano de fermentación lenta con abundante aceite de oliva extra virgen y sal marina en escamas.",
-    rendimiento_base: 1,
-    rendimiento_unidad: "Bandeja (6 porciones)",
-    tiempo_preparacion_min: 35,
-    tiempo_horneado_min: 25,
-    temperatura_horno_c: 220,
-    materiales_indirectos_pct: 8,
-    costos_operativos_pct: 15,
-    reposicion_equipos_pct: 10,
-    mano_obra_pct: 30,
-    margen_beneficio_pct: 50,
-    activa: true,
-    ingredientes: [
-      { insumo_id: 2, cantidad: 400, tipo: "fijo" },
-      { insumo_id: 67, cantidad: 6, tipo: "fijo" },
-      { insumo_id: 68, cantidad: 8, tipo: "fijo" },
-      { insumo_id: 12, cantidad: 10, tipo: "fijo" },
-      // Variables
-      { insumo_id: 21, cantidad: 80, tipo: "variable" }, // Aceite de oliva
-      { insumo_id: 69, cantidad: 5, tipo: "variable" }, // Flor de sal
-      { insumo_id: 93, cantidad: 1, tipo: "variable" }
+    "id": 32,
+    "nombre": "Postre Cuatro Leches con Arequipe (Bandeja 12 porciones)",
+    "categoria": "Tres Leches y Postres Fríos",
+    "descripcion": "Variación con arequipe artesanal integrado a la mezcla de leches y cobertura.",
+    "rendimiento_base": 1,
+    "rendimiento_unidad": "Bandeja (12 porciones)",
+    "tiempo_preparacion_min": 35,
+    "tiempo_horneado_min": 30,
+    "temperatura_horno_c": 175,
+    "materiales_indirectos_pct": 10,
+    "costos_operativos_pct": 15,
+    "reposicion_equipos_pct": 10,
+    "mano_obra_pct": 30,
+    "margen_beneficio_pct": 50,
+    "activa": true,
+    "ingredientes": [
+      {
+        "insumo_id": 1,
+        "cantidad": 200,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 9,
+        "cantidad": 180,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 35,
+        "cantidad": 6,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 65,
+        "cantidad": 6,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 27,
+        "cantidad": 395,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 28,
+        "cantidad": 400,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 24,
+        "cantidad": 250,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 29,
+        "cantidad": 300,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 84,
+        "cantidad": 1,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 93,
+        "cantidad": 1,
+        "tipo": "variable"
+      }
     ]
   },
   {
-    id: 45,
-    nombre: "Pan de Queso / Pandebono Colombiano Artesanal (Docena)",
-    categoria: "Panes y Masas Saladas",
-    descripcion: "Bocados tradicionales con fécula de yuca, queso y maíz, suaves por dentro y dorados por fuera.",
-    rendimiento_base: 1,
-    rendimiento_unidad: "12 unidades",
-    tiempo_preparacion_min: 25,
-    tiempo_horneado_min: 18,
-    temperatura_horno_c: 200,
-    materiales_indirectos_pct: 8,
-    costos_operativos_pct: 15,
-    reposicion_equipos_pct: 10,
-    mano_obra_pct: 30,
-    margen_beneficio_pct: 50,
-    activa: true,
-    ingredientes: [
-      { insumo_id: 7, cantidad: 250, tipo: "fijo" }, // Fécula de yuca
-      { insumo_id: 4, cantidad: 50, tipo: "fijo" }, // Maicena
-      { insumo_id: 34, cantidad: 250, tipo: "fijo" }, // Queso mozzarella/costeño
-      { insumo_id: 16, cantidad: 50, tipo: "fijo" },
-      { insumo_id: 35, cantidad: 2, tipo: "fijo" },
-      { insumo_id: 23, cantidad: 50, tipo: "fijo" },
-      { insumo_id: 9, cantidad: 15, tipo: "fijo" },
-      // Variables
-      { insumo_id: 88, cantidad: 1, tipo: "variable" },
-      { insumo_id: 93, cantidad: 1, tipo: "variable" }
+    "id": 33,
+    "nombre": "Tres Leches de Maracuyá Frío (Bandeja 12 porciones)",
+    "categoria": "Tres Leches y Postres Fríos",
+    "descripcion": "Equilibrio cítrico perfecto con reducción artesanal de pulpa de maracuyá pura.",
+    "rendimiento_base": 1,
+    "rendimiento_unidad": "Bandeja (12 porciones)",
+    "tiempo_preparacion_min": 40,
+    "tiempo_horneado_min": 30,
+    "temperatura_horno_c": 175,
+    "materiales_indirectos_pct": 10,
+    "costos_operativos_pct": 15,
+    "reposicion_equipos_pct": 10,
+    "mano_obra_pct": 30,
+    "margen_beneficio_pct": 50,
+    "activa": true,
+    "ingredientes": [
+      {
+        "insumo_id": 1,
+        "cantidad": 200,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 9,
+        "cantidad": 180,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 35,
+        "cantidad": 6,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 27,
+        "cantidad": 395,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 28,
+        "cantidad": 300,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 24,
+        "cantidad": 250,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 50,
+        "cantidad": 250,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 31,
+        "cantidad": 200,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 84,
+        "cantidad": 1,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 93,
+        "cantidad": 1,
+        "tipo": "variable"
+      }
     ]
   },
   {
-    id: 46,
-    nombre: "Rollos de Canela Glaseados estilo Cinnabon (Pack x 6)",
-    categoria: "Panes y Masas Saladas",
-    descripcion: "Masa brioche enrollada con abundante mantequilla, azúcar morena y canela de Ceilán, con glaseado de queso crema.",
-    rendimiento_base: 1,
-    rendimiento_unidad: "6 unidades grandes",
-    tiempo_preparacion_min: 40,
-    tiempo_horneado_min: 24,
-    temperatura_horno_c: 180,
-    materiales_indirectos_pct: 10,
-    costos_operativos_pct: 15,
-    reposicion_equipos_pct: 10,
-    mano_obra_pct: 30,
-    margen_beneficio_pct: 50,
-    activa: true,
-    ingredientes: [
-      { insumo_id: 2, cantidad: 350, tipo: "fijo" },
-      { insumo_id: 23, cantidad: 140, tipo: "fijo" },
-      { insumo_id: 16, cantidad: 70, tipo: "fijo" },
-      { insumo_id: 9, cantidad: 50, tipo: "fijo" },
-      { insumo_id: 35, cantidad: 1, tipo: "fijo" },
-      { insumo_id: 67, cantidad: 7, tipo: "fijo" },
-      // Variables (Relleno canela + Glaseado)
-      { insumo_id: 10, cantidad: 120, tipo: "variable" }, // Azúcar morena
-      { insumo_id: 16, cantidad: 60, tipo: "variable" },
-      { insumo_id: 76, cantidad: 15, tipo: "variable" }, // Canela
-      { insumo_id: 25, cantidad: 100, tipo: "variable" }, // Queso crema
-      { insumo_id: 11, cantidad: 100, tipo: "variable" },
-      { insumo_id: 88, cantidad: 1, tipo: "variable" },
-      { insumo_id: 93, cantidad: 1, tipo: "variable" }
+    "id": 34,
+    "nombre": "Tiramisú Clásico Italiano con Mascarpone (Bandeja 8 porciones)",
+    "categoria": "Tres Leches y Postres Fríos",
+    "descripcion": "Capas de bizcochos savoiardi humedecidos en espresso y Kahlúa, crema sedosa de queso mascarpone y cacao holandés.",
+    "rendimiento_base": 1,
+    "rendimiento_unidad": "Bandeja (8 porciones)",
+    "tiempo_preparacion_min": 40,
+    "tiempo_horneado_min": 0,
+    "temperatura_horno_c": 0,
+    "materiales_indirectos_pct": 10,
+    "costos_operativos_pct": 15,
+    "reposicion_equipos_pct": 10,
+    "mano_obra_pct": 30,
+    "margen_beneficio_pct": 50,
+    "activa": true,
+    "ingredientes": [
+      {
+        "insumo_id": 26,
+        "cantidad": 400,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 37,
+        "cantidad": 80,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 9,
+        "cantidad": 120,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 24,
+        "cantidad": 200,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 79,
+        "cantidad": 20,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 81,
+        "cantidad": 40,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 1,
+        "cantidad": 150,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 41,
+        "cantidad": 25,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 84,
+        "cantidad": 1,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 93,
+        "cantidad": 1,
+        "tipo": "variable"
+      }
     ]
   },
   {
-    id: 47,
-    nombre: "Croissants de Mantequilla Franceses (Pack x 6)",
-    categoria: "Panes y Masas Saladas",
-    descripcion: "Hojaldre laminado artesanal con capas crujientes y alveolos perfectos.",
-    rendimiento_base: 1,
-    rendimiento_unidad: "6 unidades",
-    tiempo_preparacion_min: 60,
-    tiempo_horneado_min: 20,
-    temperatura_horno_c: 195,
-    materiales_indirectos_pct: 10,
-    costos_operativos_pct: 18,
-    reposicion_equipos_pct: 10,
-    mano_obra_pct: 40,
-    margen_beneficio_pct: 50,
-    activa: true,
-    ingredientes: [
-      { insumo_id: 2, cantidad: 300, tipo: "fijo" },
-      { insumo_id: 23, cantidad: 120, tipo: "fijo" },
-      { insumo_id: 9, cantidad: 35, tipo: "fijo" },
-      { insumo_id: 67, cantidad: 7, tipo: "fijo" },
-      { insumo_id: 68, cantidad: 5, tipo: "fijo" },
-      // Variables (Empaste de Mantequilla)
-      { insumo_id: 16, cantidad: 180, tipo: "variable" }, // Mantequilla 82%
-      { insumo_id: 88, cantidad: 1, tipo: "variable" },
-      { insumo_id: 93, cantidad: 1, tipo: "variable" }
+    "id": 35,
+    "nombre": "Mousse de Chocolate Belga 56% en Vasitos (Pack x 6)",
+    "categoria": "Tres Leches y Postres Fríos",
+    "descripcion": "Postre frío individual aireado y ligero con chocolate belga y avellanas.",
+    "rendimiento_base": 1,
+    "rendimiento_unidad": "6 vasitos",
+    "tiempo_preparacion_min": 30,
+    "tiempo_horneado_min": 0,
+    "temperatura_horno_c": 0,
+    "materiales_indirectos_pct": 10,
+    "costos_operativos_pct": 15,
+    "reposicion_equipos_pct": 10,
+    "mano_obra_pct": 30,
+    "margen_beneficio_pct": 50,
+    "activa": true,
+    "ingredientes": [
+      {
+        "insumo_id": 38,
+        "cantidad": 200,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 24,
+        "cantidad": 300,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 36,
+        "cantidad": 80,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 9,
+        "cantidad": 60,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 91,
+        "cantidad": 6,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 93,
+        "cantidad": 1,
+        "tipo": "variable"
+      }
     ]
   },
   {
-    id: 48,
-    nombre: "Pan Rústico Campesino de Masa Madre (Hogaza 750g)",
-    categoria: "Panes y Masas Saladas",
-    descripcion: "Hogaza crujiente con fermentación natural de 24 horas, corteza tostada y miga abierta.",
-    rendimiento_base: 1,
-    rendimiento_unidad: "1 hogaza (750g)",
-    tiempo_preparacion_min: 40,
-    tiempo_horneado_min: 40,
-    temperatura_horno_c: 230,
-    materiales_indirectos_pct: 8,
-    costos_operativos_pct: 18,
-    reposicion_equipos_pct: 10,
-    mano_obra_pct: 35,
-    margen_beneficio_pct: 50,
-    activa: true,
-    ingredientes: [
-      { insumo_id: 2, cantidad: 450, tipo: "fijo" }, // Harina fuerza
-      { insumo_id: 6, cantidad: 50, tipo: "fijo" }, // Centeno
-      { insumo_id: 68, cantidad: 10, tipo: "fijo" }, // Sal
-      // Variables
-      { insumo_id: 93, cantidad: 1, tipo: "variable" }
-    ]
-  },
-
-  // --- RELLENOS Y COBERTURAS (5 recetas) ---
-  {
-    id: 49,
-    nombre: "Buttercream Suizo de Vainilla (Lote 1 kg)",
-    categoria: "Rellenos y Coberturas",
-    descripcion: "Crema de mantequilla a base de merengue suizo, sedosa, estable y nada empalagosa.",
-    rendimiento_base: 1,
-    rendimiento_unidad: "1 kg (rinde para 2 tortas)",
-    tiempo_preparacion_min: 25,
-    tiempo_horneado_min: 0,
-    temperatura_horno_c: 0,
-    materiales_indirectos_pct: 8,
-    costos_operativos_pct: 10,
-    reposicion_equipos_pct: 10,
-    mano_obra_pct: 25,
-    margen_beneficio_pct: 50,
-    activa: true,
-    ingredientes: [
-      { insumo_id: 36, cantidad: 200, tipo: "fijo" }, // Claras
-      { insumo_id: 9, cantidad: 350, tipo: "fijo" }, // Azúcar
-      { insumo_id: 16, cantidad: 450, tipo: "fijo" }, // Mantequilla sin sal
-      { insumo_id: 73, cantidad: 15, tipo: "fijo" }, // Vainilla
-      { insumo_id: 68, cantidad: 2, tipo: "fijo" }
-    ]
-  },
-  {
-    id: 50,
-    nombre: "Ganache de Chocolate Semiamargo 56% (Lote 1 kg)",
-    categoria: "Rellenos y Coberturas",
-    descripcion: "Emulsión perfecta de chocolate belga y crema de leche para relleno o cobertura lisa.",
-    rendimiento_base: 1,
-    rendimiento_unidad: "1 kg",
-    tiempo_preparacion_min: 15,
-    tiempo_horneado_min: 0,
-    temperatura_horno_c: 0,
-    materiales_indirectos_pct: 8,
-    costos_operativos_pct: 10,
-    reposicion_equipos_pct: 10,
-    mano_obra_pct: 25,
-    margen_beneficio_pct: 50,
-    activa: true,
-    ingredientes: [
-      { insumo_id: 38, cantidad: 550, tipo: "fijo" }, // Chocolate 56%
-      { insumo_id: 24, cantidad: 400, tipo: "fijo" }, // Crema
-      { insumo_id: 16, cantidad: 50, tipo: "fijo" } // Mantequilla brillo
+    "id": 36,
+    "nombre": "Mousse de Frutos Rojos y Chocolate Blanco (Pack x 6)",
+    "categoria": "Tres Leches y Postres Fríos",
+    "descripcion": "Vasitos individuales con crema de chocolate blanco y coulis de frambuesa.",
+    "rendimiento_base": 1,
+    "rendimiento_unidad": "6 vasitos",
+    "tiempo_preparacion_min": 30,
+    "tiempo_horneado_min": 0,
+    "temperatura_horno_c": 0,
+    "materiales_indirectos_pct": 10,
+    "costos_operativos_pct": 15,
+    "reposicion_equipos_pct": 10,
+    "mano_obra_pct": 30,
+    "margen_beneficio_pct": 50,
+    "activa": true,
+    "ingredientes": [
+      {
+        "insumo_id": 39,
+        "cantidad": 180,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 24,
+        "cantidad": 250,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 70,
+        "cantidad": 8,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 48,
+        "cantidad": 150,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 91,
+        "cantidad": 6,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 93,
+        "cantidad": 1,
+        "tipo": "variable"
+      }
     ]
   },
   {
-    id: 51,
-    nombre: "Crema Pastelera Artesanal de Vainilla (Lote 1 kg)",
-    categoria: "Rellenos y Coberturas",
-    descripcion: "Crema cocida tradicional con leche entera, yemas, maicena y vainilla natural en vaina.",
-    rendimiento_base: 1,
-    rendimiento_unidad: "1 kg",
-    tiempo_preparacion_min: 20,
-    tiempo_horneado_min: 0,
-    temperatura_horno_c: 0,
-    materiales_indirectos_pct: 8,
-    costos_operativos_pct: 12,
-    reposicion_equipos_pct: 10,
-    mano_obra_pct: 25,
-    margen_beneficio_pct: 50,
-    activa: true,
-    ingredientes: [
-      { insumo_id: 23, cantidad: 700, tipo: "fijo" }, // Leche
-      { insumo_id: 9, cantidad: 160, tipo: "fijo" }, // Azúcar
-      { insumo_id: 37, cantidad: 100, tipo: "fijo" }, // Yemas
-      { insumo_id: 4, cantidad: 60, tipo: "fijo" }, // Maicena
-      { insumo_id: 16, cantidad: 40, tipo: "fijo" }, // Mantequilla
-      { insumo_id: 74, cantidad: 10, tipo: "fijo" } // Pasta de vainilla
+    "id": 37,
+    "nombre": "New York Cheesecake Horneado con Frutos Rojos (Molde 24cm)",
+    "categoria": "Cheesecakes y Tartas",
+    "descripcion": "Cheesecake horneado a baño maría, textura densa y cremosa, base de galleta y compota de frutos rojos.",
+    "rendimiento_base": 1,
+    "rendimiento_unidad": "1 molde 24cm (12 porciones)",
+    "tiempo_preparacion_min": 40,
+    "tiempo_horneado_min": 75,
+    "temperatura_horno_c": 150,
+    "materiales_indirectos_pct": 10,
+    "costos_operativos_pct": 18,
+    "reposicion_equipos_pct": 10,
+    "mano_obra_pct": 30,
+    "margen_beneficio_pct": 50,
+    "activa": true,
+    "ingredientes": [
+      {
+        "insumo_id": 25,
+        "cantidad": 800,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 9,
+        "cantidad": 220,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 35,
+        "cantidad": 4,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 24,
+        "cantidad": 150,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 73,
+        "cantidad": 10,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 51,
+        "cantidad": 10,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 1,
+        "cantidad": 150,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 16,
+        "cantidad": 80,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 55,
+        "cantidad": 250,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 46,
+        "cantidad": 100,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 84,
+        "cantidad": 1,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 86,
+        "cantidad": 1,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 93,
+        "cantidad": 1,
+        "tipo": "variable"
+      }
     ]
   },
   {
-    id: 52,
-    nombre: "Compota Rústica de Frutos Rojos Silvestres (Lote 800g)",
-    categoria: "Rellenos y Coberturas",
-    descripcion: "Reducción artesanal de fresas, moras y frambuesas con toque de zumo de limón natural.",
-    rendimiento_base: 1,
-    rendimiento_unidad: "800g",
-    tiempo_preparacion_min: 25,
-    tiempo_horneado_min: 0,
-    temperatura_horno_c: 0,
-    materiales_indirectos_pct: 8,
-    costos_operativos_pct: 12,
-    reposicion_equipos_pct: 10,
-    mano_obra_pct: 25,
-    margen_beneficio_pct: 50,
-    activa: true,
-    ingredientes: [
-      { insumo_id: 46, cantidad: 300, tipo: "fijo" }, // Fresas
-      { insumo_id: 48, cantidad: 250, tipo: "fijo" }, // Frambuesas
-      { insumo_id: 49, cantidad: 200, tipo: "fijo" }, // Moras
-      { insumo_id: 9, cantidad: 180, tipo: "fijo" }, // Azúcar
-      { insumo_id: 51, cantidad: 20, tipo: "fijo" } // Limón
+    "id": 38,
+    "nombre": "Cheesecake de Maracuyá Frío Sin Horno (Molde 22cm)",
+    "categoria": "Cheesecakes y Tartas",
+    "descripcion": "Postre refrescante con suave crema de queso y espejo brillante de maracuyá.",
+    "rendimiento_base": 1,
+    "rendimiento_unidad": "1 molde 22cm (10 porciones)",
+    "tiempo_preparacion_min": 35,
+    "tiempo_horneado_min": 0,
+    "temperatura_horno_c": 0,
+    "materiales_indirectos_pct": 10,
+    "costos_operativos_pct": 12,
+    "reposicion_equipos_pct": 10,
+    "mano_obra_pct": 30,
+    "margen_beneficio_pct": 50,
+    "activa": true,
+    "ingredientes": [
+      {
+        "insumo_id": 25,
+        "cantidad": 500,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 27,
+        "cantidad": 300,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 24,
+        "cantidad": 250,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 70,
+        "cantidad": 15,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 50,
+        "cantidad": 200,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 1,
+        "cantidad": 120,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 16,
+        "cantidad": 60,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 84,
+        "cantidad": 1,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 86,
+        "cantidad": 1,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 93,
+        "cantidad": 1,
+        "tipo": "variable"
+      }
     ]
   },
   {
-    id: 53,
-    nombre: "Caramelo Salado Artesanal / Toffee (Lote 600g)",
-    categoria: "Rellenos y Coberturas",
-    descripcion: "Caramelo dorado cremoso con mantequilla pura, crema y escamas de flor de sal marina.",
-    rendimiento_base: 1,
-    rendimiento_unidad: "600g",
-    tiempo_preparacion_min: 20,
-    tiempo_horneado_min: 0,
-    temperatura_horno_c: 0,
-    materiales_indirectos_pct: 8,
-    costos_operativos_pct: 12,
-    reposicion_equipos_pct: 10,
-    mano_obra_pct: 25,
-    margen_beneficio_pct: 50,
-    activa: true,
-    ingredientes: [
-      { insumo_id: 9, cantidad: 300, tipo: "fijo" }, // Azúcar
-      { insumo_id: 16, cantidad: 120, tipo: "fijo" }, // Mantequilla
-      { insumo_id: 24, cantidad: 200, tipo: "fijo" }, // Crema
-      { insumo_id: 69, cantidad: 6, tipo: "fijo" } // Sal en escamas
+    "id": 39,
+    "nombre": "Tarta de Manzana Caramelizada Rústica (Molde 26cm)",
+    "categoria": "Cheesecakes y Tartas",
+    "descripcion": "Masa quebrada de mantequilla rellena de manzanas salteadas en canela y azúcar morena.",
+    "rendimiento_base": 1,
+    "rendimiento_unidad": "1 molde 26cm (8-10 porciones)",
+    "tiempo_preparacion_min": 40,
+    "tiempo_horneado_min": 45,
+    "temperatura_horno_c": 180,
+    "materiales_indirectos_pct": 10,
+    "costos_operativos_pct": 15,
+    "reposicion_equipos_pct": 10,
+    "mano_obra_pct": 30,
+    "margen_beneficio_pct": 50,
+    "activa": true,
+    "ingredientes": [
+      {
+        "insumo_id": 1,
+        "cantidad": 250,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 16,
+        "cantidad": 130,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 9,
+        "cantidad": 50,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 35,
+        "cantidad": 1,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 52,
+        "cantidad": 600,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 10,
+        "cantidad": 100,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 76,
+        "cantidad": 8,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 16,
+        "cantidad": 30,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 84,
+        "cantidad": 1,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 86,
+        "cantidad": 1,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 93,
+        "cantidad": 1,
+        "tipo": "variable"
+      }
+    ]
+  },
+  {
+    "id": 40,
+    "nombre": "Tarta de Limón y Merengue Suizo / Lemon Pie (Molde 24cm)",
+    "categoria": "Cheesecakes y Tartas",
+    "descripcion": "Masa sablé crujiente con cuajada ácida de limón natural y copas de merengue suizo flambeado.",
+    "rendimiento_base": 1,
+    "rendimiento_unidad": "1 molde 24cm (10 porciones)",
+    "tiempo_preparacion_min": 45,
+    "tiempo_horneado_min": 25,
+    "temperatura_horno_c": 175,
+    "materiales_indirectos_pct": 10,
+    "costos_operativos_pct": 15,
+    "reposicion_equipos_pct": 10,
+    "mano_obra_pct": 30,
+    "margen_beneficio_pct": 50,
+    "activa": true,
+    "ingredientes": [
+      {
+        "insumo_id": 1,
+        "cantidad": 220,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 16,
+        "cantidad": 110,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 11,
+        "cantidad": 60,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 35,
+        "cantidad": 1,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 51,
+        "cantidad": 150,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 27,
+        "cantidad": 395,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 37,
+        "cantidad": 60,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 36,
+        "cantidad": 120,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 9,
+        "cantidad": 200,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 84,
+        "cantidad": 1,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 86,
+        "cantidad": 1,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 93,
+        "cantidad": 1,
+        "tipo": "variable"
+      }
+    ]
+  },
+  {
+    "id": 41,
+    "nombre": "Cheesecake Vasco Tostado / San Sebastián (Molde 22cm)",
+    "categoria": "Cheesecakes y Tartas",
+    "descripcion": "El icónico cheesecake tostado por fuera con centro cremoso que fluye suavemente.",
+    "rendimiento_base": 1,
+    "rendimiento_unidad": "1 molde 22cm (10 porciones)",
+    "tiempo_preparacion_min": 25,
+    "tiempo_horneado_min": 40,
+    "temperatura_horno_c": 210,
+    "materiales_indirectos_pct": 10,
+    "costos_operativos_pct": 18,
+    "reposicion_equipos_pct": 10,
+    "mano_obra_pct": 30,
+    "margen_beneficio_pct": 50,
+    "activa": true,
+    "ingredientes": [
+      {
+        "insumo_id": 25,
+        "cantidad": 750,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 24,
+        "cantidad": 350,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 9,
+        "cantidad": 200,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 35,
+        "cantidad": 5,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 1,
+        "cantidad": 25,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 73,
+        "cantidad": 8,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 84,
+        "cantidad": 1,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 86,
+        "cantidad": 1,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 93,
+        "cantidad": 1,
+        "tipo": "variable"
+      }
+    ]
+  },
+  {
+    "id": 42,
+    "nombre": "Tarta de Ganache de Chocolate y Caramelo Salado (Molde 24cm)",
+    "categoria": "Cheesecakes y Tartas",
+    "descripcion": "Base de chocolate, toffee salado artesanal y ganache sedoso de chocolate belga.",
+    "rendimiento_base": 1,
+    "rendimiento_unidad": "1 molde 24cm (10 porciones)",
+    "tiempo_preparacion_min": 45,
+    "tiempo_horneado_min": 20,
+    "temperatura_horno_c": 175,
+    "materiales_indirectos_pct": 10,
+    "costos_operativos_pct": 15,
+    "reposicion_equipos_pct": 10,
+    "mano_obra_pct": 30,
+    "margen_beneficio_pct": 50,
+    "activa": true,
+    "ingredientes": [
+      {
+        "insumo_id": 1,
+        "cantidad": 200,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 41,
+        "cantidad": 30,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 16,
+        "cantidad": 100,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 35,
+        "cantidad": 1,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 9,
+        "cantidad": 150,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 24,
+        "cantidad": 300,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 16,
+        "cantidad": 50,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 69,
+        "cantidad": 4,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 38,
+        "cantidad": 220,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 84,
+        "cantidad": 1,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 86,
+        "cantidad": 1,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 93,
+        "cantidad": 1,
+        "tipo": "variable"
+      }
+    ]
+  },
+  {
+    "id": 43,
+    "nombre": "Pan Brioche Francés Artesanal de Mantequilla (Molde 600g)",
+    "categoria": "Panes y Masas Saladas",
+    "descripcion": "Pan enriquecido con 40% mantequilla de alta calidad, miga algodonosa dorada.",
+    "rendimiento_base": 1,
+    "rendimiento_unidad": "1 molde 600g (12 rebanadas)",
+    "tiempo_preparacion_min": 45,
+    "tiempo_horneado_min": 32,
+    "temperatura_horno_c": 175,
+    "materiales_indirectos_pct": 8,
+    "costos_operativos_pct": 15,
+    "reposicion_equipos_pct": 10,
+    "mano_obra_pct": 35,
+    "margen_beneficio_pct": 50,
+    "activa": true,
+    "ingredientes": [
+      {
+        "insumo_id": 2,
+        "cantidad": 350,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 16,
+        "cantidad": 160,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 35,
+        "cantidad": 4,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 9,
+        "cantidad": 40,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 23,
+        "cantidad": 60,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 67,
+        "cantidad": 8,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 68,
+        "cantidad": 6,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 93,
+        "cantidad": 1,
+        "tipo": "variable"
+      }
+    ]
+  },
+  {
+    "id": 44,
+    "nombre": "Focaccia Artesanal al Romero, Oliva y Sal Marina (Bandeja 6 porciones)",
+    "categoria": "Panes y Masas Saladas",
+    "descripcion": "Pan plano italiano de fermentación lenta con abundante aceite de oliva extra virgen y sal marina en escamas.",
+    "rendimiento_base": 1,
+    "rendimiento_unidad": "Bandeja (6 porciones)",
+    "tiempo_preparacion_min": 35,
+    "tiempo_horneado_min": 25,
+    "temperatura_horno_c": 220,
+    "materiales_indirectos_pct": 8,
+    "costos_operativos_pct": 15,
+    "reposicion_equipos_pct": 10,
+    "mano_obra_pct": 30,
+    "margen_beneficio_pct": 50,
+    "activa": true,
+    "ingredientes": [
+      {
+        "insumo_id": 2,
+        "cantidad": 400,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 67,
+        "cantidad": 6,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 68,
+        "cantidad": 8,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 12,
+        "cantidad": 10,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 21,
+        "cantidad": 80,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 69,
+        "cantidad": 5,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 93,
+        "cantidad": 1,
+        "tipo": "variable"
+      }
+    ]
+  },
+  {
+    "id": 45,
+    "nombre": "Pan de Queso / Pandebono Colombiano Artesanal (Docena)",
+    "categoria": "Panes y Masas Saladas",
+    "descripcion": "Bocados tradicionales con fécula de yuca, queso y maíz, suaves por dentro y dorados por fuera.",
+    "rendimiento_base": 1,
+    "rendimiento_unidad": "12 unidades",
+    "tiempo_preparacion_min": 25,
+    "tiempo_horneado_min": 18,
+    "temperatura_horno_c": 200,
+    "materiales_indirectos_pct": 8,
+    "costos_operativos_pct": 15,
+    "reposicion_equipos_pct": 10,
+    "mano_obra_pct": 30,
+    "margen_beneficio_pct": 50,
+    "activa": true,
+    "ingredientes": [
+      {
+        "insumo_id": 7,
+        "cantidad": 250,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 4,
+        "cantidad": 50,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 34,
+        "cantidad": 250,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 16,
+        "cantidad": 50,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 35,
+        "cantidad": 2,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 23,
+        "cantidad": 50,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 9,
+        "cantidad": 15,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 88,
+        "cantidad": 1,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 93,
+        "cantidad": 1,
+        "tipo": "variable"
+      }
+    ]
+  },
+  {
+    "id": 46,
+    "nombre": "Rollos de Canela Glaseados estilo Cinnabon (Pack x 6)",
+    "categoria": "Panes y Masas Saladas",
+    "descripcion": "Masa brioche enrollada con abundante mantequilla, azúcar morena y canela de Ceilán, con glaseado de queso crema.",
+    "rendimiento_base": 1,
+    "rendimiento_unidad": "6 unidades grandes",
+    "tiempo_preparacion_min": 40,
+    "tiempo_horneado_min": 24,
+    "temperatura_horno_c": 180,
+    "materiales_indirectos_pct": 10,
+    "costos_operativos_pct": 15,
+    "reposicion_equipos_pct": 10,
+    "mano_obra_pct": 30,
+    "margen_beneficio_pct": 50,
+    "activa": true,
+    "ingredientes": [
+      {
+        "insumo_id": 2,
+        "cantidad": 350,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 23,
+        "cantidad": 140,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 16,
+        "cantidad": 70,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 9,
+        "cantidad": 50,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 35,
+        "cantidad": 1,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 67,
+        "cantidad": 7,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 10,
+        "cantidad": 120,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 16,
+        "cantidad": 60,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 76,
+        "cantidad": 15,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 25,
+        "cantidad": 100,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 11,
+        "cantidad": 100,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 88,
+        "cantidad": 1,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 93,
+        "cantidad": 1,
+        "tipo": "variable"
+      }
+    ]
+  },
+  {
+    "id": 47,
+    "nombre": "Croissants de Mantequilla Franceses (Pack x 6)",
+    "categoria": "Panes y Masas Saladas",
+    "descripcion": "Hojaldre laminado artesanal con capas crujientes y alveolos perfectos.",
+    "rendimiento_base": 1,
+    "rendimiento_unidad": "6 unidades",
+    "tiempo_preparacion_min": 60,
+    "tiempo_horneado_min": 20,
+    "temperatura_horno_c": 195,
+    "materiales_indirectos_pct": 10,
+    "costos_operativos_pct": 18,
+    "reposicion_equipos_pct": 10,
+    "mano_obra_pct": 40,
+    "margen_beneficio_pct": 50,
+    "activa": true,
+    "ingredientes": [
+      {
+        "insumo_id": 2,
+        "cantidad": 300,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 23,
+        "cantidad": 120,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 9,
+        "cantidad": 35,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 67,
+        "cantidad": 7,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 68,
+        "cantidad": 5,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 16,
+        "cantidad": 180,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 88,
+        "cantidad": 1,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 93,
+        "cantidad": 1,
+        "tipo": "variable"
+      }
+    ]
+  },
+  {
+    "id": 48,
+    "nombre": "Pan Rústico Campesino de Masa Madre (Hogaza 750g)",
+    "categoria": "Panes y Masas Saladas",
+    "descripcion": "Hogaza crujiente con fermentación natural de 24 horas, corteza tostada y miga abierta.",
+    "rendimiento_base": 1,
+    "rendimiento_unidad": "1 hogaza (750g)",
+    "tiempo_preparacion_min": 40,
+    "tiempo_horneado_min": 40,
+    "temperatura_horno_c": 230,
+    "materiales_indirectos_pct": 8,
+    "costos_operativos_pct": 18,
+    "reposicion_equipos_pct": 10,
+    "mano_obra_pct": 35,
+    "margen_beneficio_pct": 50,
+    "activa": true,
+    "ingredientes": [
+      {
+        "insumo_id": 2,
+        "cantidad": 450,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 6,
+        "cantidad": 50,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 68,
+        "cantidad": 10,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 93,
+        "cantidad": 1,
+        "tipo": "variable"
+      }
+    ]
+  },
+  {
+    "id": 49,
+    "nombre": "Buttercream Suizo de Vainilla (Lote 1 kg)",
+    "categoria": "Rellenos y Coberturas",
+    "descripcion": "Crema de mantequilla a base de merengue suizo, sedosa, estable y nada empalagosa.",
+    "rendimiento_base": 1,
+    "rendimiento_unidad": "1 kg (rinde para 2 tortas)",
+    "tiempo_preparacion_min": 25,
+    "tiempo_horneado_min": 0,
+    "temperatura_horno_c": 0,
+    "materiales_indirectos_pct": 8,
+    "costos_operativos_pct": 10,
+    "reposicion_equipos_pct": 10,
+    "mano_obra_pct": 25,
+    "margen_beneficio_pct": 50,
+    "activa": true,
+    "ingredientes": [
+      {
+        "insumo_id": 36,
+        "cantidad": 200,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 9,
+        "cantidad": 350,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 16,
+        "cantidad": 450,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 73,
+        "cantidad": 15,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 68,
+        "cantidad": 2,
+        "tipo": "fijo"
+      }
+    ]
+  },
+  {
+    "id": 50,
+    "nombre": "Ganache de Chocolate Semiamargo 56% (Lote 1 kg)",
+    "categoria": "Rellenos y Coberturas",
+    "descripcion": "Emulsión perfecta de chocolate belga y crema de leche para relleno o cobertura lisa.",
+    "rendimiento_base": 1,
+    "rendimiento_unidad": "1 kg",
+    "tiempo_preparacion_min": 15,
+    "tiempo_horneado_min": 0,
+    "temperatura_horno_c": 0,
+    "materiales_indirectos_pct": 8,
+    "costos_operativos_pct": 10,
+    "reposicion_equipos_pct": 10,
+    "mano_obra_pct": 25,
+    "margen_beneficio_pct": 50,
+    "activa": true,
+    "ingredientes": [
+      {
+        "insumo_id": 38,
+        "cantidad": 550,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 24,
+        "cantidad": 400,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 16,
+        "cantidad": 50,
+        "tipo": "fijo"
+      }
+    ]
+  },
+  {
+    "id": 51,
+    "nombre": "Crema Pastelera Artesanal de Vainilla (Lote 1 kg)",
+    "categoria": "Rellenos y Coberturas",
+    "descripcion": "Crema cocida tradicional con leche entera, yemas, maicena y vainilla natural en vaina.",
+    "rendimiento_base": 1,
+    "rendimiento_unidad": "1 kg",
+    "tiempo_preparacion_min": 20,
+    "tiempo_horneado_min": 0,
+    "temperatura_horno_c": 0,
+    "materiales_indirectos_pct": 8,
+    "costos_operativos_pct": 12,
+    "reposicion_equipos_pct": 10,
+    "mano_obra_pct": 25,
+    "margen_beneficio_pct": 50,
+    "activa": true,
+    "ingredientes": [
+      {
+        "insumo_id": 23,
+        "cantidad": 700,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 9,
+        "cantidad": 160,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 37,
+        "cantidad": 100,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 4,
+        "cantidad": 60,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 16,
+        "cantidad": 40,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 74,
+        "cantidad": 10,
+        "tipo": "fijo"
+      }
+    ]
+  },
+  {
+    "id": 52,
+    "nombre": "Compota Rústica de Frutos Rojos Silvestres (Lote 800g)",
+    "categoria": "Rellenos y Coberturas",
+    "descripcion": "Reducción artesanal de fresas, moras y frambuesas con toque de zumo de limón natural.",
+    "rendimiento_base": 1,
+    "rendimiento_unidad": "800g",
+    "tiempo_preparacion_min": 25,
+    "tiempo_horneado_min": 0,
+    "temperatura_horno_c": 0,
+    "materiales_indirectos_pct": 8,
+    "costos_operativos_pct": 12,
+    "reposicion_equipos_pct": 10,
+    "mano_obra_pct": 25,
+    "margen_beneficio_pct": 50,
+    "activa": true,
+    "ingredientes": [
+      {
+        "insumo_id": 46,
+        "cantidad": 300,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 48,
+        "cantidad": 250,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 49,
+        "cantidad": 200,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 9,
+        "cantidad": 180,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 51,
+        "cantidad": 20,
+        "tipo": "fijo"
+      }
+    ]
+  },
+  {
+    "id": 53,
+    "nombre": "Caramelo Salado Artesanal / Toffee (Lote 600g)",
+    "categoria": "Rellenos y Coberturas",
+    "descripcion": "Caramelo dorado cremoso con mantequilla pura, crema y escamas de flor de sal marina.",
+    "rendimiento_base": 1,
+    "rendimiento_unidad": "600g",
+    "tiempo_preparacion_min": 20,
+    "tiempo_horneado_min": 0,
+    "temperatura_horno_c": 0,
+    "materiales_indirectos_pct": 8,
+    "costos_operativos_pct": 12,
+    "reposicion_equipos_pct": 10,
+    "mano_obra_pct": 25,
+    "margen_beneficio_pct": 50,
+    "activa": true,
+    "ingredientes": [
+      {
+        "insumo_id": 9,
+        "cantidad": 300,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 16,
+        "cantidad": 120,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 24,
+        "cantidad": 200,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 69,
+        "cantidad": 6,
+        "tipo": "fijo"
+      }
+    ]
+  },
+  {
+    "id": 54,
+    "nombre": "Quesillo Tradicional Casero de Caramelo Dorado (Molde 22cm)",
+    "categoria": "Tres Leches y Postres Fríos",
+    "descripcion": "Clásico quesillo artesanal de textura sedosa con agujeritos característicos, elaborado a base de leche condensada, leche evaporada y baño generoso de caramelo dorado al punto ámbar.",
+    "rendimiento_base": 1,
+    "rendimiento_unidad": "1 Molde 22cm (10-12 porciones)",
+    "tiempo_preparacion_min": 20,
+    "tiempo_horneado_min": 60,
+    "temperatura_horno_c": 175,
+    "materiales_indirectos_pct": 10,
+    "costos_operativos_pct": 15,
+    "reposicion_equipos_pct": 10,
+    "mano_obra_pct": 30,
+    "margen_beneficio_pct": 50,
+    "activa": true,
+    "ingredientes": [
+      {
+        "insumo_id": 9,
+        "cantidad": 180,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 27,
+        "cantidad": 395,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 28,
+        "cantidad": 350,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 35,
+        "cantidad": 5,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 73,
+        "cantidad": 10,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 85,
+        "cantidad": 1,
+        "tipo": "variable"
+      }
+    ],
+    "instrucciones": [
+      "1. Elaborar el caramelo en el molde fundiendo el azúcar a fuego medio hasta obtener un color ámbar dorado parejo. Cubrir paredes del molde y dejar enfriar.",
+      "2. Licuar la leche condensada, leche evaporada, los huevos enteros y el extracto de vainilla a velocidad baja por 1 minuto.",
+      "3. Colar la mezcla y verter dentro del molde caramelizado.",
+      "4. Hornear a baño de María tapado con papel aluminio a 175°C durante 60 minutos.",
+      "5. Dejar enfriar a temperatura ambiente y refrigerar mínimo 6 horas antes de desmoldar con cuidado."
+    ]
+  },
+  {
+    "id": 55,
+    "nombre": "Quesillo Cremoso de Coco Caribeño (Molde 22cm)",
+    "categoria": "Tres Leches y Postres Fríos",
+    "descripcion": "Quesillo tropical infusionado con leche de coco, leche condensada y corona de coco rallado tostado sobre caramelo ámbar brillante.",
+    "rendimiento_base": 1,
+    "rendimiento_unidad": "1 Molde 22cm (10-12 porciones)",
+    "tiempo_preparacion_min": 25,
+    "tiempo_horneado_min": 60,
+    "temperatura_horno_c": 175,
+    "materiales_indirectos_pct": 10,
+    "costos_operativos_pct": 15,
+    "reposicion_equipos_pct": 10,
+    "mano_obra_pct": 30,
+    "margen_beneficio_pct": 50,
+    "activa": true,
+    "ingredientes": [
+      {
+        "insumo_id": 9,
+        "cantidad": 180,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 27,
+        "cantidad": 395,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 28,
+        "cantidad": 250,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 23,
+        "cantidad": 100,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 60,
+        "cantidad": 100,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 35,
+        "cantidad": 5,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 73,
+        "cantidad": 8,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 85,
+        "cantidad": 1,
+        "tipo": "variable"
+      }
+    ],
+    "instrucciones": [
+      "1. Caramelizar el molde con azúcar hasta tono ámbar.",
+      "2. Licuar leche condensada, evaporada, leche entera, coco rallado, huevos y vainilla.",
+      "3. Verter en el molde y hornear a baño de María a 175°C durante 60 minutos.",
+      "4. Refrigerar durante la noche y desmoldar decorando con coco tostado."
+    ]
+  },
+  {
+    "id": 56,
+    "nombre": "Flan / Quesillo de Queso Crema y Vainilla Bourbon (Molde 22cm)",
+    "categoria": "Tres Leches y Postres Fríos",
+    "descripcion": "Fusión irresistible entre flan de queso y quesillo tradicional: textura ultra cremosa y densa con queso crema Philadelphia y caramelo fundido.",
+    "rendimiento_base": 1,
+    "rendimiento_unidad": "1 Molde 22cm (10-12 porciones)",
+    "tiempo_preparacion_min": 20,
+    "tiempo_horneado_min": 65,
+    "temperatura_horno_c": 170,
+    "materiales_indirectos_pct": 10,
+    "costos_operativos_pct": 15,
+    "reposicion_equipos_pct": 10,
+    "mano_obra_pct": 30,
+    "margen_beneficio_pct": 50,
+    "activa": true,
+    "ingredientes": [
+      {
+        "insumo_id": 9,
+        "cantidad": 180,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 25,
+        "cantidad": 225,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 27,
+        "cantidad": 395,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 28,
+        "cantidad": 350,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 35,
+        "cantidad": 5,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 73,
+        "cantidad": 12,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 85,
+        "cantidad": 1,
+        "tipo": "variable"
+      }
+    ],
+    "instrucciones": [
+      "1. Preparar el caramelo en el molde y dejar enfriar.",
+      "2. Batir primero el queso crema con la leche condensada hasta disolver grumos.",
+      "3. Añadir leche evaporada, huevos uno a uno y vainilla.",
+      "4. Colar la mezcla y hornear a baño de María a 170°C por 65 minutos.",
+      "5. Refrigerar 8 horas antes de desmoldar."
+    ]
+  },
+  {
+    "id": 57,
+    "nombre": "Chocoflan / Torta Imposible Artesanal (Molde Bundt 24cm)",
+    "categoria": "Tortas y Pasteles",
+    "descripcion": "La legendaria torta imposible: base húmeda de torta de chocolate con cacao puro alcalino y capa superior de suave quesillo de vainilla con caramelo fluido.",
+    "rendimiento_base": 1,
+    "rendimiento_unidad": "1 Molde Bundt 24cm (12-14 porciones)",
+    "tiempo_preparacion_min": 35,
+    "tiempo_horneado_min": 75,
+    "temperatura_horno_c": 175,
+    "materiales_indirectos_pct": 10,
+    "costos_operativos_pct": 15,
+    "reposicion_equipos_pct": 10,
+    "mano_obra_pct": 30,
+    "margen_beneficio_pct": 50,
+    "activa": true,
+    "ingredientes": [
+      {
+        "insumo_id": 9,
+        "cantidad": 250,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 1,
+        "cantidad": 180,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 41,
+        "cantidad": 50,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 23,
+        "cantidad": 150,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 27,
+        "cantidad": 395,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 28,
+        "cantidad": 350,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 35,
+        "cantidad": 7,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 73,
+        "cantidad": 15,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 85,
+        "cantidad": 1,
+        "tipo": "variable"
+      }
+    ],
+    "instrucciones": [
+      "1. Caramelizar el molde Bundt con 120g de azúcar y dejar enfriar.",
+      "2. Preparar el batido de torta de chocolate: cremar mantequilla con azúcar, huevos, alternar harina y cacao con leche.",
+      "3. Verter la mezcla de torta en el fondo del molde.",
+      "4. Licuar condensada, evaporada, huevos y vainilla para el quesillo. Verter suavemente sobre la masa de chocolate con una espátula.",
+      "5. Hornear a baño de María a 175°C por 75 min (durante el horneado las capas se invierten mágicamente).",
+      "6. Enfriar completamente y desmoldar frío."
+    ]
+  },
+  {
+    "id": 58,
+    "nombre": "Quesillo de Dulce de Leche / Arequipe Artesanal (Molde 22cm)",
+    "categoria": "Tres Leches y Postres Fríos",
+    "descripcion": "Quesillo enriquecido con arequipe repostero integrado en la mezcla cremosa y bañado en caramelo toffee.",
+    "rendimiento_base": 1,
+    "rendimiento_unidad": "1 Molde 22cm (10-12 porciones)",
+    "tiempo_preparacion_min": 20,
+    "tiempo_horneado_min": 60,
+    "temperatura_horno_c": 175,
+    "materiales_indirectos_pct": 10,
+    "costos_operativos_pct": 15,
+    "reposicion_equipos_pct": 10,
+    "mano_obra_pct": 30,
+    "margen_beneficio_pct": 50,
+    "activa": true,
+    "ingredientes": [
+      {
+        "insumo_id": 9,
+        "cantidad": 160,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 29,
+        "cantidad": 250,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 27,
+        "cantidad": 250,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 28,
+        "cantidad": 350,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 35,
+        "cantidad": 5,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 73,
+        "cantidad": 8,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 85,
+        "cantidad": 1,
+        "tipo": "variable"
+      }
+    ],
+    "instrucciones": [
+      "1. Caramelizar el molde con azúcar.",
+      "2. Licuar arequipe, leche condensada, leche evaporada, huevos y vainilla.",
+      "3. Colar y verter en el molde caramelizado.",
+      "4. Hornear a baño de María a 175°C por 60 minutos.",
+      "5. Dejar enfriar y desmoldar bien frío."
     ]
   }
 ];
