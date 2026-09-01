@@ -533,6 +533,99 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   }, [syncFromSupabase]);
 
+  // ==============================================================================
+  // SINCRONIZACIÓN EN VIVO (Supabase Realtime WebSockets + Auto-Refresco al Activar Pantalla)
+  // ==============================================================================
+  useEffect(() => {
+    if (!isSupabaseConfigured()) return;
+    const client = getSupabaseClient();
+    if (!client) return;
+
+    // Canal WebSocket en vivo para escuchar modificaciones de cualquier usuario o dispositivo
+    const channel = client
+      .channel('delicias-live-sync-all')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'insumos' },
+        () => {
+          syncFromSupabase(true);
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'recetas' },
+        () => {
+          syncFromSupabase(true);
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'receta_ingredientes' },
+        () => {
+          syncFromSupabase(true);
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'cotizaciones' },
+        () => {
+          syncFromSupabase(true);
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'cotizacion_items' },
+        () => {
+          syncFromSupabase(true);
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'pedidos' },
+        () => {
+          syncFromSupabase(true);
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'pedido_items' },
+        () => {
+          syncFromSupabase(true);
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'usuarios' },
+        () => {
+          syncFromSupabase(true);
+        }
+      )
+      .subscribe();
+
+    // Re-sincronizar automáticamente en cuanto el usuario vuelve a abrir la app o desbloquea el móvil
+    const handleFocus = () => {
+      if (document.visibilityState === 'visible') {
+        syncFromSupabase(true);
+      }
+    };
+    window.addEventListener('visibilitychange', handleFocus);
+    window.addEventListener('focus', handleFocus);
+
+    // Latido regular (Heartbeat) cada 25 segundos para asegurar datos frescos
+    const heartbeat = setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        syncFromSupabase(true);
+      }
+    }, 25000);
+
+    return () => {
+      client.removeChannel(channel);
+      window.removeEventListener('visibilitychange', handleFocus);
+      window.removeEventListener('focus', handleFocus);
+      clearInterval(heartbeat);
+    };
+  }, [syncFromSupabase]);
+
   // Guardar en localStorage como respaldo local offline
   useEffect(() => {
     localStorage.setItem(`${STORAGE_KEY}_insumos`, JSON.stringify(insumos));
