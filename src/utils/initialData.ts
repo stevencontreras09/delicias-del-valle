@@ -5330,4 +5330,15 @@ export const INITIAL_USUARIOS: Usuario[] = [
     created_at: '2026-08-10T08:00:00Z',
     ultimo_acceso: '2026-08-31T18:00:00Z',
   },
+  {
+    id: 3,
+    username: 'Vgarcia',
+    password: '010203aaa',
+    nombre_completo: 'Vgarcia (Co-Administrador)',
+    email: 'vgarcia@deliciasdelvalle.com',
+    telefono: '+1 (809) 555-0103',
+    rol: 'coadmin',
+    activo: true,
+    created_at: '2026-09-01T14:00:00Z',
+  },
 ];
