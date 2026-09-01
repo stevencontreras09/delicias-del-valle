@@ -25,7 +25,6 @@ export const InventoryManager: React.FC = () => {
     updateInsumo,
     deleteInsumo,
     reabastecerInsumo,
-    reabastecerTodoElStock,
     addMerma,
     mermas,
   } = useApp();
@@ -91,14 +90,6 @@ export const InventoryManager: React.FC = () => {
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <button
-            onClick={reabastecerTodoElStock}
-            title="Abastecer al 100% todos los 93 insumos"
-            className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl border border-emerald-300 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-bold transition-all shadow-sm"
-          >
-            <PackagePlus className="w-4 h-4 text-emerald-600" />
-            <span>Abastecer Stock Completo</span>
-          </button>
 
           <button
             onClick={() => setIsWasteHistoryOpen(true)}
