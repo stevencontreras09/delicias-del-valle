@@ -398,3 +398,119 @@ export async function syncPedidoToSupabase(pedido: Pedido): Promise<boolean> {
     return false;
   }
 }
+
+/**
+ * Sube o actualiza una cotización en Supabase con sus items
+ */
+export async function syncCotizacionToSupabase(cotizacion: Cotizacion): Promise<boolean> {
+  const client = getSupabaseClient();
+  if (!client) return false;
+
+  try {
+    const { data: cotDb, error: cotErr } = await client.from('cotizaciones').upsert({
+      id: cotizacion.id,
+      codigo: cotizacion.codigo,
+      cliente_nombre: cotizacion.cliente_nombre,
+      cliente_telefono: cotizacion.cliente_telefono,
+      cliente_email: cotizacion.cliente_email || null,
+      fecha_emision: cotizacion.fecha_emision,
+      fecha_evento: cotizacion.fecha_evento || null,
+      validez_dias: cotizacion.validez_dias,
+      subtotal: cotizacion.subtotal,
+      descuento: cotizacion.descuento || 0,
+      costo_envio: cotizacion.costo_envio || 0,
+      total: cotizacion.total,
+      notas: cotizacion.notas || '',
+      estado: cotizacion.estado,
+      updated_at: new Date().toISOString(),
+    }).select().single();
+
+    if (cotErr) return false;
+
+    // Eliminar e insertar items de la cotización
+    await client.from('cotizacion_items').delete().eq('cotizacion_id', cotDb.id);
+    if (cotizacion.items.length > 0) {
+      const itemRows = cotizacion.items.map(item => ({
+        cotizacion_id: cotDb.id,
+        receta_id: item.receta_id || null,
+        receta_nombre: item.receta_nombre,
+        tamano_porciones: item.tamano_porciones,
+        masa_base: item.masa_base || '',
+        relleno: item.relleno || '',
+        decoracion: item.decoracion || '',
+        dedicatoria: item.dedicatoria || '',
+        extras: item.extras || [],
+        cantidad: item.cantidad,
+        precio_unitario: item.precio_unitario,
+        subtotal: item.subtotal,
+        factor_receta: item.factor_receta || 1,
+      }));
+      await client.from('cotizacion_items').insert(itemRows);
+    }
+
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Elimina una cotización en Supabase
+ */
+export async function deleteCotizacionFromSupabase(id: number): Promise<boolean> {
+  const client = getSupabaseClient();
+  if (!client) return false;
+  try {
+    await client.from('cotizacion_items').delete().eq('cotizacion_id', id);
+    const { error } = await client.from('cotizaciones').delete().eq('id', id);
+    return !error;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Elimina un pedido en Supabase
+ */
+export async function deletePedidoFromSupabase(id: number): Promise<boolean> {
+  const client = getSupabaseClient();
+  if (!client) return false;
+  try {
+    await client.from('pagos').delete().eq('pedido_id', id);
+    await client.from('pedido_items').delete().eq('pedido_id', id);
+    const { error } = await client.from('pedidos').delete().eq('id', id);
+    return !error;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Elimina una receta en Supabase
+ */
+export async function deleteRecetaFromSupabase(id: number): Promise<boolean> {
+  const client = getSupabaseClient();
+  if (!client) return false;
+  try {
+    await client.from('receta_ingredientes').delete().eq('receta_id', id);
+    const { error } = await client.from('recetas').delete().eq('id', id);
+    return !error;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Elimina un insumo en Supabase
+ */
+export async function deleteInsumoFromSupabase(id: number): Promise<boolean> {
+  const client = getSupabaseClient();
+  if (!client) return false;
+  try {
+    const { error } = await client.from('insumos').delete().eq('id', id);
+    return !error;
+  } catch {
+    return false;
+  }
+}
+

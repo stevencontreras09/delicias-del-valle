@@ -34,6 +34,11 @@ import {
   syncInsumoToSupabase,
   syncRecetaToSupabase,
   syncPedidoToSupabase,
+  syncCotizacionToSupabase,
+  deleteCotizacionFromSupabase,
+  deletePedidoFromSupabase,
+  deleteRecetaFromSupabase,
+  deleteInsumoFromSupabase,
 } from '../services/supabaseService';
 
 export type ActiveTab =
@@ -382,11 +387,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     try {
       const res = await fetchAllFromSupabase();
       if (res.success && res.data) {
-        if (res.data.insumos.length > 0) setInsumos(res.data.insumos);
-        if (res.data.recetas.length > 0) setRecetas(res.data.recetas);
-        if (res.data.cotizaciones.length > 0) setCotizaciones(res.data.cotizaciones);
-        if (res.data.pedidos.length > 0) setPedidos(res.data.pedidos);
-        if (res.data.mermas.length > 0) setMermas(res.data.mermas);
+        if (res.data.insumos && res.data.insumos.length > 0) setInsumos(res.data.insumos);
+        if (res.data.recetas && res.data.recetas.length > 0) setRecetas(res.data.recetas);
+        if (res.data.cotizaciones) setCotizaciones(res.data.cotizaciones);
+        if (res.data.pedidos) setPedidos(res.data.pedidos);
+        if (res.data.mermas) setMermas(res.data.mermas);
 
         setIsSupabaseOnline(true);
         if (!silent) {
@@ -543,6 +548,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
 
     setInsumos((prev) => prev.filter((i) => i.id !== id));
+    if (isSupabaseConfigured()) {
+      deleteInsumoFromSupabase(id);
+    }
     showToast('warning', 'Insumo Eliminado', `"${insumo.nombre}" fue retirado del inventario.`);
   };
 
@@ -638,6 +646,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (!receta) return;
 
     setRecetas((prev) => prev.filter((r) => r.id !== id));
+    if (isSupabaseConfigured()) {
+      deleteRecetaFromSupabase(id);
+    }
     showToast('warning', 'Receta Eliminada', `"${receta.nombre}" fue eliminada.`);
   };
 
@@ -677,25 +688,45 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
 
     setCotizaciones((prev) => [newCotizacion, ...prev]);
+    if (isSupabaseConfigured()) {
+      syncCotizacionToSupabase(newCotizacion);
+    }
     showToast('success', 'Cotización Guardada', `Cotización ${codigo} creada para ${newCotizacion.cliente_nombre}.`);
     return newCotizacion;
   };
 
   const updateCotizacion = (id: number, data: Partial<Cotizacion>) => {
     setCotizaciones((prev) =>
-      prev.map((c) => (c.id === id ? { ...c, ...data } : c))
+      prev.map((c) => {
+        if (c.id !== id) return c;
+        const updated = { ...c, ...data };
+        if (isSupabaseConfigured()) {
+          syncCotizacionToSupabase(updated);
+        }
+        return updated;
+      })
     );
     showToast('info', 'Cotización Actualizada', 'Cambios guardados exitosamente.');
   };
 
   const deleteCotizacion = (id: number) => {
     setCotizaciones((prev) => prev.filter((c) => c.id !== id));
+    if (isSupabaseConfigured()) {
+      deleteCotizacionFromSupabase(id);
+    }
     showToast('warning', 'Cotización Eliminada', 'La cotización fue eliminada del sistema.');
   };
 
   const cambiarEstadoCotizacion = (id: number, estado: EstadoCotizacion) => {
     setCotizaciones((prev) =>
-      prev.map((c) => (c.id === id ? { ...c, estado } : c))
+      prev.map((c) => {
+        if (c.id !== id) return c;
+        const updated = { ...c, estado };
+        if (isSupabaseConfigured()) {
+          syncCotizacionToSupabase(updated);
+        }
+        return updated;
+      })
     );
     showToast('info', 'Estado Actualizado', `Cotización marcada como "${estado}".`);
   };
