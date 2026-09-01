@@ -9,7 +9,7 @@ import {
 import { Modal } from '../ui/Modal';
 import { formatCurrency } from '../../utils/formatters';
 import { calcularCostosReceta } from '../../utils/calculations';
-import { Plus, Trash2, Cake, Gift, Search, ChevronDown, Check, Sparkles } from 'lucide-react';
+import { Plus, Trash2, Cake, Gift, Search, ChevronDown, Check, Sparkles, Package } from 'lucide-react';
 
 interface QuoteBuilderModalProps {
   isOpen: boolean;
@@ -100,6 +100,8 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
 
   const [tamanoPorciones, setTamanoPorciones] = useState('1 LB (16-20 porciones)');
   const [factorReceta, setFactorReceta] = useState<number>(1);
+  const [customMiniCount, setCustomMiniCount] = useState<number>(24);
+  const [isCustomMiniSelected, setIsCustomMiniSelected] = useState<boolean>(false);
   const [masaBase, setMasaBase] = useState(OPCIONES_MASA_DETALLADAS[0].nombre);
   const [relleno, setRelleno] = useState(OPCIONES_RELLENO_DETALLADAS[0].nombre);
   const [decoracion, setDecoracion] = useState(OPCIONES_DECORACION_DETALLADAS[0].nombre);
@@ -107,6 +109,14 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
   const [selectedExtras, setSelectedExtras] = useState<string[]>([]);
   const [cantidad, setCantidad] = useState<number>(1);
   const [precioBaseManual, setPrecioBaseManual] = useState<number | ''>('');
+
+  const handleCustomMiniQuoteChange = (count: number) => {
+    const validCount = Math.max(1, count);
+    setCustomMiniCount(validCount);
+    const factor = Number((validCount * (0.35 / 12)).toFixed(3));
+    setFactorReceta(factor);
+    setTamanoPorciones(`${validCount} Mini Bocaditos (${factor}x)`);
+  };
 
   // Lista de items de la cotización
   const [items, setItems] = useState<CotizacionItem[]>([]);
@@ -449,28 +459,39 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
                 Tamaño / Porciones *
               </label>
               <select
-                value={tamanoPorciones}
+                value={isCustomMiniSelected ? 'Personalizado Mini' : tamanoPorciones}
                 onChange={(e) => {
                   const val = e.target.value;
-                  setTamanoPorciones(val);
-                  if (val.includes('½ LB') || val.includes('Pack x 6')) {
-                    setFactorReceta(0.5);
-                  } else if (val.includes('2 LB') || val.includes('2x')) {
-                    setFactorReceta(2.0);
-                  } else if (val.includes('3 LB') || val.includes('100 Mini')) {
-                    setFactorReceta(3.0);
-                  } else if (val.includes('1 Porción Individual') || val.includes('0.08x')) {
-                    setFactorReceta(0.0833);
-                  } else if (val.includes('Pack x 4 Porciones') || val.includes('0.33x')) {
-                    setFactorReceta(0.3333);
-                  } else if (val.includes('12 Mini Bocaditos') || val.includes('0.4x')) {
-                    setFactorReceta(0.4);
-                  } else if (val.includes('24 Mini Bocaditos') || val.includes('0.75x')) {
-                    setFactorReceta(0.75);
-                  } else if (val.includes('50 Mini Bocaditos') || val.includes('1.5x')) {
-                    setFactorReceta(1.5);
+                  if (val === 'Personalizado Mini') {
+                    setIsCustomMiniSelected(true);
+                    handleCustomMiniQuoteChange(customMiniCount);
                   } else {
-                    setFactorReceta(1.0);
+                    setTamanoPorciones(val);
+                    if (val.includes('Mini')) {
+                      setIsCustomMiniSelected(true);
+                      let initialCount = 12;
+                      if (val.includes('24')) initialCount = 24;
+                      else if (val.includes('50')) initialCount = 50;
+                      else if (val.includes('100')) initialCount = 100;
+                      setCustomMiniCount(initialCount);
+                      const factor = Number((initialCount * (0.35 / 12)).toFixed(3));
+                      setFactorReceta(factor);
+                    } else {
+                      setIsCustomMiniSelected(false);
+                      if (val.includes('½ LB') || val.includes('Pack x 6')) {
+                        setFactorReceta(0.5);
+                      } else if (val.includes('2 LB') || val.includes('2x')) {
+                        setFactorReceta(2.0);
+                      } else if (val.includes('3 LB')) {
+                        setFactorReceta(3.0);
+                      } else if (val.includes('1 Porción Individual') || val.includes('0.08x')) {
+                        setFactorReceta(0.0833);
+                      } else if (val.includes('Pack x 4 Porciones') || val.includes('0.33x')) {
+                        setFactorReceta(0.3333);
+                      } else {
+                        setFactorReceta(1.0);
+                      }
+                    }
                   }
                 }}
                 className="w-full px-3 py-2.5 rounded-xl border border-trigo-300 focus:ring-2 focus:ring-frambuesa-400 focus:outline-none bg-white font-medium text-chocolate-900"
@@ -490,12 +511,72 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
                   <option value="Bandeja 12 porciones">Bandeja 12 porciones [1x]</option>
                 </optgroup>
                 <optgroup label="🧁 Formato Mini (Bocaditos & Mesa de Dulces)">
-                  <option value="Caja x 12 Mini Bocaditos">Caja x 12 Mini Bocaditos [0.4x]</option>
-                  <option value="Caja x 24 Mini Bocaditos">Caja x 24 Mini Bocaditos [0.75x]</option>
-                  <option value="Caja x 50 Mini Bocaditos (Eventos)">Caja x 50 Mini Bocaditos (Eventos) [1.5x]</option>
-                  <option value="Caja x 100 Mini Bocaditos (Banquete)">Caja x 100 Mini Bocaditos (Banquete) [3x]</option>
+                  <option value="Caja x 12 Mini Bocaditos">Caja x 12 Mini Bocaditos [0.35x]</option>
+                  <option value="Caja x 24 Mini Bocaditos">Caja x 24 Mini Bocaditos [0.70x]</option>
+                  <option value="Caja x 50 Mini Bocaditos (Eventos)">Caja x 50 Mini Bocaditos (Eventos) [1.45x]</option>
+                  <option value="Caja x 100 Mini Bocaditos (Banquete)">Caja x 100 Mini Bocaditos (Banquete) [2.90x]</option>
+                  <option value="Personalizado Mini">🧁 Personalizado: Cantidad Exacta de Minis...</option>
                 </optgroup>
               </select>
+
+              {/* Editor de Cantidad Exacta de Minis si aplica */}
+              {isCustomMiniSelected && (
+                <div className="mt-2.5 p-3 rounded-2xl bg-canvas border border-trigo-300 animate-fade-in shadow-inner space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-extrabold text-chocolate-900 flex items-center gap-1.5">
+                      <Package className="w-3.5 h-3.5 text-frambuesa-600" />
+                      Cantidad Exacta de Minis:
+                    </span>
+                    <span className="text-[11px] font-bold px-2 py-0.5 rounded-md bg-white border border-trigo-200 text-chocolate-700">
+                      Factor: {factorReceta.toFixed(3)}x
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <div className="flex items-center bg-white rounded-xl border border-trigo-300 shadow-sm p-0.5">
+                      <button
+                        type="button"
+                        onClick={() => handleCustomMiniQuoteChange(Math.max(1, customMiniCount - 1))}
+                        className="w-7 h-7 flex items-center justify-center text-chocolate-700 hover:bg-crema active:scale-95 rounded-lg font-bold text-sm transition-all"
+                      >
+                        -
+                      </button>
+                      <input
+                        type="number"
+                        min="1"
+                        value={customMiniCount}
+                        onChange={(e) => handleCustomMiniQuoteChange(parseInt(e.target.value) || 1)}
+                        className="w-16 text-center font-extrabold text-chocolate-900 focus:outline-none text-sm py-1 bg-transparent"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => handleCustomMiniQuoteChange(customMiniCount + 1)}
+                        className="w-7 h-7 flex items-center justify-center text-chocolate-700 hover:bg-crema active:scale-95 rounded-lg font-bold text-sm transition-all"
+                      >
+                        +
+                      </button>
+                    </div>
+                    <span className="text-xs font-bold text-chocolate-700">minis</span>
+
+                    <div className="flex items-center gap-1 ml-auto overflow-x-auto">
+                      {[12, 24, 30, 36, 50, 75, 100].map((n) => (
+                        <button
+                          key={n}
+                          type="button"
+                          onClick={() => handleCustomMiniQuoteChange(n)}
+                          className={`text-[10px] font-bold px-2 py-1 rounded-lg border transition-all ${
+                            customMiniCount === n
+                              ? 'bg-frambuesa-500 text-white border-frambuesa-600 shadow-sm'
+                              : 'bg-white text-chocolate-700 border-trigo-200 hover:bg-crema'
+                          }`}
+                        >
+                          {n}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Tipo de Masa con Precio Dinámico */}

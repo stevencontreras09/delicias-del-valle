@@ -62,6 +62,8 @@ export const RecipeDetailModal: React.FC<RecipeDetailModalProps> = ({
   const [formatoActivo, setFormatoActivo] = useState<FormatoPresentacion>('libra');
   const [multiplier, setMultiplier] = useState<number>(1);
   const [selectedPresetLabel, setSelectedPresetLabel] = useState<string>('1 LB');
+  const [customMiniCount, setCustomMiniCount] = useState<number>(12);
+  const [isEditingMiniCustom, setIsEditingMiniCustom] = useState<boolean>(false);
 
   if (!receta) return null;
 
@@ -79,6 +81,17 @@ export const RecipeDetailModal: React.FC<RecipeDetailModalProps> = ({
     setFormatoActivo(formato);
     setMultiplier(opcion.factor);
     setSelectedPresetLabel(opcion.label);
+    setIsEditingMiniCustom(false);
+  };
+
+  const handleCustomMiniChange = (count: number) => {
+    const validCount = Math.max(1, count);
+    setCustomMiniCount(validCount);
+    setIsEditingMiniCustom(true);
+    // Factor exacto por unidad mini: 0.35 factor / 12 = ~0.02917x de la receta estándar
+    const factor = Number((validCount * (0.35 / 12)).toFixed(4));
+    setMultiplier(factor);
+    setSelectedPresetLabel(`${validCount} Mini Bocaditos`);
   };
 
   return (
@@ -177,6 +190,69 @@ export const RecipeDetailModal: React.FC<RecipeDetailModalProps> = ({
               );
             })}
           </div>
+
+          {/* Selector de Cantidad Exacta Personalizada de Minis */}
+          {formatoActivo === 'mini' && (
+            <div className="mt-2.5 p-3.5 rounded-2xl bg-canvas border border-trigo-300 flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-fade-in shadow-inner">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-frambuesa-100 flex items-center justify-center text-frambuesa-600 flex-shrink-0">
+                  <Package className="w-4 h-4" />
+                </div>
+                <div>
+                  <span className="text-xs font-extrabold text-chocolate-900 block">
+                    ¿Deseas una cantidad exacta personalizada?
+                  </span>
+                  <span className="text-[11px] text-gray-500">
+                    Escribe cualquier cantidad y los gramos e ingredientes se adaptarán en tiempo real.
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 self-start sm:self-auto">
+                <div className="flex items-center bg-white rounded-xl border border-trigo-300 shadow-sm p-1">
+                  <button
+                    type="button"
+                    onClick={() => handleCustomMiniChange(Math.max(1, customMiniCount - 1))}
+                    className="w-8 h-8 flex items-center justify-center text-chocolate-700 hover:bg-crema active:scale-95 rounded-lg font-bold text-base transition-all"
+                  >
+                    -
+                  </button>
+                  <input
+                    type="number"
+                    min="1"
+                    value={customMiniCount}
+                    onChange={(e) => handleCustomMiniChange(parseInt(e.target.value) || 1)}
+                    className="w-16 text-center font-extrabold text-chocolate-900 focus:outline-none text-sm py-1 bg-transparent"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => handleCustomMiniChange(customMiniCount + 1)}
+                    className="w-8 h-8 flex items-center justify-center text-chocolate-700 hover:bg-crema active:scale-95 rounded-lg font-bold text-base transition-all"
+                  >
+                    +
+                  </button>
+                </div>
+                <span className="text-xs font-bold text-chocolate-700">minis</span>
+
+                <div className="hidden sm:flex items-center gap-1 ml-1.5">
+                  {[12, 24, 30, 36, 50, 75, 100].map((n) => (
+                    <button
+                      key={n}
+                      type="button"
+                      onClick={() => handleCustomMiniChange(n)}
+                      className={`text-[10px] font-bold px-2 py-1.5 rounded-lg border transition-all ${
+                        customMiniCount === n && isEditingMiniCustom
+                          ? 'bg-frambuesa-500 text-white border-frambuesa-600 shadow-sm'
+                          : 'bg-white text-chocolate-700 border-trigo-200 hover:bg-crema'
+                      }`}
+                    >
+                      {n}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Tiempos de Taller y Datos Técnicos */}
