@@ -48,6 +48,14 @@ export interface RecetaIngrediente {
 }
 
 export type CategoriaReceta = 
+  | 'Tortas'
+  | 'Brownies'
+  | 'Cupcakes'
+  | 'Galletas'
+  | 'Alfajores'
+  | 'Panes y Salados'
+  | 'Postres'
+  | 'Tres Leches'
   | 'Tortas y Pasteles'
   | 'Cupcakes y Muffins'
   | 'Galletas y Alfajores'
@@ -55,7 +63,8 @@ export type CategoriaReceta =
   | 'Tres Leches y Postres Fríos'
   | 'Panes y Masas Saladas'
   | 'Cheesecakes y Tartas'
-  | 'Rellenos y Coberturas';
+  | 'Rellenos y Coberturas'
+  | string;
 
 export interface Receta {
   id: number;
