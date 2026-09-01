@@ -1,5 +1,5 @@
 import { getSupabaseClient } from '../utils/supabaseClient';
-import { Insumo, Merma, Receta, Cotizacion, Pedido } from '../types';
+import { Insumo, Merma, Receta, Cotizacion, Pedido, Usuario } from '../types';
 
 export interface SyncResult {
   success: boolean;
@@ -54,6 +54,7 @@ export async function fetchAllFromSupabase(): Promise<{
     cotizaciones: Cotizacion[];
     pedidos: Pedido[];
     mermas: Merma[];
+    usuarios?: Usuario[];
   };
 }> {
   const client = getSupabaseClient();
@@ -232,6 +233,32 @@ export async function fetchAllFromSupabase(): Promise<{
       notas: m.notas || '',
     }));
 
+    // 6. Fetch Usuarios (si la tabla existe)
+    let usuarios: Usuario[] = [];
+    try {
+      const { data: usuariosDb, error: userErr } = await client
+        .from('usuarios')
+        .select('*')
+        .order('id', { ascending: true });
+      if (!userErr && usuariosDb) {
+        usuarios = usuariosDb.map((u: any) => ({
+          id: Number(u.id),
+          username: u.username,
+          password: u.password,
+          nombre_completo: u.nombre_completo,
+          email: u.email || '',
+          telefono: u.telefono || '',
+          rol: u.rol,
+          activo: Boolean(u.activo),
+          avatar_url: u.avatar_url || '',
+          ultimo_acceso: u.ultimo_acceso || undefined,
+          created_at: u.created_at || new Date().toISOString(),
+        }));
+      }
+    } catch {
+      // Ignorar si la tabla usuarios no existe aún en Supabase
+    }
+
     return {
       success: true,
       data: {
@@ -240,6 +267,7 @@ export async function fetchAllFromSupabase(): Promise<{
         cotizaciones,
         pedidos,
         mermas,
+        usuarios,
       },
     };
   } catch (err: any) {
@@ -513,4 +541,46 @@ export async function deleteInsumoFromSupabase(id: number): Promise<boolean> {
     return false;
   }
 }
+
+/**
+ * Sube o actualiza un usuario en Supabase
+ */
+export async function syncUsuarioToSupabase(usuario: Usuario): Promise<boolean> {
+  const client = getSupabaseClient();
+  if (!client) return false;
+
+  try {
+    const { error } = await client.from('usuarios').upsert({
+      id: usuario.id,
+      username: usuario.username,
+      password: usuario.password || '',
+      nombre_completo: usuario.nombre_completo,
+      email: usuario.email || '',
+      telefono: usuario.telefono || '',
+      rol: usuario.rol,
+      activo: usuario.activo,
+      avatar_url: usuario.avatar_url || null,
+      ultimo_acceso: usuario.ultimo_acceso || null,
+      created_at: usuario.created_at || new Date().toISOString(),
+    });
+    return !error;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Elimina un usuario en Supabase
+ */
+export async function deleteUsuarioFromSupabase(id: number): Promise<boolean> {
+  const client = getSupabaseClient();
+  if (!client) return false;
+  try {
+    const { error } = await client.from('usuarios').delete().eq('id', id);
+    return !error;
+  } catch {
+    return false;
+  }
+}
+
 

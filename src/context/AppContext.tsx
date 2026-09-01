@@ -39,6 +39,8 @@ import {
   deletePedidoFromSupabase,
   deleteRecetaFromSupabase,
   deleteInsumoFromSupabase,
+  syncUsuarioToSupabase,
+  deleteUsuarioFromSupabase,
 } from '../services/supabaseService';
 
 export type ActiveTab =
@@ -312,6 +314,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       created_at: new Date().toISOString(),
     };
     setUsuarios(prev => [newUsuario, ...prev]);
+    if (isSupabaseConfigured()) {
+      syncUsuarioToSupabase(newUsuario);
+    }
     showToast('success', 'Usuario Creado', `Usuario "${newUsuario.username}" registrado exitosamente.`);
     return newUsuario;
   }, [usuarios, showToast]);
@@ -324,6 +329,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         if (currentUser?.id === id) {
           setCurrentUser(updated);
           localStorage.setItem(`${STORAGE_KEY}_session_user`, JSON.stringify(updated));
+        }
+        if (isSupabaseConfigured()) {
+          syncUsuarioToSupabase(updated);
         }
         return updated;
       })
@@ -346,6 +354,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
 
     setUsuarios(prev => prev.filter(u => u.id !== id));
+    if (isSupabaseConfigured()) {
+      deleteUsuarioFromSupabase(id);
+    }
     showToast('warning', 'Usuario Eliminado', `"${user.nombre_completo}" fue eliminado del sistema.`);
     return { success: true };
   }, [usuarios, currentUser, showToast]);
@@ -392,6 +403,23 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         if (res.data.cotizaciones) setCotizaciones(res.data.cotizaciones);
         if (res.data.pedidos) setPedidos(res.data.pedidos);
         if (res.data.mermas) setMermas(res.data.mermas);
+        const usersDb = res.data.usuarios;
+        if (usersDb && usersDb.length > 0) {
+          setUsuarios(prev => {
+            const map = new Map<string, Usuario>();
+            // 1. Usuarios maestros fijos siempre preservados
+            INITIAL_USUARIOS.forEach(u => map.set(u.username.toLowerCase(), u));
+            // 2. Usuarios descargados de Supabase
+            usersDb.forEach(u => map.set(u.username.toLowerCase(), u));
+            // 3. Usuarios locales que aún no hayan sincronizado
+            prev.forEach(u => {
+              if (!map.has(u.username.toLowerCase())) {
+                map.set(u.username.toLowerCase(), u);
+              }
+            });
+            return Array.from(map.values());
+          });
+        }
 
         setIsSupabaseOnline(true);
         if (!silent) {
