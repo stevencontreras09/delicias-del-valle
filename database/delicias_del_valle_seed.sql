@@ -293,10 +293,11 @@ CREATE POLICY "Acceso total configuracion_taller" ON configuracion_taller FOR AL
 -- 6. INSERT DE DATOS INICIALES (SEED MAESTRO EN DOP / RD$)
 -- ==============================================================================
 
--- 0. Usuarios (Admin Maestro Steven9909 + Personal de Taller)
+-- 0. Usuarios (Admin Maestro Steven9909 + Co-Administradores Rmarpa y Vgarcia)
 INSERT INTO usuarios (id, username, password, nombre_completo, email, telefono, rol, activo, created_at, ultimo_acceso) VALUES
 (1, 'Steven9909', '@Manzana0104', 'Steven (Administrador Maestro)', 'steven@deliciasdelvalle.com', '+1 (809) 555-0142', 'admin', TRUE, '2026-08-01 08:00:00+00', '2026-08-31 17:00:00+00'),
-(2, 'Rmarpa', '010203aaa', 'Rmarpa (Co-Administrador)', 'rmarpa@deliciasdelvalle.com', '+1 (809) 555-0142', 'coadmin', TRUE, '2026-08-10 08:00:00+00', '2026-08-31 18:00:00+00');
+(2, 'Rmarpa', '010203aaa', 'Rmarpa (Co-Administrador)', 'rmarpa@deliciasdelvalle.com', '+1 (809) 555-0142', 'coadmin', TRUE, '2026-08-10 08:00:00+00', '2026-08-31 18:00:00+00'),
+(3, 'Vgarcia', '010203aaa', 'Vgarcia (Co-Administrador)', 'vgarcia@deliciasdelvalle.com', '+1 (809) 555-0103', 'coadmin', TRUE, '2026-09-01 14:00:00+00', '2026-09-01 14:00:00+00');
 
 -- A. Insumos Maestros (93 Registros en DOP / RD$ con stock_actual = 0)
 INSERT INTO insumos (id, nombre, categoria, unidad_compra, precio_compra, presentacion_empaque, unidad_base, factor_conversion, costo_unitario_base, stock_actual, stock_minimo, activo) VALUES
