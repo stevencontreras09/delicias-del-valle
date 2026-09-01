@@ -27,6 +27,7 @@ import {
   setSupabaseCredentials,
   clearSupabaseCredentials,
   getSavedCredentials,
+  getSupabaseClient,
 } from '../utils/supabaseClient';
 import {
   testSupabaseConnection,
@@ -65,7 +66,7 @@ interface AppContextType {
   setActiveTab: (tab: ActiveTab) => void;
   // Autenticación & Sesión
   currentUser: Usuario | null;
-  login: (username: string, password: string) => { success: boolean; message: string };
+  login: (username: string, password: string) => Promise<{ success: boolean; message: string }>;
   logout: () => void;
   // Gestión de Usuarios (Exclusivo Admin)
   usuarios: Usuario[];
@@ -262,10 +263,51 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // AUTENTICACIÓN (LOGIN / LOGOUT)
   // ==========================================
   const login = useCallback(
-    (usernameInput: string, passwordInput: string): { success: boolean; message: string } => {
-      const user = usuarios.find(
-        u => u.username.trim().toLowerCase() === usernameInput.trim().toLowerCase()
+    async (usernameInput: string, passwordInput: string): Promise<{ success: boolean; message: string }> => {
+      const cleanUser = usernameInput.trim().toLowerCase();
+      let user = usuarios.find(
+        u => u.username.trim().toLowerCase() === cleanUser
       );
+
+      // Si no está en el estado local, consultar directamente a Supabase en tiempo real
+      if (!user && isSupabaseConfigured()) {
+        try {
+          const client = getSupabaseClient();
+          if (client) {
+            const { data: dbUsers, error } = await client
+              .from('usuarios')
+              .select('*')
+              .ilike('username', cleanUser);
+
+            if (!error && dbUsers && dbUsers.length > 0) {
+              const fetched = dbUsers[0];
+              const parsedUser: Usuario = {
+                id: Number(fetched.id),
+                username: fetched.username,
+                password: fetched.password,
+                nombre_completo: fetched.nombre_completo,
+                email: fetched.email || '',
+                telefono: fetched.telefono || '',
+                rol: fetched.rol,
+                activo: Boolean(fetched.activo),
+                avatar_url: fetched.avatar_url || '',
+                ultimo_acceso: fetched.ultimo_acceso || undefined,
+                created_at: fetched.created_at || new Date().toISOString(),
+              };
+              user = parsedUser;
+              setUsuarios(prev => {
+                const map = new Map<string, Usuario>();
+                INITIAL_USUARIOS.forEach(u => map.set(u.username.toLowerCase(), u));
+                prev.forEach(u => map.set(u.username.toLowerCase(), u));
+                map.set(parsedUser.username.toLowerCase(), parsedUser);
+                return Array.from(map.values());
+              });
+            }
+          }
+        } catch (e) {
+          console.error('Error verificando usuario en Supabase:', e);
+        }
+      }
 
       if (!user) {
         return { success: false, message: 'Usuario no encontrado en el sistema.' };
@@ -285,7 +327,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       };
 
       setCurrentUser(updatedUser);
-      setUsuarios(prev => prev.map(u => (u.id === user.id ? updatedUser : u)));
+      setUsuarios(prev => prev.map(u => (u.id === user!.id ? updatedUser : u)));
       localStorage.setItem(`${STORAGE_KEY}_session_user`, JSON.stringify(updatedUser));
 
       showToast('success', `¡Bienvenido, ${user.nombre_completo}!`, `Sesión iniciada como ${user.rol.toUpperCase()}.`);

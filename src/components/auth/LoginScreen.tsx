@@ -10,18 +10,21 @@ export const LoginScreen: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setLoading(true);
 
-    setTimeout(() => {
-      const res = login(username, password);
+    try {
+      const res = await login(username, password);
       if (!res.success) {
         setError(res.message);
-        setLoading(false);
       }
-    }, 350);
+    } catch {
+      setError('Error al verificar credenciales con el servidor.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

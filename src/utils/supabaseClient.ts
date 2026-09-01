@@ -1,14 +1,18 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
-// Obtener credenciales desde localStorage o desde variables de entorno .env
+// Credenciales públicas de cliente Supabase (anon/publishable key con Row Level Security)
+const DEFAULT_SUPABASE_URL = 'https://ahzseugjftsmkdterpgq.supabase.co';
+const DEFAULT_SUPABASE_KEY = 'sb_publishable_KCDYQsATqBIVTAsYcHFZZQ_NNAoO20N';
+
+// Obtener credenciales desde localStorage, variables de entorno .env o valores por defecto
 const getSupabaseCredentials = () => {
   const localUrl = localStorage.getItem('delicias_supabase_url') || '';
   const localKey = localStorage.getItem('delicias_supabase_anon_key') || '';
   const envUrl = import.meta.env.VITE_SUPABASE_URL || '';
   const envKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 
-  const url = (localUrl || envUrl).trim();
-  const anonKey = (localKey || envKey).trim();
+  const url = (localUrl || envUrl || DEFAULT_SUPABASE_URL).trim();
+  const anonKey = (localKey || envKey || DEFAULT_SUPABASE_KEY).trim();
 
   return { url, anonKey };
 };
