@@ -85,6 +85,9 @@ export interface Receta {
   ingredientes: RecetaIngrediente[];
   instrucciones?: string[];
   activa: boolean;
+  nombre_base?: string;
+  es_variante_de?: number;
+  orden_variante?: number;
 }
 
 // Estructura calculada en tiempo real

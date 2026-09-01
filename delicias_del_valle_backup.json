@@ -1591,7 +1591,8 @@
           "cantidad": 1,
           "tipo": "fijo"
         }
-      ]
+      ],
+      "nombre_base": "Torta de Vainilla"
     },
     {
       "id": 2,
@@ -1651,7 +1652,8 @@
           "cantidad": 1,
           "tipo": "fijo"
         }
-      ]
+      ],
+      "nombre_base": "Torta de Vainilla"
     },
     {
       "id": 3,
@@ -1711,7 +1713,8 @@
           "cantidad": 1,
           "tipo": "fijo"
         }
-      ]
+      ],
+      "nombre_base": "Torta de Vainilla"
     },
     {
       "id": 4,
@@ -1771,7 +1774,8 @@
           "cantidad": 375,
           "tipo": "fijo"
         }
-      ]
+      ],
+      "nombre_base": "Torta de Chocolate"
     },
     {
       "id": 5,
@@ -1836,7 +1840,8 @@
           "cantidad": 187.5,
           "tipo": "fijo"
         }
-      ]
+      ],
+      "nombre_base": "Torta de Chocolate"
     },
     {
       "id": 6,
@@ -1881,7 +1886,8 @@
           "cantidad": 3,
           "tipo": "fijo"
         }
-      ]
+      ],
+      "nombre_base": "Suspiro para Torta"
     },
     {
       "id": 7,
@@ -1911,7 +1917,8 @@
           "cantidad": 500,
           "tipo": "variable"
         }
-      ]
+      ],
+      "nombre_base": "Torta de Vainilla"
     },
     {
       "id": 8,
@@ -1941,7 +1948,8 @@
           "cantidad": 400,
           "tipo": "variable"
         }
-      ]
+      ],
+      "nombre_base": "Torta de Vainilla"
     },
     {
       "id": 9,
@@ -1971,7 +1979,8 @@
           "cantidad": 400,
           "tipo": "variable"
         }
-      ]
+      ],
+      "nombre_base": "Torta de Vainilla"
     },
     {
       "id": 10,
@@ -2001,7 +2010,8 @@
           "cantidad": 400,
           "tipo": "variable"
         }
-      ]
+      ],
+      "nombre_base": "Torta de Vainilla"
     },
     {
       "id": 11,
@@ -2036,7 +2046,8 @@
           "cantidad": 400,
           "tipo": "variable"
         }
-      ]
+      ],
+      "nombre_base": "Torta de Vainilla"
     },
     {
       "id": 12,
@@ -2066,7 +2077,8 @@
           "cantidad": 400,
           "tipo": "variable"
         }
-      ]
+      ],
+      "nombre_base": "Torta de Vainilla"
     },
     {
       "id": 13,
@@ -2096,7 +2108,8 @@
           "cantidad": 400,
           "tipo": "variable"
         }
-      ]
+      ],
+      "nombre_base": "Torta de Vainilla"
     },
     {
       "id": 14,
@@ -2121,7 +2134,8 @@
           "cantidad": 400,
           "tipo": "variable"
         }
-      ]
+      ],
+      "nombre_base": "Torta de Vainilla"
     },
     {
       "id": 15,
@@ -2186,7 +2200,8 @@
           "cantidad": 300,
           "tipo": "variable"
         }
-      ]
+      ],
+      "nombre_base": "Torta de Vainilla"
     },
     {
       "id": 16,
@@ -2251,7 +2266,8 @@
           "cantidad": 300,
           "tipo": "variable"
         }
-      ]
+      ],
+      "nombre_base": "Torta de Vainilla"
     },
     {
       "id": 17,
@@ -2316,7 +2332,8 @@
           "cantidad": 300,
           "tipo": "variable"
         }
-      ]
+      ],
+      "nombre_base": "Torta de Vainilla"
     },
     {
       "id": 18,
@@ -2386,7 +2403,8 @@
           "cantidad": 500,
           "tipo": "variable"
         }
-      ]
+      ],
+      "nombre_base": "Torta de Vainilla"
     },
     {
       "id": 19,
@@ -2456,7 +2474,8 @@
           "cantidad": 500,
           "tipo": "variable"
         }
-      ]
+      ],
+      "nombre_base": "Torta de Vainilla"
     },
     {
       "id": 20,
@@ -2501,7 +2520,8 @@
           "cantidad": 1,
           "tipo": "variable"
         }
-      ]
+      ],
+      "nombre_base": "Torta de Chocolate"
     },
     {
       "id": 21,
@@ -2541,7 +2561,8 @@
           "cantidad": 1,
           "tipo": "variable"
         }
-      ]
+      ],
+      "nombre_base": "Torta de Chocolate"
     },
     {
       "id": 22,
@@ -2581,7 +2602,8 @@
           "cantidad": 1,
           "tipo": "variable"
         }
-      ]
+      ],
+      "nombre_base": "Torta de Chocolate"
     },
     {
       "id": 23,
@@ -2626,7 +2648,8 @@
           "cantidad": 1,
           "tipo": "variable"
         }
-      ]
+      ],
+      "nombre_base": "Torta de Chocolate"
     },
     {
       "id": 24,
@@ -2686,7 +2709,8 @@
           "cantidad": 10,
           "tipo": "fijo"
         }
-      ]
+      ],
+      "nombre_base": "Brownie"
     },
     {
       "id": 25,
@@ -2721,7 +2745,8 @@
           "cantidad": 18,
           "tipo": "variable"
         }
-      ]
+      ],
+      "nombre_base": "Brownie"
     },
     {
       "id": 26,
@@ -2746,7 +2771,8 @@
           "cantidad": 18,
           "tipo": "variable"
         }
-      ]
+      ],
+      "nombre_base": "Brownie"
     },
     {
       "id": 27,
@@ -2816,7 +2842,8 @@
           "cantidad": 3,
           "tipo": "variable"
         }
-      ]
+      ],
+      "nombre_base": "Cupcake"
     },
     {
       "id": 28,
@@ -2891,7 +2918,8 @@
           "cantidad": 240,
           "tipo": "fijo"
         }
-      ]
+      ],
+      "nombre_base": "Cupcake"
     },
     {
       "id": 29,
@@ -2971,7 +2999,8 @@
           "cantidad": 50,
           "tipo": "variable"
         }
-      ]
+      ],
+      "nombre_base": "Cupcake"
     },
     {
       "id": 30,
@@ -3051,7 +3080,8 @@
           "cantidad": 50,
           "tipo": "variable"
         }
-      ]
+      ],
+      "nombre_base": "Cupcake"
     },
     {
       "id": 31,
@@ -3126,7 +3156,8 @@
           "cantidad": 2,
           "tipo": "variable"
         }
-      ]
+      ],
+      "nombre_base": "Cupcake"
     },
     {
       "id": 32,
@@ -3206,7 +3237,8 @@
           "cantidad": 2,
           "tipo": "variable"
         }
-      ]
+      ],
+      "nombre_base": "Cupcake"
     },
     {
       "id": 33,
@@ -3276,7 +3308,8 @@
           "cantidad": 1,
           "tipo": "variable"
         }
-      ]
+      ],
+      "nombre_base": "Pasta Seca"
     },
     {
       "id": 34,
@@ -3336,7 +3369,8 @@
           "cantidad": 250,
           "tipo": "variable"
         }
-      ]
+      ],
+      "nombre_base": "Galletas de Mantequilla"
     },
     {
       "id": 35,
@@ -3406,7 +3440,8 @@
           "cantidad": 10,
           "tipo": "variable"
         }
-      ]
+      ],
+      "nombre_base": "Galletas de Mantequilla"
     },
     {
       "id": 36,
@@ -3471,7 +3506,8 @@
           "cantidad": 50,
           "tipo": "variable"
         }
-      ]
+      ],
+      "nombre_base": "Galletas de Mantequilla"
     },
     {
       "id": 37,
@@ -3526,7 +3562,8 @@
           "cantidad": 16,
           "tipo": "fijo"
         }
-      ]
+      ],
+      "nombre_base": "Galletas de Formas"
     },
     {
       "id": 38,
@@ -3586,7 +3623,8 @@
           "cantidad": 50,
           "tipo": "variable"
         }
-      ]
+      ],
+      "nombre_base": "Galletas Lunette"
     },
     {
       "id": 39,
@@ -3651,7 +3689,8 @@
           "cantidad": 50,
           "tipo": "variable"
         }
-      ]
+      ],
+      "nombre_base": "Galletas Lunette"
     },
     {
       "id": 40,
@@ -3711,7 +3750,8 @@
           "cantidad": 40,
           "tipo": "variable"
         }
-      ]
+      ],
+      "nombre_base": "Alfajor"
     },
     {
       "id": 41,
@@ -3766,7 +3806,8 @@
           "cantidad": 1,
           "tipo": "variable"
         }
-      ]
+      ],
+      "nombre_base": "Alfajor"
     },
     {
       "id": 42,
@@ -3866,7 +3907,8 @@
           "cantidad": 30,
           "tipo": "variable"
         }
-      ]
+      ],
+      "nombre_base": "Pan de Jamón"
     },
     {
       "id": 43,
@@ -3971,7 +4013,8 @@
           "cantidad": 30,
           "tipo": "variable"
         }
-      ]
+      ],
+      "nombre_base": "Pan de Jamón"
     },
     {
       "id": 44,
@@ -4036,7 +4079,8 @@
           "cantidad": 30,
           "tipo": "variable"
         }
-      ]
+      ],
+      "nombre_base": "Pan de Jamón"
     },
     {
       "id": 45,
@@ -4116,7 +4160,8 @@
           "cantidad": 1,
           "tipo": "variable"
         }
-      ]
+      ],
+      "nombre_base": "Cachito"
     },
     {
       "id": 46,
@@ -4176,7 +4221,8 @@
           "cantidad": 1,
           "tipo": "variable"
         }
-      ]
+      ],
+      "nombre_base": "Quesillo"
     },
     {
       "id": 47,
@@ -4241,7 +4287,8 @@
           "cantidad": 5,
           "tipo": "fijo"
         }
-      ]
+      ],
+      "nombre_base": "Quesillo"
     },
     {
       "id": 48,
@@ -4296,7 +4343,8 @@
           "cantidad": 12,
           "tipo": "variable"
         }
-      ]
+      ],
+      "nombre_base": "Quesillo"
     },
     {
       "id": 49,
@@ -4336,7 +4384,8 @@
           "cantidad": 30,
           "tipo": "fijo"
         }
-      ]
+      ],
+      "nombre_base": "Bizcocho"
     },
     {
       "id": 50,
@@ -4381,7 +4430,8 @@
           "cantidad": 250,
           "tipo": "variable"
         }
-      ]
+      ],
+      "nombre_base": "Tres Leches"
     },
     {
       "id": 51,
@@ -4431,7 +4481,8 @@
           "cantidad": 12,
           "tipo": "variable"
         }
-      ]
+      ],
+      "nombre_base": "Tres Leches"
     },
     {
       "id": 52,
@@ -4486,7 +4537,8 @@
           "cantidad": 12,
           "tipo": "variable"
         }
-      ]
+      ],
+      "nombre_base": "Tres Leches"
     },
     {
       "id": 53,
@@ -4546,7 +4598,8 @@
           "cantidad": 100,
           "tipo": "variable"
         }
-      ]
+      ],
+      "nombre_base": "Torta de Vainilla"
     },
     {
       "id": 54,
@@ -4586,7 +4639,8 @@
           "cantidad": 1,
           "tipo": "variable"
         }
-      ]
+      ],
+      "nombre_base": "Suspiritos"
     },
     {
       "id": 55,
@@ -4621,7 +4675,8 @@
           "cantidad": 1,
           "tipo": "variable"
         }
-      ]
+      ],
+      "nombre_base": "Marquesa de Limón"
     },
     {
       "id": 56,
@@ -4686,7 +4741,8 @@
           "cantidad": 227,
           "tipo": "fijo"
         }
-      ]
+      ],
+      "nombre_base": "Deditos de Novia"
     },
     {
       "id": 57,
@@ -4741,7 +4797,8 @@
           "cantidad": 30,
           "tipo": "variable"
         }
-      ]
+      ],
+      "nombre_base": "Polvorones"
     },
     {
       "id": 58,
@@ -4801,7 +4858,8 @@
           "cantidad": 1,
           "tipo": "variable"
         }
-      ]
+      ],
+      "nombre_base": "Polvorones"
     },
     {
       "id": 59,
@@ -4861,7 +4919,8 @@
           "cantidad": 30,
           "tipo": "variable"
         }
-      ]
+      ],
+      "nombre_base": "Besitos de Nuez"
     },
     {
       "id": 60,
@@ -4906,7 +4965,8 @@
           "cantidad": 1,
           "tipo": "variable"
         }
-      ]
+      ],
+      "nombre_base": "Taquitos de Hojaldre"
     }
   ],
   "cotizaciones": [],

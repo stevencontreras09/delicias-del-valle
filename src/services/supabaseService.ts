@@ -135,6 +135,9 @@ export async function fetchAllFromSupabase(): Promise<{
       mano_obra_pct: Number(r.mano_obra_pct ?? 30),
       margen_beneficio_pct: Number(r.margen_beneficio_pct ?? 50),
       activa: Boolean(r.activa),
+      nombre_base: r.nombre_base || undefined,
+      es_variante_de: r.es_variante_de ? Number(r.es_variante_de) : undefined,
+      orden_variante: r.orden_variante !== undefined ? Number(r.orden_variante) : undefined,
       instrucciones: Array.isArray(r.instrucciones) ? r.instrucciones : [],
       ingredientes: (r.receta_ingredientes || []).map((ing: any) => ({
         insumo_id: Number(ing.insumo_id),

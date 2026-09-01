@@ -1552,7 +1552,8 @@ export const INITIAL_RECETAS: Receta[] = [
         "cantidad": 1,
         "tipo": "fijo"
       }
-    ]
+    ],
+    "nombre_base": "Torta de Vainilla"
   },
   {
     "id": 2,
@@ -1612,7 +1613,8 @@ export const INITIAL_RECETAS: Receta[] = [
         "cantidad": 1,
         "tipo": "fijo"
       }
-    ]
+    ],
+    "nombre_base": "Torta de Vainilla"
   },
   {
     "id": 3,
@@ -1672,7 +1674,8 @@ export const INITIAL_RECETAS: Receta[] = [
         "cantidad": 1,
         "tipo": "fijo"
       }
-    ]
+    ],
+    "nombre_base": "Torta de Vainilla"
   },
   {
     "id": 4,
@@ -1732,7 +1735,8 @@ export const INITIAL_RECETAS: Receta[] = [
         "cantidad": 375,
         "tipo": "fijo"
       }
-    ]
+    ],
+    "nombre_base": "Torta de Chocolate"
   },
   {
     "id": 5,
@@ -1797,7 +1801,8 @@ export const INITIAL_RECETAS: Receta[] = [
         "cantidad": 187.5,
         "tipo": "fijo"
       }
-    ]
+    ],
+    "nombre_base": "Torta de Chocolate"
   },
   {
     "id": 6,
@@ -1842,7 +1847,8 @@ export const INITIAL_RECETAS: Receta[] = [
         "cantidad": 3,
         "tipo": "fijo"
       }
-    ]
+    ],
+    "nombre_base": "Suspiro para Torta"
   },
   {
     "id": 7,
@@ -1872,7 +1878,8 @@ export const INITIAL_RECETAS: Receta[] = [
         "cantidad": 500,
         "tipo": "variable"
       }
-    ]
+    ],
+    "nombre_base": "Torta de Vainilla"
   },
   {
     "id": 8,
@@ -1902,7 +1909,8 @@ export const INITIAL_RECETAS: Receta[] = [
         "cantidad": 400,
         "tipo": "variable"
       }
-    ]
+    ],
+    "nombre_base": "Torta de Vainilla"
   },
   {
     "id": 9,
@@ -1932,7 +1940,8 @@ export const INITIAL_RECETAS: Receta[] = [
         "cantidad": 400,
         "tipo": "variable"
       }
-    ]
+    ],
+    "nombre_base": "Torta de Vainilla"
   },
   {
     "id": 10,
@@ -1962,7 +1971,8 @@ export const INITIAL_RECETAS: Receta[] = [
         "cantidad": 400,
         "tipo": "variable"
       }
-    ]
+    ],
+    "nombre_base": "Torta de Vainilla"
   },
   {
     "id": 11,
@@ -1997,7 +2007,8 @@ export const INITIAL_RECETAS: Receta[] = [
         "cantidad": 400,
         "tipo": "variable"
       }
-    ]
+    ],
+    "nombre_base": "Torta de Vainilla"
   },
   {
     "id": 12,
@@ -2027,7 +2038,8 @@ export const INITIAL_RECETAS: Receta[] = [
         "cantidad": 400,
         "tipo": "variable"
       }
-    ]
+    ],
+    "nombre_base": "Torta de Vainilla"
   },
   {
     "id": 13,
@@ -2057,7 +2069,8 @@ export const INITIAL_RECETAS: Receta[] = [
         "cantidad": 400,
         "tipo": "variable"
       }
-    ]
+    ],
+    "nombre_base": "Torta de Vainilla"
   },
   {
     "id": 14,
@@ -2082,7 +2095,8 @@ export const INITIAL_RECETAS: Receta[] = [
         "cantidad": 400,
         "tipo": "variable"
       }
-    ]
+    ],
+    "nombre_base": "Torta de Vainilla"
   },
   {
     "id": 15,
@@ -2147,7 +2161,8 @@ export const INITIAL_RECETAS: Receta[] = [
         "cantidad": 300,
         "tipo": "variable"
       }
-    ]
+    ],
+    "nombre_base": "Torta de Vainilla"
   },
   {
     "id": 16,
@@ -2212,7 +2227,8 @@ export const INITIAL_RECETAS: Receta[] = [
         "cantidad": 300,
         "tipo": "variable"
       }
-    ]
+    ],
+    "nombre_base": "Torta de Vainilla"
   },
   {
     "id": 17,
@@ -2277,7 +2293,8 @@ export const INITIAL_RECETAS: Receta[] = [
         "cantidad": 300,
         "tipo": "variable"
       }
-    ]
+    ],
+    "nombre_base": "Torta de Vainilla"
   },
   {
     "id": 18,
@@ -2347,7 +2364,8 @@ export const INITIAL_RECETAS: Receta[] = [
         "cantidad": 500,
         "tipo": "variable"
       }
-    ]
+    ],
+    "nombre_base": "Torta de Vainilla"
   },
   {
     "id": 19,
@@ -2417,7 +2435,8 @@ export const INITIAL_RECETAS: Receta[] = [
         "cantidad": 500,
         "tipo": "variable"
       }
-    ]
+    ],
+    "nombre_base": "Torta de Vainilla"
   },
   {
     "id": 20,
@@ -2462,7 +2481,8 @@ export const INITIAL_RECETAS: Receta[] = [
         "cantidad": 1,
         "tipo": "variable"
       }
-    ]
+    ],
+    "nombre_base": "Torta de Chocolate"
   },
   {
     "id": 21,
@@ -2502,7 +2522,8 @@ export const INITIAL_RECETAS: Receta[] = [
         "cantidad": 1,
         "tipo": "variable"
       }
-    ]
+    ],
+    "nombre_base": "Torta de Chocolate"
   },
   {
     "id": 22,
@@ -2542,7 +2563,8 @@ export const INITIAL_RECETAS: Receta[] = [
         "cantidad": 1,
         "tipo": "variable"
       }
-    ]
+    ],
+    "nombre_base": "Torta de Chocolate"
   },
   {
     "id": 23,
@@ -2587,7 +2609,8 @@ export const INITIAL_RECETAS: Receta[] = [
         "cantidad": 1,
         "tipo": "variable"
       }
-    ]
+    ],
+    "nombre_base": "Torta de Chocolate"
   },
   {
     "id": 24,
@@ -2647,7 +2670,8 @@ export const INITIAL_RECETAS: Receta[] = [
         "cantidad": 10,
         "tipo": "fijo"
       }
-    ]
+    ],
+    "nombre_base": "Brownie"
   },
   {
     "id": 25,
@@ -2682,7 +2706,8 @@ export const INITIAL_RECETAS: Receta[] = [
         "cantidad": 18,
         "tipo": "variable"
       }
-    ]
+    ],
+    "nombre_base": "Brownie"
   },
   {
     "id": 26,
@@ -2707,7 +2732,8 @@ export const INITIAL_RECETAS: Receta[] = [
         "cantidad": 18,
         "tipo": "variable"
       }
-    ]
+    ],
+    "nombre_base": "Brownie"
   },
   {
     "id": 27,
@@ -2777,7 +2803,8 @@ export const INITIAL_RECETAS: Receta[] = [
         "cantidad": 3,
         "tipo": "variable"
       }
-    ]
+    ],
+    "nombre_base": "Cupcake"
   },
   {
     "id": 28,
@@ -2852,7 +2879,8 @@ export const INITIAL_RECETAS: Receta[] = [
         "cantidad": 240,
         "tipo": "fijo"
       }
-    ]
+    ],
+    "nombre_base": "Cupcake"
   },
   {
     "id": 29,
@@ -2932,7 +2960,8 @@ export const INITIAL_RECETAS: Receta[] = [
         "cantidad": 50,
         "tipo": "variable"
       }
-    ]
+    ],
+    "nombre_base": "Cupcake"
   },
   {
     "id": 30,
@@ -3012,7 +3041,8 @@ export const INITIAL_RECETAS: Receta[] = [
         "cantidad": 50,
         "tipo": "variable"
       }
-    ]
+    ],
+    "nombre_base": "Cupcake"
   },
   {
     "id": 31,
@@ -3087,7 +3117,8 @@ export const INITIAL_RECETAS: Receta[] = [
         "cantidad": 2,
         "tipo": "variable"
       }
-    ]
+    ],
+    "nombre_base": "Cupcake"
   },
   {
     "id": 32,
@@ -3167,7 +3198,8 @@ export const INITIAL_RECETAS: Receta[] = [
         "cantidad": 2,
         "tipo": "variable"
       }
-    ]
+    ],
+    "nombre_base": "Cupcake"
   },
   {
     "id": 33,
@@ -3237,7 +3269,8 @@ export const INITIAL_RECETAS: Receta[] = [
         "cantidad": 1,
         "tipo": "variable"
       }
-    ]
+    ],
+    "nombre_base": "Pasta Seca"
   },
   {
     "id": 34,
@@ -3297,7 +3330,8 @@ export const INITIAL_RECETAS: Receta[] = [
         "cantidad": 250,
         "tipo": "variable"
       }
-    ]
+    ],
+    "nombre_base": "Galletas de Mantequilla"
   },
   {
     "id": 35,
@@ -3367,7 +3401,8 @@ export const INITIAL_RECETAS: Receta[] = [
         "cantidad": 10,
         "tipo": "variable"
       }
-    ]
+    ],
+    "nombre_base": "Galletas de Mantequilla"
   },
   {
     "id": 36,
@@ -3432,7 +3467,8 @@ export const INITIAL_RECETAS: Receta[] = [
         "cantidad": 50,
         "tipo": "variable"
       }
-    ]
+    ],
+    "nombre_base": "Galletas de Mantequilla"
   },
   {
     "id": 37,
@@ -3487,7 +3523,8 @@ export const INITIAL_RECETAS: Receta[] = [
         "cantidad": 16,
         "tipo": "fijo"
       }
-    ]
+    ],
+    "nombre_base": "Galletas de Formas"
   },
   {
     "id": 38,
@@ -3547,7 +3584,8 @@ export const INITIAL_RECETAS: Receta[] = [
         "cantidad": 50,
         "tipo": "variable"
       }
-    ]
+    ],
+    "nombre_base": "Galletas Lunette"
   },
   {
     "id": 39,
@@ -3612,7 +3650,8 @@ export const INITIAL_RECETAS: Receta[] = [
         "cantidad": 50,
         "tipo": "variable"
       }
-    ]
+    ],
+    "nombre_base": "Galletas Lunette"
   },
   {
     "id": 40,
@@ -3672,7 +3711,8 @@ export const INITIAL_RECETAS: Receta[] = [
         "cantidad": 40,
         "tipo": "variable"
       }
-    ]
+    ],
+    "nombre_base": "Alfajor"
   },
   {
     "id": 41,
@@ -3727,7 +3767,8 @@ export const INITIAL_RECETAS: Receta[] = [
         "cantidad": 1,
         "tipo": "variable"
       }
-    ]
+    ],
+    "nombre_base": "Alfajor"
   },
   {
     "id": 42,
@@ -3827,7 +3868,8 @@ export const INITIAL_RECETAS: Receta[] = [
         "cantidad": 30,
         "tipo": "variable"
       }
-    ]
+    ],
+    "nombre_base": "Pan de Jamón"
   },
   {
     "id": 43,
@@ -3932,7 +3974,8 @@ export const INITIAL_RECETAS: Receta[] = [
         "cantidad": 30,
         "tipo": "variable"
       }
-    ]
+    ],
+    "nombre_base": "Pan de Jamón"
   },
   {
     "id": 44,
@@ -3997,7 +4040,8 @@ export const INITIAL_RECETAS: Receta[] = [
         "cantidad": 30,
         "tipo": "variable"
       }
-    ]
+    ],
+    "nombre_base": "Pan de Jamón"
   },
   {
     "id": 45,
@@ -4077,7 +4121,8 @@ export const INITIAL_RECETAS: Receta[] = [
         "cantidad": 1,
         "tipo": "variable"
       }
-    ]
+    ],
+    "nombre_base": "Cachito"
   },
   {
     "id": 46,
@@ -4137,7 +4182,8 @@ export const INITIAL_RECETAS: Receta[] = [
         "cantidad": 1,
         "tipo": "variable"
       }
-    ]
+    ],
+    "nombre_base": "Quesillo"
   },
   {
     "id": 47,
@@ -4202,7 +4248,8 @@ export const INITIAL_RECETAS: Receta[] = [
         "cantidad": 5,
         "tipo": "fijo"
       }
-    ]
+    ],
+    "nombre_base": "Quesillo"
   },
   {
     "id": 48,
@@ -4257,7 +4304,8 @@ export const INITIAL_RECETAS: Receta[] = [
         "cantidad": 12,
         "tipo": "variable"
       }
-    ]
+    ],
+    "nombre_base": "Quesillo"
   },
   {
     "id": 49,
@@ -4297,7 +4345,8 @@ export const INITIAL_RECETAS: Receta[] = [
         "cantidad": 30,
         "tipo": "fijo"
       }
-    ]
+    ],
+    "nombre_base": "Bizcocho"
   },
   {
     "id": 50,
@@ -4342,7 +4391,8 @@ export const INITIAL_RECETAS: Receta[] = [
         "cantidad": 250,
         "tipo": "variable"
       }
-    ]
+    ],
+    "nombre_base": "Tres Leches"
   },
   {
     "id": 51,
@@ -4392,7 +4442,8 @@ export const INITIAL_RECETAS: Receta[] = [
         "cantidad": 12,
         "tipo": "variable"
       }
-    ]
+    ],
+    "nombre_base": "Tres Leches"
   },
   {
     "id": 52,
@@ -4447,7 +4498,8 @@ export const INITIAL_RECETAS: Receta[] = [
         "cantidad": 12,
         "tipo": "variable"
       }
-    ]
+    ],
+    "nombre_base": "Tres Leches"
   },
   {
     "id": 53,
@@ -4507,7 +4559,8 @@ export const INITIAL_RECETAS: Receta[] = [
         "cantidad": 100,
         "tipo": "variable"
       }
-    ]
+    ],
+    "nombre_base": "Torta de Vainilla"
   },
   {
     "id": 54,
@@ -4547,7 +4600,8 @@ export const INITIAL_RECETAS: Receta[] = [
         "cantidad": 1,
         "tipo": "variable"
       }
-    ]
+    ],
+    "nombre_base": "Suspiritos"
   },
   {
     "id": 55,
@@ -4582,7 +4636,8 @@ export const INITIAL_RECETAS: Receta[] = [
         "cantidad": 1,
         "tipo": "variable"
       }
-    ]
+    ],
+    "nombre_base": "Marquesa de Limón"
   },
   {
     "id": 56,
@@ -4647,7 +4702,8 @@ export const INITIAL_RECETAS: Receta[] = [
         "cantidad": 227,
         "tipo": "fijo"
       }
-    ]
+    ],
+    "nombre_base": "Deditos de Novia"
   },
   {
     "id": 57,
@@ -4702,7 +4758,8 @@ export const INITIAL_RECETAS: Receta[] = [
         "cantidad": 30,
         "tipo": "variable"
       }
-    ]
+    ],
+    "nombre_base": "Polvorones"
   },
   {
     "id": 58,
@@ -4762,7 +4819,8 @@ export const INITIAL_RECETAS: Receta[] = [
         "cantidad": 1,
         "tipo": "variable"
       }
-    ]
+    ],
+    "nombre_base": "Polvorones"
   },
   {
     "id": 59,
@@ -4822,7 +4880,8 @@ export const INITIAL_RECETAS: Receta[] = [
         "cantidad": 30,
         "tipo": "variable"
       }
-    ]
+    ],
+    "nombre_base": "Besitos de Nuez"
   },
   {
     "id": 60,
@@ -4867,7 +4926,8 @@ export const INITIAL_RECETAS: Receta[] = [
         "cantidad": 1,
         "tipo": "variable"
       }
-    ]
+    ],
+    "nombre_base": "Taquitos de Hojaldre"
   }
 ];
 
