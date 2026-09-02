@@ -228,7 +228,7 @@ export type UserRole = 'admin' | 'coadmin' | 'pastelero' | 'cajero' | 'operador'
 export interface Usuario {
   id: number;
   username: string; // ej: "Steven9909"
-  password?: string; // ej: "@Manzana0104"
+  password?: string; // Campo estrictamente de escritura al crear/editar; NUNCA devuelto ni persistido en sesión
   nombre_completo: string;
   email: string;
   telefono?: string;
@@ -238,3 +238,15 @@ export interface Usuario {
   ultimo_acceso?: string;
   created_at: string;
 }
+
+export type UsuarioSesion = Omit<Usuario, 'password'>;
+
+export type ActiveTab =
+  | 'dashboard'
+  | 'inventory'
+  | 'recipes'
+  | 'quotes'
+  | 'orders'
+  | 'kitchen'
+  | 'users'
+  | 'database';

@@ -236,18 +236,29 @@ export async function fetchAllFromSupabase(): Promise<{
       notas: m.notas || '',
     }));
 
-    // 6. Fetch Usuarios (si la tabla existe)
+    // 6. Fetch Usuarios Seguros (sin columna password)
     let usuarios: Usuario[] = [];
     try {
-      const { data: usuariosDb, error: userErr } = await client
-        .from('usuarios')
+      // Intentar primero con la vista segura usuarios_seguros
+      let { data: usuariosDb, error: userErr } = await client
+        .from('usuarios_seguros')
         .select('*')
         .order('id', { ascending: true });
+
+      // Si aún no se ha creado la vista, fallback a usuarios excluyendo la columna password
+      if (userErr) {
+        const fallbackRes = await client
+          .from('usuarios')
+          .select('id, username, nombre_completo, email, telefono, rol, activo, avatar_url, ultimo_acceso, created_at')
+          .order('id', { ascending: true });
+        usuariosDb = fallbackRes.data;
+        userErr = fallbackRes.error;
+      }
+
       if (!userErr && usuariosDb) {
         usuarios = usuariosDb.map((u: any) => ({
           id: Number(u.id),
           username: u.username,
-          password: u.password,
           nombre_completo: u.nombre_completo,
           email: u.email || '',
           telefono: u.telefono || '',
@@ -259,7 +270,7 @@ export async function fetchAllFromSupabase(): Promise<{
         }));
       }
     } catch {
-      // Ignorar si la tabla usuarios no existe aún en Supabase
+      // Continuar sin interrumpir la carga de otros datos
     }
 
     return {
@@ -546,41 +557,136 @@ export async function deleteInsumoFromSupabase(id: number): Promise<boolean> {
 }
 
 /**
- * Sube o actualiza un usuario en Supabase
+ * Autentica un usuario mediante función segura PL/pgSQL en PostgreSQL
+ * Valida el hash bcrypt en el servidor y retorna el perfil sin exponer contraseñas
+ */
+export async function autenticarUsuarioEnSupabase(
+  username: string,
+  password: string
+): Promise<{ success: boolean; message: string; user?: Usuario }> {
+  const client = getSupabaseClient();
+  if (!client) {
+    return { success: false, message: 'Supabase no está configurado.' };
+  }
+
+  try {
+    const { data, error } = await client.rpc('autenticar_usuario', {
+      p_username: username.trim(),
+      p_password: password.trim(),
+    });
+
+    if (error) {
+      return { success: false, message: `Error de autenticación: ${error.message}` };
+    }
+
+    if (data && typeof data === 'object') {
+      if (data.success && data.user) {
+        const u = data.user;
+        const parsedUser: Usuario = {
+          id: Number(u.id),
+          username: u.username,
+          nombre_completo: u.nombre_completo,
+          email: u.email || '',
+          telefono: u.telefono || '',
+          rol: u.rol,
+          activo: Boolean(u.activo),
+          avatar_url: u.avatar_url || '',
+          ultimo_acceso: u.ultimo_acceso || new Date().toISOString(),
+          created_at: u.created_at || new Date().toISOString(),
+        };
+        return { success: true, message: data.message || 'Autenticación exitosa', user: parsedUser };
+      }
+      return { success: false, message: data.message || 'Credenciales inválidas.' };
+    }
+
+    return { success: false, message: 'Respuesta inválida del servidor.' };
+  } catch (err: any) {
+    return { success: false, message: err?.message || 'Error de conexión con el servidor.' };
+  }
+}
+
+/**
+ * Sube o actualiza un usuario en Supabase de forma segura
+ * Cifra la contraseña con bcrypt en el servidor mediante la función RPC 'guardar_usuario_seguro'
  */
 export async function syncUsuarioToSupabase(usuario: Usuario): Promise<boolean> {
   const client = getSupabaseClient();
   if (!client) return false;
 
   try {
-    const { error } = await client.from('usuarios').upsert({
+    // Intentar primero con la función RPC segura
+    const { data, error } = await client.rpc('guardar_usuario_seguro', {
+      p_id: usuario.id,
+      p_username: usuario.username.trim(),
+      p_password: usuario.password ? usuario.password.trim() : '',
+      p_nombre_completo: usuario.nombre_completo.trim(),
+      p_email: (usuario.email || '').trim(),
+      p_telefono: (usuario.telefono || '').trim(),
+      p_rol: usuario.rol,
+      p_activo: usuario.activo,
+      p_avatar_url: usuario.avatar_url || null,
+    });
+
+    if (!error && data?.success) {
+      return true;
+    }
+
+    // Si la función RPC no está disponible aún, fallback a upsert
+    const { error: upsertError } = await client.from('usuarios').upsert({
       id: usuario.id,
-      username: usuario.username,
-      password: usuario.password || '',
-      nombre_completo: usuario.nombre_completo,
-      email: usuario.email || '',
-      telefono: usuario.telefono || '',
+      username: usuario.username.trim(),
+      nombre_completo: usuario.nombre_completo.trim(),
+      email: (usuario.email || '').trim(),
+      telefono: (usuario.telefono || '').trim(),
       rol: usuario.rol,
       activo: usuario.activo,
       avatar_url: usuario.avatar_url || null,
       ultimo_acceso: usuario.ultimo_acceso || null,
       created_at: usuario.created_at || new Date().toISOString(),
     });
-    return !error;
+
+    return !upsertError;
   } catch {
     return false;
   }
 }
 
 /**
- * Elimina un usuario en Supabase
+ * Cambia la contraseña de un usuario en Supabase mediante hash bcrypt seguro
+ */
+export async function cambiarPasswordEnSupabase(id: number, newPassword: string): Promise<boolean> {
+  const client = getSupabaseClient();
+  if (!client) return false;
+
+  try {
+    const { data, error } = await client.rpc('cambiar_password_usuario', {
+      p_id: id,
+      p_new_password: newPassword.trim(),
+    });
+
+    return !error && Boolean(data?.success);
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Elimina un usuario en Supabase de forma segura
  */
 export async function deleteUsuarioFromSupabase(id: number): Promise<boolean> {
   const client = getSupabaseClient();
   if (!client) return false;
+
   try {
-    const { error } = await client.from('usuarios').delete().eq('id', id);
-    return !error;
+    // Intentar con la función segura que protege al Admin Maestro
+    const { data, error } = await client.rpc('eliminar_usuario_seguro', { p_id: id });
+    if (!error && data?.success) {
+      return true;
+    }
+
+    // Fallback si la función aún no existe
+    const { error: delErr } = await client.from('usuarios').delete().eq('id', id);
+    return !delErr;
   } catch {
     return false;
   }

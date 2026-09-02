@@ -1,18 +1,15 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
-// Credenciales públicas de cliente Supabase (anon/publishable key con Row Level Security)
-const DEFAULT_SUPABASE_URL = 'https://ahzseugjftsmkdterpgq.supabase.co';
-const DEFAULT_SUPABASE_KEY = 'sb_publishable_KCDYQsATqBIVTAsYcHFZZQ_NNAoO20N';
-
-// Obtener credenciales desde localStorage, variables de entorno .env o valores por defecto
+// Obtener credenciales desde variables de entorno .env (Vite) o configuración manual en localStorage
 const getSupabaseCredentials = () => {
-  const localUrl = localStorage.getItem('delicias_supabase_url') || '';
-  const localKey = localStorage.getItem('delicias_supabase_anon_key') || '';
-  const envUrl = import.meta.env.VITE_SUPABASE_URL || '';
-  const envKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+  const envUrl = (import.meta.env.VITE_SUPABASE_URL || '').trim();
+  const envKey = (import.meta.env.VITE_SUPABASE_ANON_KEY || '').trim();
+  const localUrl = (localStorage.getItem('delicias_supabase_url') || '').trim();
+  const localKey = (localStorage.getItem('delicias_supabase_anon_key') || '').trim();
 
-  const url = (localUrl || envUrl || DEFAULT_SUPABASE_URL).trim();
-  const anonKey = (localKey || envKey || DEFAULT_SUPABASE_KEY).trim();
+  // Priorizar variables de entorno de Vite; si no existen, usar configuración local explícita
+  const url = envUrl || localUrl;
+  const anonKey = envKey || localKey;
 
   return { url, anonKey };
 };

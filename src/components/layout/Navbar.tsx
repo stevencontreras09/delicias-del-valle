@@ -15,6 +15,7 @@ import {
   Shield,
   Trash2,
 } from 'lucide-react';
+import { canAccessTab } from '../../utils/security';
 
 export const Navbar: React.FC = () => {
   const {
@@ -41,7 +42,7 @@ export const Navbar: React.FC = () => {
   ).length;
   const pendingQuotesCount = cotizaciones.filter((c) => c.estado === 'pendiente').length;
 
-  const navItems: { id: ActiveTab; label: string; icon: React.ReactNode; badge?: number; adminOnly?: boolean }[] = [
+  const allNavItems: { id: ActiveTab; label: string; icon: React.ReactNode; badge?: number }[] = [
     { id: 'dashboard', label: 'Inicio', icon: <LayoutDashboard className="w-3.5 h-3.5" /> },
     {
       id: 'inventory',
@@ -62,14 +63,13 @@ export const Navbar: React.FC = () => {
       icon: <Receipt className="w-3.5 h-3.5" />,
       badge: activeOrdersCount > 0 ? activeOrdersCount : undefined,
     },
-    // Pestañas exclusivas para el Administrador
-    ...(isAdmin
-      ? [
-          { id: 'users' as ActiveTab, label: 'Usuarios', icon: <Users className="w-3.5 h-3.5" />, adminOnly: true },
-          { id: 'database' as ActiveTab, label: 'Base SQL', icon: <Database className="w-3.5 h-3.5" />, adminOnly: true },
-        ]
-      : []),
+    { id: 'kitchen', label: 'Cocina', icon: <ChefHat className="w-3.5 h-3.5" /> },
+    { id: 'users', label: 'Usuarios', icon: <Users className="w-3.5 h-3.5" /> },
+    { id: 'database', label: 'Base SQL', icon: <Database className="w-3.5 h-3.5" /> },
   ];
+
+  // Filtrado RBAC estricto: solo renderizar pestañas autorizadas para el rol del usuario
+  const navItems = allNavItems.filter((item) => canAccessTab(currentUser?.rol, item.id));
 
   return (
     <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-trigo-200 shadow-sm">
@@ -192,7 +192,7 @@ export const Navbar: React.FC = () => {
                       </div>
                     </div>
 
-                    {isAdmin && (
+                    {canAccessTab(currentUser?.rol, 'users') && (
                       <button
                         onClick={() => {
                           setActiveTab('users');
@@ -205,7 +205,7 @@ export const Navbar: React.FC = () => {
                       </button>
                     )}
 
-                    {isAdmin && (
+                    {canAccessTab(currentUser?.rol, 'database') && (
                       <button
                         onClick={() => {
                           setActiveTab('database');

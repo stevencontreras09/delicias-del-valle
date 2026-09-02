@@ -4945,7 +4945,6 @@ export const INITIAL_USUARIOS: Usuario[] = [
   {
     "id": 1,
     "username": "Steven9909",
-    "password": "@Manzana0104",
     "nombre_completo": "Steven Contreras (Admin Maestro)",
     "email": "admin@deliciasdelvalle.com",
     "telefono": "+1 (809) 555-0101",
@@ -4956,7 +4955,6 @@ export const INITIAL_USUARIOS: Usuario[] = [
   {
     "id": 2,
     "username": "Rmarpa",
-    "password": "010203aaa",
     "nombre_completo": "Rmarpa (Co-Administrador)",
     "email": "rmarpa@deliciasdelvalle.com",
     "telefono": "+1 (809) 555-0102",
@@ -4967,7 +4965,6 @@ export const INITIAL_USUARIOS: Usuario[] = [
   {
     "id": 3,
     "username": "Vgarcia",
-    "password": "010203aaa",
     "nombre_completo": "Vgarcia (Co-Administrador)",
     "email": "vgarcia@deliciasdelvalle.com",
     "telefono": "+1 (809) 555-0103",

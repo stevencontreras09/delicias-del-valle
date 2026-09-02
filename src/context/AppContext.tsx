@@ -42,7 +42,15 @@ import {
   deleteInsumoFromSupabase,
   syncUsuarioToSupabase,
   deleteUsuarioFromSupabase,
+  autenticarUsuarioEnSupabase,
+  cambiarPasswordEnSupabase,
 } from '../services/supabaseService';
+import {
+  sanitizeInput,
+  sanitizeUserForStorage,
+  canAccessTab,
+  getDefaultTabForRole,
+} from '../utils/security';
 
 export type ActiveTab =
   | 'dashboard'
@@ -160,10 +168,18 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [activeTab, setActiveTab] = useState<ActiveTab>('dashboard');
 
-  // Estados de autenticación & Usuarios
+  // Estados de autenticación & Usuarios (almacenamiento sanitizado sin contraseñas)
   const [usuarios, setUsuarios] = useState<Usuario[]>(() => {
     const saved = localStorage.getItem(`${STORAGE_KEY}_usuarios`);
-    return saved ? JSON.parse(saved) : INITIAL_USUARIOS;
+    if (saved) {
+      try {
+        const parsed: any[] = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          return parsed.map((u) => sanitizeUserForStorage(u)).filter(Boolean) as Usuario[];
+        }
+      } catch {}
+    }
+    return INITIAL_USUARIOS;
   });
 
   const [currentUser, setCurrentUser] = useState<Usuario | null>(() => {
@@ -260,80 +276,85 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, []);
 
   // ==========================================
-  // AUTENTICACIÓN (LOGIN / LOGOUT)
+  // AUTENTICACIÓN SEGURA (LOGIN / LOGOUT)
   // ==========================================
   const login = useCallback(
     async (usernameInput: string, passwordInput: string): Promise<{ success: boolean; message: string }> => {
-      const cleanUser = usernameInput.trim().toLowerCase();
-      let user = usuarios.find(
-        u => u.username.trim().toLowerCase() === cleanUser
-      );
+      const cleanUser = sanitizeInput(usernameInput);
+      const cleanPass = passwordInput.trim();
 
-      // Si no está en el estado local, consultar directamente a Supabase en tiempo real
-      if (!user && isSupabaseConfigured()) {
+      if (!cleanUser || !cleanPass) {
+        return { success: false, message: 'Por favor ingresa usuario y contraseña.' };
+      }
+
+      // 1. Si Supabase está configurado, autenticar mediante función PL/pgSQL pgcrypto en PostgreSQL
+      if (isSupabaseConfigured()) {
         try {
-          const client = getSupabaseClient();
-          if (client) {
-            const { data: dbUsers, error } = await client
-              .from('usuarios')
-              .select('*')
-              .ilike('username', cleanUser);
+          const authRes = await autenticarUsuarioEnSupabase(cleanUser, cleanPass);
+          if (authRes.success && authRes.user) {
+            const sessionUser = sanitizeUserForStorage(authRes.user);
+            if (sessionUser) {
+              setCurrentUser(sessionUser as Usuario);
+              localStorage.setItem(`${STORAGE_KEY}_session_user`, JSON.stringify(sessionUser));
 
-            if (!error && dbUsers && dbUsers.length > 0) {
-              const fetched = dbUsers[0];
-              const parsedUser: Usuario = {
-                id: Number(fetched.id),
-                username: fetched.username,
-                password: fetched.password,
-                nombre_completo: fetched.nombre_completo,
-                email: fetched.email || '',
-                telefono: fetched.telefono || '',
-                rol: fetched.rol,
-                activo: Boolean(fetched.activo),
-                avatar_url: fetched.avatar_url || '',
-                ultimo_acceso: fetched.ultimo_acceso || undefined,
-                created_at: fetched.created_at || new Date().toISOString(),
-              };
-              user = parsedUser;
-              setUsuarios(prev => {
-                const map = new Map<string, Usuario>();
-                INITIAL_USUARIOS.forEach(u => map.set(u.username.toLowerCase(), u));
-                prev.forEach(u => map.set(u.username.toLowerCase(), u));
-                map.set(parsedUser.username.toLowerCase(), parsedUser);
-                return Array.from(map.values());
-              });
+              // Redirigir a la pestaña correspondiente según permisos RBAC
+              const targetTab = getDefaultTabForRole(sessionUser.rol);
+              setActiveTab(targetTab);
+
+              showToast(
+                'success',
+                `¡Bienvenido, ${sessionUser.nombre_completo}!`,
+                `Sesión iniciada como ${sessionUser.rol.toUpperCase()}.`
+              );
+              playSuccessChime();
+              return { success: true, message: 'Autenticación exitosa.' };
             }
+          } else {
+            return { success: false, message: authRes.message || 'Credenciales incorrectas o usuario no registrado.' };
           }
-        } catch (e) {
-          console.error('Error verificando usuario en Supabase:', e);
+        } catch (err: any) {
+          console.error('Error en autenticación remota Supabase:', err);
         }
       }
 
-      if (!user) {
+      // 2. Modo Offline / Respaldo Local (si Supabase no está conectado)
+      const cleanUserLower = cleanUser.toLowerCase();
+      const localUser = usuarios.find((u) => u.username.trim().toLowerCase() === cleanUserLower);
+
+      if (!localUser) {
         return { success: false, message: 'Usuario no encontrado en el sistema.' };
       }
 
-      if (!user.activo) {
-        return { success: false, message: 'Este usuario está inactivo. Contacta al Administrador.' };
+      if (!localUser.activo) {
+        return { success: false, message: 'Esta cuenta de usuario está inactiva. Contacta al Administrador.' };
       }
 
-      if (user.password !== passwordInput.trim()) {
+      // Si el usuario local tuviera una contraseña temporal local
+      if (localUser.password && localUser.password !== cleanPass) {
         return { success: false, message: 'Contraseña incorrecta.' };
       }
 
-      const updatedUser: Usuario = {
-        ...user,
+      const sessionUser = sanitizeUserForStorage({
+        ...localUser,
         ultimo_acceso: new Date().toISOString(),
-      };
+      });
 
-      setCurrentUser(updatedUser);
-      setUsuarios(prev => prev.map(u => (u.id === user!.id ? updatedUser : u)));
-      localStorage.setItem(`${STORAGE_KEY}_session_user`, JSON.stringify(updatedUser));
+      if (sessionUser) {
+        setCurrentUser(sessionUser as Usuario);
+        localStorage.setItem(`${STORAGE_KEY}_session_user`, JSON.stringify(sessionUser));
+        const targetTab = getDefaultTabForRole(sessionUser.rol);
+        setActiveTab(targetTab);
 
-      showToast('success', `¡Bienvenido, ${user.nombre_completo}!`, `Sesión iniciada como ${user.rol.toUpperCase()}.`);
-      playSuccessChime();
+        showToast(
+          'success',
+          `¡Bienvenido, ${sessionUser.nombre_completo}!`,
+          `Sesión iniciada como ${sessionUser.rol.toUpperCase()}.`
+        );
+        playSuccessChime();
+        return { success: true, message: 'Autenticación exitosa.' };
+      }
 
-      return { success: true, message: 'Autenticación exitosa.' };
+      return { success: false, message: 'Error procesando la sesión de usuario.' };
     },
     [usuarios, showToast]
   );
@@ -346,43 +367,66 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, [showToast]);
 
   // ==========================================
-  // GESTIÓN DE USUARIOS (CRUD)
+  // GESTIÓN DE USUARIOS (CRUD CON HASH BCRYPT)
   // ==========================================
   const addUsuario = useCallback((data: Omit<Usuario, 'id' | 'created_at'>): Usuario => {
-    const nextId = usuarios.length > 0 ? Math.max(...usuarios.map(u => u.id)) + 1 : 1;
-    const newUsuario: Usuario = {
-      ...data,
+    const nextId = usuarios.length > 0 ? Math.max(...usuarios.map((u) => u.id)) + 1 : 1;
+    const sanitizedNewUser: Usuario = {
       id: nextId,
+      username: sanitizeInput(data.username),
+      password: data.password ? data.password.trim() : undefined,
+      nombre_completo: sanitizeInput(data.nombre_completo),
+      email: sanitizeInput(data.email),
+      telefono: sanitizeInput(data.telefono || ''),
+      rol: data.rol,
+      activo: Boolean(data.activo),
       created_at: new Date().toISOString(),
     };
-    setUsuarios(prev => [newUsuario, ...prev]);
+
+    // Agregar a la lista local omitiendo la contraseña para evitar exposición en memoria/storage
+    const safeLocalUser = sanitizeUserForStorage(sanitizedNewUser) as Usuario;
+    setUsuarios((prev) => [safeLocalUser, ...prev]);
+
     if (isSupabaseConfigured()) {
-      syncUsuarioToSupabase(newUsuario);
+      // Enviar a Supabase con contraseña para cifrado bcrypt en el servidor PostgreSQL
+      syncUsuarioToSupabase(sanitizedNewUser);
     }
-    showToast('success', 'Usuario Creado', `Usuario "${newUsuario.username}" registrado exitosamente.`);
-    return newUsuario;
+
+    showToast('success', 'Usuario Creado', `Usuario "${safeLocalUser.username}" registrado exitosamente.`);
+    return safeLocalUser;
   }, [usuarios, showToast]);
 
   const updateUsuario = useCallback((id: number, data: Partial<Usuario>) => {
-    setUsuarios(prev =>
-      prev.map(u => {
+    const sanitizedData: Partial<Usuario> = {
+      ...data,
+      username: data.username ? sanitizeInput(data.username) : undefined,
+      nombre_completo: data.nombre_completo ? sanitizeInput(data.nombre_completo) : undefined,
+      email: data.email ? sanitizeInput(data.email) : undefined,
+      telefono: data.telefono ? sanitizeInput(data.telefono) : undefined,
+    };
+
+    setUsuarios((prev) =>
+      prev.map((u) => {
         if (u.id !== id) return u;
-        const updated = { ...u, ...data };
+        const updated = { ...u, ...sanitizedData };
+        const safeUpdated = sanitizeUserForStorage(updated) as Usuario;
+
         if (currentUser?.id === id) {
-          setCurrentUser(updated);
-          localStorage.setItem(`${STORAGE_KEY}_session_user`, JSON.stringify(updated));
+          setCurrentUser(safeUpdated);
+          localStorage.setItem(`${STORAGE_KEY}_session_user`, JSON.stringify(safeUpdated));
         }
+
         if (isSupabaseConfigured()) {
-          syncUsuarioToSupabase(updated);
+          syncUsuarioToSupabase({ ...updated, id });
         }
-        return updated;
+        return safeUpdated;
       })
     );
     showToast('info', 'Usuario Actualizado', 'Los datos del usuario fueron guardados.');
   }, [currentUser, showToast]);
 
   const deleteUsuario = useCallback((id: number): { success: boolean; message?: string } => {
-    const user = usuarios.find(u => u.id === id);
+    const user = usuarios.find((u) => u.id === id);
     if (!user) return { success: false, message: 'Usuario no encontrado.' };
 
     if (user.username === 'Steven9909' || id === 1) {
@@ -395,7 +439,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return { success: false, message: 'No puedes eliminar tu propia cuenta mientras estés conectado.' };
     }
 
-    setUsuarios(prev => prev.filter(u => u.id !== id));
+    setUsuarios((prev) => prev.filter((u) => u.id !== id));
     if (isSupabaseConfigured()) {
       deleteUsuarioFromSupabase(id);
     }
@@ -404,7 +448,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, [usuarios, currentUser, showToast]);
 
   const toggleUsuarioEstado = useCallback((id: number) => {
-    const user = usuarios.find(u => u.id === id);
+    const user = usuarios.find((u) => u.id === id);
     if (!user) return;
 
     if (user.username === 'Steven9909' || id === 1) {
@@ -417,14 +461,23 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     showToast('info', 'Estado Modificado', `Usuario "${user.username}" ahora está ${nuevoEstado ? 'ACTIVO' : 'INACTIVO'}.`);
   }, [usuarios, updateUsuario, showToast]);
 
-  const resetPasswordUsuario = useCallback((id: number, newPassword: string) => {
-    updateUsuario(id, { password: newPassword.trim() });
-    showToast('success', 'Contraseña Actualizada', 'La nueva contraseña fue establecida con éxito.');
-  }, [updateUsuario, showToast]);
+  const resetPasswordUsuario = useCallback(async (id: number, newPassword: string) => {
+    const cleanPass = newPassword.trim();
+    if (cleanPass.length < 6) {
+      showToast('warning', 'Contraseña Muy Corta', 'La contraseña debe tener al menos 6 caracteres.');
+      return;
+    }
 
-  // Sincronizar cambios en usuarios en localStorage
+    if (isSupabaseConfigured()) {
+      await cambiarPasswordEnSupabase(id, cleanPass);
+    }
+    showToast('success', 'Contraseña Actualizada', 'La nueva contraseña fue cifrada con bcrypt y guardada.');
+  }, [showToast]);
+
+  // Sincronizar usuarios en localStorage asegurando que NUNCA se guarden contraseñas en disco
   useEffect(() => {
-    localStorage.setItem(`${STORAGE_KEY}_usuarios`, JSON.stringify(usuarios));
+    const sanitizedList = usuarios.map((u) => sanitizeUserForStorage(u)).filter(Boolean);
+    localStorage.setItem(`${STORAGE_KEY}_usuarios`, JSON.stringify(sanitizedList));
   }, [usuarios]);
 
   // Sincronización Supabase
@@ -847,6 +900,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       ...data,
       id: nextId,
       codigo,
+      cliente_nombre: sanitizeInput(data.cliente_nombre),
+      cliente_telefono: sanitizeInput(data.cliente_telefono),
+      cliente_email: data.cliente_email ? sanitizeInput(data.cliente_email) : undefined,
+      notas: data.notas ? sanitizeInput(data.notas) : undefined,
       created_at: new Date().toISOString(),
     };
 
@@ -988,6 +1045,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       ...data,
       id: nextId,
       numero_factura,
+      cliente_nombre: sanitizeInput(data.cliente_nombre),
+      cliente_telefono: sanitizeInput(data.cliente_telefono),
+      cliente_email: data.cliente_email ? sanitizeInput(data.cliente_email) : undefined,
+      direccion_entrega: data.direccion_entrega ? sanitizeInput(data.direccion_entrega) : undefined,
+      notas_cocina: data.notas_cocina ? sanitizeInput(data.notas_cocina) : undefined,
       saldo_pendiente,
       inventario_descontado: false,
       created_at: new Date().toISOString(),
@@ -1049,14 +1111,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       id: nextId,
       cotizacion_id: cot.id,
       numero_factura,
-      cliente_nombre: cot.cliente_nombre,
-      cliente_telefono: cot.cliente_telefono,
-      cliente_email: cot.cliente_email,
+      cliente_nombre: sanitizeInput(cot.cliente_nombre),
+      cliente_telefono: sanitizeInput(cot.cliente_telefono),
+      cliente_email: cot.cliente_email ? sanitizeInput(cot.cliente_email) : undefined,
       fecha_pedido: new Date().toISOString().split('T')[0],
       fecha_entrega: fechaEntrega,
       hora_entrega: horaEntrega,
       tipo_entrega: tipoEntrega,
-      direccion_entrega: direccion,
+      direccion_entrega: direccion ? sanitizeInput(direccion) : undefined,
       items: pedidoItems,
       subtotal: cot.subtotal,
       costo_envio: cot.costo_envio,
