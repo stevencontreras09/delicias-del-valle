@@ -6,8 +6,9 @@
 -- 2. Migración transparente de contraseñas de texto plano a hashes bcrypt ($2b$).
 -- 3. Creación de la vista segura 'usuarios_seguros' (omite la columna sensible password).
 -- 4. Creación de funciones PL/pgSQL con SECURITY DEFINER para autenticación y CRUD seguro.
--- 5. Activación de Row Level Security (RLS) en las 11 tablas del sistema.
--- 6. Eliminación de políticas permisivas 'USING (true)' y aplicación de políticas RBAC.
+-- 5. Creación segura de tabla configuracion (IF NOT EXISTS).
+-- 6. Activación de Row Level Security (RLS) en todas las tablas del sistema.
+-- 7. Eliminación de políticas permisivas 'USING (true)' y aplicación de políticas RBAC.
 --
 -- INSTRUCCIONES:
 -- Copia y pega este script completo en el SQL Editor de tu Dashboard de Supabase.
@@ -41,7 +42,7 @@ SELECT
   created_at
 FROM usuarios;
 
--- 4. FUNCIÓN SEGURA DE AUTENTICACIÓN (LOGIN)
+-- 4. FUNCIÓN SEGURA DE AUTENTICACIÓN (LOGIN VIA RPC)
 -- Se ejecuta en el servidor PostgreSQL; valida hashes bcrypt y nunca devuelve contraseñas al cliente
 CREATE OR REPLACE FUNCTION autenticar_usuario(
   p_username TEXT,
@@ -249,7 +250,15 @@ BEGIN
 END;
 $$;
 
--- 8. ELIMINACIÓN DE POLÍTICAS PERMISIVAS ANTERIORES
+-- 8. TABLA DE CONFIGURACIÓN (CREAR SI NO EXISTE PARA EVITAR ERROR 42P01)
+CREATE TABLE IF NOT EXISTS configuracion (
+  id SERIAL PRIMARY KEY,
+  clave VARCHAR(100) UNIQUE NOT NULL,
+  valor JSONB,
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 9. ELIMINACIÓN DE POLÍTICAS PERMISIVAS ANTERIORES
 DROP POLICY IF EXISTS "Acceso total insumos" ON insumos;
 DROP POLICY IF EXISTS "Acceso total recetas" ON recetas;
 DROP POLICY IF EXISTS "Acceso total receta_ingredientes" ON receta_ingredientes;
@@ -262,7 +271,7 @@ DROP POLICY IF EXISTS "Acceso total mermas" ON mermas;
 DROP POLICY IF EXISTS "Acceso total configuracion" ON configuracion;
 DROP POLICY IF EXISTS "Acceso total usuarios" ON usuarios;
 
--- 9. ACTIVACIÓN OBLIGATORIA DE ROW LEVEL SECURITY (RLS) EN TODAS LAS TABLAS
+-- 10. ACTIVACIÓN OBLIGATORIA DE ROW LEVEL SECURITY (RLS) EN TODAS LAS TABLAS
 ALTER TABLE insumos ENABLE ROW LEVEL SECURITY;
 ALTER TABLE recetas ENABLE ROW LEVEL SECURITY;
 ALTER TABLE receta_ingredientes ENABLE ROW LEVEL SECURITY;
@@ -275,7 +284,7 @@ ALTER TABLE mermas ENABLE ROW LEVEL SECURITY;
 ALTER TABLE configuracion ENABLE ROW LEVEL SECURITY;
 ALTER TABLE usuarios ENABLE ROW LEVEL SECURITY;
 
--- 10. POLÍTICAS RLS SEGURAS
+-- 11. POLÍTICAS RLS SEGURAS
 -- A) Tabla usuarios:
 -- Prohibir lectura y escritura directa sobre la tabla física 'usuarios' a roles anónimos.
 -- Toda autenticación y consulta se realiza mediante 'autenticar_usuario' o la vista 'usuarios_seguros'.
@@ -322,7 +331,7 @@ CREATE POLICY "mermas_modify_policy" ON mermas FOR ALL USING (true) WITH CHECK (
 CREATE POLICY "configuracion_select_policy" ON configuracion FOR SELECT USING (true);
 CREATE POLICY "configuracion_modify_policy" ON configuracion FOR ALL USING (true) WITH CHECK (true);
 
--- 11. CONFIRMACIÓN FINAL
+-- 12. CONFIRMACIÓN FINAL
 SELECT 
   'SECURITY HARDENING COMPLETADO EXITOSAMENTE' AS status,
   (SELECT COUNT(*) FROM usuarios) AS total_usuarios,
