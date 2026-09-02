@@ -1,0 +1,29 @@
+{
+  "short_name": "Delicias",
+  "name": "Delicias del Valle - ERP Gastronómico",
+  "description": "Sistema ERP y Punto de Venta para Pastelería & Panadería Artesanal",
+  "icons": [
+    {
+      "src": "/logo.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "/logo.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    },
+    {
+      "src": "/logo.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#FFFDF9",
+  "theme_color": "#5D4037",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "scope": "/"
+}

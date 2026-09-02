@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Pedido, EstadoPedido, MetodoPago, TipoPago } from '../../types';
+import { Pedido, EstadoPedido, MetodoPago, TipoPago, BancoRD } from '../../types';
 import { Modal } from '../ui/Modal';
 import { formatCurrency, formatDate } from '../../utils/formatters';
 import {
@@ -10,6 +10,9 @@ import {
   Phone,
   User,
   Sparkles,
+  Printer,
+  XCircle,
+  Trash2,
 } from 'lucide-react';
 import { Badge } from '../ui/Badge';
 import { generarPdfPedido } from '../../utils/pdfGenerator';
@@ -21,12 +24,17 @@ interface OrderDetailModalProps {
   onClose: () => void;
   pedido: Pedido | null;
   onChangeStatus: (pedidoId: number, nuevoEstado: EstadoPedido) => void;
+  onRequestPrintTicket?: (pedido: Pedido) => void;
+  onRequestCancel?: (pedido: Pedido) => void;
+  onRequestDelete?: (pedido: Pedido) => void;
   onSavePayment: (
     pedidoId: number,
     monto: number,
     metodo: MetodoPago,
     referencia: string,
-    tipoPago: TipoPago
+    tipoPago: TipoPago,
+    banco?: BancoRD,
+    comprobanteUrl?: string
   ) => void;
 }
 
@@ -42,6 +50,9 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({
   onClose,
   pedido,
   onChangeStatus,
+  onRequestPrintTicket,
+  onRequestCancel,
+  onRequestDelete,
   onSavePayment,
 }) => {
   const [isPaymentOpen, setIsPaymentOpen] = useState(false);
@@ -126,6 +137,17 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({
               <span>Factura PDF</span>
             </button>
 
+            {onRequestPrintTicket && (
+              <button
+                type="button"
+                onClick={() => onRequestPrintTicket(pedido)}
+                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold transition-all shadow-sm"
+              >
+                <Printer className="w-4 h-4 text-slate-600" />
+                <span>Ticket Térmico</span>
+              </button>
+            )}
+
             <a
               href={waUrl}
               target="_blank"
@@ -143,6 +165,36 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({
               >
                 <CreditCard className="w-4 h-4" />
                 <span>Cobrar Saldo 50%</span>
+              </button>
+            )}
+
+            {onRequestCancel && pedido.estado !== 'cancelado' && (
+              <button
+                type="button"
+                onClick={() => {
+                  onRequestCancel(pedido);
+                  onClose();
+                }}
+                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-800 text-xs font-bold transition-all border border-amber-200"
+                title="Cancelar pedido y resolver inventario/mermas"
+              >
+                <XCircle className="w-4 h-4 text-amber-600" />
+                <span>Cancelar</span>
+              </button>
+            )}
+
+            {onRequestDelete && (
+              <button
+                type="button"
+                onClick={() => {
+                  onRequestDelete(pedido);
+                  onClose();
+                }}
+                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold transition-all border border-rose-200"
+                title="Eliminar pedido y devolver insumos al inventario (Requiere Admin/Coadmin)"
+              >
+                <Trash2 className="w-4 h-4 text-rose-600" />
+                <span>Eliminar Pedido</span>
               </button>
             )}
           </div>

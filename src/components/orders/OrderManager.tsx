@@ -7,12 +7,20 @@ import {
   FileText,
   LayoutGrid,
   List,
+  MessageCircle,
+  Printer,
+  XCircle,
+  Trash2,
 } from 'lucide-react';
 import { formatCurrency, formatDate } from '../../utils/formatters';
 import { Badge } from '../ui/Badge';
 import { OrderDetailModal } from './OrderDetailModal';
 import { PaymentRecordModal } from './PaymentRecordModal';
+import { PrintTicketModal } from './PrintTicketModal';
+import { OrderCancellationDialog } from './OrderCancellationDialog';
+import { OrderDeleteDialog } from './OrderDeleteDialog';
 import { generarPdfPedido } from '../../utils/pdfGenerator';
+import { generateOrderWhatsAppUrl } from '../../utils/whatsappHelper';
 
 const COLUMNAS_KANBAN: { id: EstadoPedido; label: string; badgeVariant: 'warning' | 'info' | 'success' | 'frambuesa' }[] = [
   { id: 'confirmado', label: '1. Confirmados', badgeVariant: 'warning' },
@@ -22,7 +30,7 @@ const COLUMNAS_KANBAN: { id: EstadoPedido; label: string; badgeVariant: 'warning
 ];
 
 export const OrderManager: React.FC = () => {
-  const { pedidos, setActiveTab } = useApp();
+  const { pedidos, recetas, insumosMap, setActiveTab } = useApp();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter] = useState<'all' | EstadoPedido>('all');
   const [viewMode, setViewMode] = useState<'kanban' | 'table'>('kanban');
@@ -30,6 +38,9 @@ export const OrderManager: React.FC = () => {
   // Modales
   const [selectedPedido, setSelectedPedido] = useState<Pedido | null>(null);
   const [paymentPedido, setPaymentPedido] = useState<Pedido | null>(null);
+  const [printTicketPedido, setPrintTicketPedido] = useState<Pedido | null>(null);
+  const [cancelPedido, setCancelPedido] = useState<Pedido | null>(null);
+  const [deletePedido, setDeletePedido] = useState<Pedido | null>(null);
 
   const filteredPedidos = useMemo(() => {
     return pedidos.list.filter((p) => {
@@ -216,6 +227,39 @@ export const OrderManager: React.FC = () => {
                               </button>
                             )}
                           </div>
+
+                          {/* Acciones Rápidas: WhatsApp y Ticket Térmico */}
+                          <div className="flex items-center gap-1.5 pt-1 border-t border-trigo-100">
+                            <a
+                              href={generateOrderWhatsAppUrl(pedido)}
+                              target="_blank"
+                              rel="noreferrer"
+                              title="Enviar por WhatsApp"
+                              className="p-1.5 rounded-lg bg-emerald-50 text-emerald-600 hover:bg-emerald-100 transition-colors flex items-center justify-center flex-1"
+                            >
+                              <MessageCircle className="w-3.5 h-3.5" />
+                              <span className="text-[10px] font-bold ml-1">WhatsApp</span>
+                            </a>
+
+                            <button
+                              type="button"
+                              onClick={() => setPrintTicketPedido(pedido)}
+                              title="Imprimir comanda / ticket térmico"
+                              className="p-1.5 rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors flex items-center justify-center flex-1"
+                            >
+                              <Printer className="w-3.5 h-3.5" />
+                              <span className="text-[10px] font-bold ml-1">Ticket POS</span>
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => setDeletePedido(pedido)}
+                              title="Eliminar pedido y devolver a inventario (Requiere Admin/Coadmin)"
+                              className="p-1.5 rounded-lg bg-rose-50 text-rose-600 hover:bg-rose-100 hover:text-rose-800 transition-colors"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
                         </div>
                       );
                     })
@@ -304,12 +348,37 @@ export const OrderManager: React.FC = () => {
                         >
                           Ver
                         </button>
+                        <a
+                          href={generateOrderWhatsAppUrl(p)}
+                          target="_blank"
+                          rel="noreferrer"
+                          title="Enviar por WhatsApp"
+                          className="p-1.5 rounded-lg bg-emerald-50 text-emerald-600 hover:bg-emerald-100 transition-colors"
+                        >
+                          <MessageCircle className="w-3.5 h-3.5" />
+                        </a>
+                        <button
+                          type="button"
+                          onClick={() => setPrintTicketPedido(p)}
+                          title="Ticket Térmico POS"
+                          className="p-1.5 rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors"
+                        >
+                          <Printer className="w-3.5 h-3.5" />
+                        </button>
                         <button
                           onClick={() => generarPdfPedido(p)}
                           title="PDF Factura"
-                          className="p-1 rounded-lg border border-trigo-300 hover:bg-crema text-chocolate-700"
+                          className="p-1.5 rounded-lg border border-trigo-300 hover:bg-crema text-chocolate-700"
                         >
-                          <FileText className="w-4 h-4" />
+                          <FileText className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setDeletePedido(p)}
+                          title="Eliminar pedido y devolver a inventario (Requiere Admin/Coadmin)"
+                          className="p-1.5 rounded-lg bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200 transition-colors"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
                         </button>
                       </div>
                     </td>
@@ -328,6 +397,9 @@ export const OrderManager: React.FC = () => {
           onClose={() => setSelectedPedido(null)}
           pedido={selectedPedido}
           onChangeStatus={pedidos.cambiarEstadoPedido}
+          onRequestPrintTicket={setPrintTicketPedido}
+          onRequestCancel={setCancelPedido}
+          onRequestDelete={setDeletePedido}
           onSavePayment={pedidos.registrarPago}
         />
       )}
@@ -338,6 +410,36 @@ export const OrderManager: React.FC = () => {
           onClose={() => setPaymentPedido(null)}
           pedido={paymentPedido}
           onSavePayment={pedidos.registrarPago}
+        />
+      )}
+
+      {printTicketPedido && (
+        <PrintTicketModal
+          isOpen={!!printTicketPedido}
+          onClose={() => setPrintTicketPedido(null)}
+          pedido={printTicketPedido}
+        />
+      )}
+
+      {cancelPedido && (
+        <OrderCancellationDialog
+          isOpen={!!cancelPedido}
+          onClose={() => setCancelPedido(null)}
+          pedido={cancelPedido}
+          recetas={recetas}
+          insumosMap={insumosMap}
+          onConfirmCancellation={pedidos.cancelarPedidoConResolucion}
+        />
+      )}
+
+      {deletePedido && (
+        <OrderDeleteDialog
+          isOpen={!!deletePedido}
+          onClose={() => setDeletePedido(null)}
+          pedido={deletePedido}
+          recetas={recetas}
+          insumosMap={insumosMap}
+          onConfirmDelete={pedidos.eliminarPedido}
         />
       )}
     </div>

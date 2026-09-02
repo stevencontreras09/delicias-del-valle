@@ -15,10 +15,15 @@ import {
   Sparkles,
   CheckCircle2,
   Scale,
+  Eye,
+  EyeOff,
+  Layers,
 } from 'lucide-react';
 import { formatCurrency, formatUnit } from '../../utils/formatters';
 import { enriquecerIngredientes } from '../../utils/calculations';
 import { playOvenTimerAlarm, playSuccessChime } from '../../utils/kitchenAudio';
+import { useWakeLock } from '../../hooks/useWakeLock';
+import { EstacionCocina } from '../../types';
 
 export const KitchenMode: React.FC = () => {
   const {
@@ -35,6 +40,10 @@ export const KitchenMode: React.FC = () => {
   const [selectedPedidoId, setSelectedPedidoId] = useState<number | null>(null);
   const [activeRecipeScale, setActiveRecipeScale] = useState<number>(1);
   const [soundEnabled, setSoundEnabled] = useState(true);
+  const [estacionFiltro, setEstacionFiltro] = useState<EstacionCocina>('todas');
+
+  // Screen Wake Lock API para mantener pantalla activa en taller
+  const { isLocked, isSupported, requestWakeLock, releaseWakeLock } = useWakeLock(true);
 
   // Pedidos activos para producción en taller
   const activeOrders: Pedido[] = pedidos.list.filter(
@@ -65,6 +74,18 @@ export const KitchenMode: React.FC = () => {
 
   const fijos = ingredientesEnriquecidos.filter((i) => i.tipo === 'fijo');
   const variables = ingredientesEnriquecidos.filter((i) => i.tipo === 'variable');
+
+  const fijosConKey = fijos.map((ing) => ({
+    ...ing,
+    checkKey: `${ing.insumo_id}_${currentPedido?.id}_fijo`,
+  }));
+  const variablesConKey = variables.map((ing) => ({
+    ...ing,
+    checkKey: `${ing.insumo_id}_${currentPedido?.id}_var`,
+  }));
+  const allCurrentIngs = [...fijosConKey, ...variablesConKey];
+  const checkedCount = allCurrentIngs.filter((i) => currentPedido?.checklist_completado?.[i.checkKey]).length;
+  const progressPct = allCurrentIngs.length > 0 ? Math.round((checkedCount / allCurrentIngs.length) * 100) : 0;
 
   // Reloj de temporizadores en segundo plano
   useEffect(() => {
@@ -115,8 +136,42 @@ export const KitchenMode: React.FC = () => {
           </div>
         </div>
 
-        {/* Controles de Sonido y Nuevo Temporizador Rápido */}
-        <div className="flex items-center gap-3 w-full md:w-auto justify-end">
+        {/* Controles de Pantalla Activa, Sonido y Nuevo Temporizador Rápido */}
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3 w-full md:w-auto justify-end">
+          {/* Badge / Botón Screen Wake Lock */}
+          <button
+            onClick={() => (isLocked ? releaseWakeLock() : requestWakeLock())}
+            disabled={!isSupported}
+            title={
+              isSupported
+                ? isLocked
+                  ? 'Pantalla bloqueada para mantenerse encendida. Toca para permitir suspensión.'
+                  : 'Toca para mantener la pantalla siempre encendida sin apagarse en el taller.'
+                : 'Screen Wake Lock API no soportada en este navegador'
+            }
+            className={`px-3.5 py-3 rounded-2xl border font-bold text-xs flex items-center gap-2 transition-all shadow-sm ${
+              isLocked
+                ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50 hover:bg-emerald-500/30'
+                : isSupported
+                ? 'bg-slate-700/80 text-slate-300 border-slate-600 hover:bg-slate-700 hover:text-white'
+                : 'bg-slate-800 text-slate-500 border-slate-700 cursor-not-allowed opacity-60'
+            }`}
+          >
+            <span
+              className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${
+                isLocked ? 'bg-emerald-400 animate-pulse' : 'bg-slate-500'
+              }`}
+            />
+            {isLocked ? (
+              <Eye className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+            ) : (
+              <EyeOff className="w-4 h-4 text-slate-400 flex-shrink-0" />
+            )}
+            <span className="whitespace-nowrap">
+              {isLocked ? 'Pantalla Activa' : isSupported ? 'Activar Pantalla' : 'Sin Wake Lock'}
+            </span>
+          </button>
+
           <button
             onClick={() => setSoundEnabled(!soundEnabled)}
             className={`p-3 rounded-2xl border font-bold text-xs flex items-center gap-2 transition-all ${
@@ -333,68 +388,142 @@ export const KitchenMode: React.FC = () => {
                 </div>
               </div>
 
-              {/* CHECKLIST DE PESAJE DE INGREDIENTES FIJOS (MASA) */}
+              {/* BARRA DE FILTRO POR ESTACIONES Y PROGRESO DE PESAJE */}
               <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-sm font-black text-white uppercase tracking-wider flex items-center gap-2">
-                    <span>1. Checklist de Pesaje: Masa Base ({fijos.length})</span>
-                  </h3>
-                  <span className="text-xs text-slate-400 font-bold">
-                    Toca cada fila con el dedo para tachar lo pesado
-                  </span>
+                <div className="flex flex-wrap items-center justify-between gap-3 bg-slate-900/90 p-3 rounded-2xl border border-slate-700">
+                  <div className="flex items-center gap-2">
+                    <Layers className="w-4 h-4 text-trigo-400" />
+                    <span className="text-xs font-black text-slate-300 uppercase tracking-wider">
+                      Estación de Trabajo:
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      onClick={() => setEstacionFiltro('todas')}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all ${
+                        estacionFiltro === 'todas'
+                          ? 'bg-frambuesa-600 text-white shadow-sm'
+                          : 'bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700'
+                      }`}
+                    >
+                      Todas ({allCurrentIngs.length})
+                    </button>
+                    <button
+                      onClick={() => setEstacionFiltro('horneado')}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 ${
+                        estacionFiltro === 'horneado'
+                          ? 'bg-amber-600 text-white shadow-sm'
+                          : 'bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700'
+                      }`}
+                    >
+                      <span>🔥 Masas / Horneado ({fijos.length})</span>
+                    </button>
+                    <button
+                      onClick={() => setEstacionFiltro('decoracion')}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 ${
+                        estacionFiltro === 'decoracion'
+                          ? 'bg-fuchsia-600 text-white shadow-sm'
+                          : 'bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700'
+                      }`}
+                    >
+                      <span>✨ Rellenos / Decoración ({variables.length})</span>
+                    </button>
+                  </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                  {fijos.map((ing, idx) => {
-                    const checkKey = `${ing.insumo_id}_${currentPedido.id}_fijo`;
-                    const isChecked = !!currentPedido.checklist_completado?.[checkKey];
-
-                    return (
-                      <button
-                        key={idx}
-                        onClick={() => toggleKitchenChecklist(currentPedido.id, checkKey)}
-                        className={`min-h-[58px] p-3.5 rounded-2xl border-2 text-left flex items-center justify-between gap-3 transition-all active:scale-[0.98] ${
-                          isChecked
-                            ? 'bg-emerald-950/40 border-emerald-500/50 text-emerald-200 line-through opacity-70'
-                            : 'bg-slate-900 border-slate-700 text-white hover:border-trigo-500 hover:bg-slate-900/90'
-                        }`}
-                      >
-                        <div className="flex items-center gap-3 min-w-0">
-                          {isChecked ? (
-                            <CheckSquare className="w-6 h-6 text-emerald-400 flex-shrink-0" />
-                          ) : (
-                            <Square className="w-6 h-6 text-slate-500 flex-shrink-0" />
-                          )}
-                          <span className="font-bold text-xs sm:text-sm truncate">
-                            {ing.insumo_nombre}
-                          </span>
-                        </div>
-
-                        <span className="font-black text-base sm:text-lg text-trigo-300 flex-shrink-0">
-                          {formatUnit(ing.cantidad_escalada, ing.unidad_base)}
-                        </span>
-                      </button>
-                    );
-                  })}
+                {/* Barra de Progreso de Pesaje en Vivo */}
+                <div className="bg-slate-900/80 p-3.5 rounded-2xl border border-slate-700/80 space-y-2">
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="font-black text-slate-300 flex items-center gap-2">
+                      <Scale className="w-4 h-4 text-emerald-400" />
+                      Progreso de Pesaje y Preparación:
+                    </span>
+                    <span className="font-extrabold text-emerald-400">
+                      {checkedCount} de {allCurrentIngs.length} pesados ({progressPct}%)
+                    </span>
+                  </div>
+                  <div className="w-full h-2.5 bg-slate-800 rounded-full overflow-hidden border border-slate-700">
+                    <div
+                      className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 transition-all duration-300 rounded-full"
+                      style={{ width: `${progressPct}%` }}
+                    />
+                  </div>
+                  {progressPct === 100 && allCurrentIngs.length > 0 && (
+                    <div className="text-center py-1 text-xs font-bold text-emerald-300 flex items-center justify-center gap-1.5 bg-emerald-950/40 rounded-xl border border-emerald-500/30 animate-fade-in">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                      <span>¡Todos los ingredientes pesados y añadidos al bowl!</span>
+                    </div>
+                  )}
                 </div>
               </div>
 
-              {/* CHECKLIST DE INGREDIENTES VARIABLES (RELLENO / COBERTURA) */}
-              {variables.length > 0 && (
-                <div className="space-y-3 pt-3 border-t border-slate-700">
-                  <h3 className="text-sm font-black text-white uppercase tracking-wider">
-                    2. Rellenos, Coberturas & Empaques ({variables.length})
-                  </h3>
+              {/* CHECKLIST DE PESAJE DE INGREDIENTES FIJOS (MASA) */}
+              {(estacionFiltro === 'todas' || estacionFiltro === 'horneado') && (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-sm font-black text-white uppercase tracking-wider flex items-center gap-2">
+                      <span>1. Checklist de Pesaje: Masa Base ({fijos.length})</span>
+                    </h3>
+                    <span className="text-xs text-slate-400 font-bold">
+                      Toca cada ingrediente al añadir al bowl
+                    </span>
+                  </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                    {variables.map((ing, idx) => {
-                      const checkKey = `${ing.insumo_id}_${currentPedido.id}_var`;
-                      const isChecked = !!currentPedido.checklist_completado?.[checkKey];
+                    {fijosConKey.map((ing, idx) => {
+                      const isChecked = !!currentPedido.checklist_completado?.[ing.checkKey];
 
                       return (
                         <button
                           key={idx}
-                          onClick={() => toggleKitchenChecklist(currentPedido.id, checkKey)}
+                          onClick={() => toggleKitchenChecklist(currentPedido.id, ing.checkKey)}
+                          className={`min-h-[58px] p-3.5 rounded-2xl border-2 text-left flex items-center justify-between gap-3 transition-all active:scale-[0.98] ${
+                            isChecked
+                              ? 'bg-emerald-950/40 border-emerald-500/50 text-emerald-200 line-through opacity-70'
+                              : 'bg-slate-900 border-slate-700 text-white hover:border-trigo-500 hover:bg-slate-900/90'
+                          }`}
+                        >
+                          <div className="flex items-center gap-3 min-w-0">
+                            {isChecked ? (
+                              <CheckSquare className="w-6 h-6 text-emerald-400 flex-shrink-0" />
+                            ) : (
+                              <Square className="w-6 h-6 text-slate-500 flex-shrink-0" />
+                            )}
+                            <span className="font-bold text-xs sm:text-sm truncate">
+                              {ing.insumo_nombre}
+                            </span>
+                          </div>
+
+                          <span className="font-black text-base sm:text-lg text-trigo-300 flex-shrink-0">
+                            {formatUnit(ing.cantidad_escalada, ing.unidad_base)}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* CHECKLIST DE INGREDIENTES VARIABLES (RELLENO / COBERTURA) */}
+              {variables.length > 0 && (estacionFiltro === 'todas' || estacionFiltro === 'decoracion') && (
+                <div className="space-y-3 pt-3 border-t border-slate-700">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-sm font-black text-white uppercase tracking-wider flex items-center gap-2">
+                      <span>2. Rellenos, Coberturas & Empaques ({variables.length})</span>
+                    </h3>
+                    <span className="text-xs text-slate-400 font-bold">
+                      Toca para marcar
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    {variablesConKey.map((ing, idx) => {
+                      const isChecked = !!currentPedido.checklist_completado?.[ing.checkKey];
+
+                      return (
+                        <button
+                          key={idx}
+                          onClick={() => toggleKitchenChecklist(currentPedido.id, ing.checkKey)}
                           className={`min-h-[58px] p-3.5 rounded-2xl border-2 text-left flex items-center justify-between gap-3 transition-all active:scale-[0.98] ${
                             isChecked
                               ? 'bg-emerald-950/40 border-emerald-500/50 text-emerald-200 line-through opacity-70'

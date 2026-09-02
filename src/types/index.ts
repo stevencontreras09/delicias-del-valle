@@ -18,7 +18,7 @@ export interface Insumo {
   tipo_costo?: 'fijo' | 'variable'; // Fijo (materia prima base) o Variable (empaque, decoración, etc.)
 }
 
-export type MermaMotivo = 'caducidad' | 'quemado' | 'derrame' | 'error_pesado' | 'calidad' | 'otro';
+export type MermaMotivo = 'caducidad' | 'quemado' | 'derrame' | 'error_pesado' | 'calidad' | 'cancelacion_cliente' | 'otro';
 
 export interface Merma {
   id: number;
@@ -137,6 +137,7 @@ export type EstadoCotizacion = 'pendiente' | 'enviada' | 'aprobada' | 'rechazada
 export interface Cotizacion {
   id: number;
   codigo: string; // 'COT-2026-001'
+  cliente_id?: number;
   cliente_nombre: string;
   cliente_telefono: string;
   cliente_email?: string;
@@ -157,6 +158,7 @@ export type TipoEntrega = 'recogida_local' | 'domicilio';
 export type EstadoPedido = 'confirmado' | 'en_produccion' | 'listo' | 'entregado' | 'cancelado';
 export type MetodoPago = 'transferencia' | 'efectivo' | 'tarjeta' | 'sinpe_zelle';
 export type TipoPago = 'anticipo_50' | 'saldo_50' | 'pago_completo' | 'abono';
+export type BancoRD = 'Banco Popular' | 'Banreservas' | 'BHD' | 'Efectivo' | 'Otro';
 
 export interface PagoRegistro {
   id: string;
@@ -164,7 +166,11 @@ export interface PagoRegistro {
   fecha: string;
   monto: number;
   metodo: MetodoPago;
+  banco?: BancoRD;
   referencia: string;
+  numero_referencia?: string;
+  comprobante_url?: string;
+  estado_conciliacion?: 'pendiente' | 'confirmado';
   tipo_pago: TipoPago;
 }
 
@@ -187,6 +193,7 @@ export interface PedidoItem {
 export interface Pedido {
   id: number;
   cotizacion_id?: number;
+  cliente_id?: number;
   numero_factura: string; // 'FAC-2026-001' o 'PED-001'
   cliente_nombre: string;
   cliente_telefono: string;
@@ -250,3 +257,27 @@ export type ActiveTab =
   | 'kitchen'
   | 'users'
   | 'database';
+
+// ==========================================
+// CLIENTES FRECUENTES (MINI CRM)
+// ==========================================
+export interface Cliente {
+  id: number;
+  nombre: string;
+  telefono: string;
+  email?: string;
+  direccion?: string;
+  alergias_preferencias?: string;
+  fecha_cumpleanos?: string;
+  cumpleanos_familiar?: string;
+  total_pedidos?: number;
+  total_pedidos_historico?: number;
+  ultimo_pedido?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+// ==========================================
+// MODO COCINA PRO
+// ==========================================
+export type EstacionCocina = 'todas' | 'horneado' | 'decoracion';

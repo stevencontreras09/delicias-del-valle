@@ -5,17 +5,31 @@ import {
   CotizacionExtra,
   Receta,
   Insumo,
+  Cliente,
 } from '../../types';
+import { useApp } from '../../context/AppContext';
 import { Modal } from '../ui/Modal';
 import { formatCurrency } from '../../utils/formatters';
 import { calcularCostosReceta } from '../../utils/calculations';
-import { Plus, Trash2, Cake, Gift, Search, ChevronDown, Check, Sparkles, Package, Settings } from 'lucide-react';
+import {
+  Plus,
+  Trash2,
+  Cake,
+  Gift,
+  Search,
+  ChevronDown,
+  Check,
+  Sparkles,
+  Package,
+  Settings,
+  UserCheck,
+} from 'lucide-react';
 import { OptionsManagerModal, CategoriaOpcion } from './OptionsManagerModal';
 
 interface QuoteBuilderModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (cotizacion: Omit<Cotizacion, 'id' | 'codigo' | 'created_at'>) => void;
+  onSave: (cotizacion: Omit<Cotizacion, 'id' | 'codigo' | 'created_at'>) => Promise<any> | any;
   recetas: Receta[];
   insumosMap: Map<number, Insumo>;
   initialCotizacion?: Cotizacion | null;
@@ -107,6 +121,8 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
   insumosMap,
   initialCotizacion,
 }) => {
+  const { clientes } = useApp();
+
   // Datos del Cliente
   const [clienteNombre, setClienteNombre] = useState('');
   const [clienteTelefono, setClienteTelefono] = useState('');
@@ -116,6 +132,19 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
   const [costoEnvio, setCostoEnvio] = useState<number | ''>(0);
   const [descuento, setDescuento] = useState<number | ''>(0);
   const [notas, setNotas] = useState('');
+
+  // Mini CRM Clientes Autocompletado
+  const [selectedClienteCrm, setSelectedClienteCrm] = useState<Cliente | null>(null);
+  const [isClientSuggestionsOpen, setIsClientSuggestionsOpen] = useState(false);
+  const clientInputRef = useRef<HTMLDivElement>(null);
+
+  const matchingClientes = useMemo(() => {
+    const q = clienteNombre.trim().toLowerCase();
+    if (q.length < 2) return [];
+    return clientes.filter(
+      (c) => c.nombre.toLowerCase().includes(q) || c.telefono.includes(q)
+    );
+  }, [clientes, clienteNombre]);
 
   // Item a configurar (Wizard)
   const [selectedRecetaId, setSelectedRecetaId] = useState<number>(recetas[0]?.id || 1);
@@ -297,6 +326,12 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
       ) {
         setIsProductDropdownOpen(false);
       }
+      if (
+        clientInputRef.current &&
+        !clientInputRef.current.contains(event.target as Node)
+      ) {
+        setIsClientSuggestionsOpen(false);
+      }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
@@ -442,14 +477,14 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
   const descNum = typeof descuento === 'number' ? descuento : 0;
   const totalCotizacion = Math.max(0, subtotalCotizacion + envioNum - descNum);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!clienteNombre.trim() || items.length === 0) {
       alert('Por favor completa el nombre del cliente y agrega al menos un producto a la cotización.');
       return;
     }
 
-    onSave({
+    const res = await onSave({
       cliente_nombre: clienteNombre.trim(),
       cliente_telefono: clienteTelefono.trim() || 'N/A',
       cliente_email: clienteEmail.trim(),
@@ -464,6 +499,10 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
       notas: notas.trim(),
       estado: initialCotizacion ? initialCotizacion.estado : 'pendiente',
     });
+
+    if (res === null || res === false) {
+      return;
+    }
 
     onClose();
   };
@@ -484,18 +523,71 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
           </h3>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 text-xs">
-            <div>
-              <label className="block font-semibold text-chocolate-700 mb-1">
-                Nombre del Cliente *
-              </label>
+            <div className="relative" ref={clientInputRef}>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block font-semibold text-chocolate-700">
+                  Nombre del Cliente *
+                </label>
+                {selectedClienteCrm && (
+                  <span className="text-[10px] text-emerald-700 font-bold bg-emerald-50 px-1.5 py-0.5 rounded-full border border-emerald-200 flex items-center gap-1">
+                    <UserCheck className="w-3 h-3" />
+                    <span>Cliente CRM</span>
+                  </span>
+                )}
+              </div>
               <input
                 type="text"
                 required
-                placeholder="Ej. Valeria Morales"
+                placeholder="Escribe para buscar o ingresar cliente..."
                 value={clienteNombre}
-                onChange={(e) => setClienteNombre(e.target.value)}
+                onFocus={() => setIsClientSuggestionsOpen(true)}
+                onChange={(e) => {
+                  setClienteNombre(e.target.value);
+                  setIsClientSuggestionsOpen(true);
+                  if (selectedClienteCrm && e.target.value !== selectedClienteCrm.nombre) {
+                    setSelectedClienteCrm(null);
+                  }
+                }}
                 className="w-full px-3 py-2 rounded-xl border border-trigo-300 focus:ring-2 focus:ring-frambuesa-400 focus:outline-none bg-white font-medium text-chocolate-900"
               />
+
+              {/* Sugerencias de clientes frecuentes del CRM */}
+              {isClientSuggestionsOpen && matchingClientes.length > 0 && (
+                <div className="absolute z-50 left-0 right-0 top-full mt-1 bg-white border border-trigo-300 rounded-2xl shadow-xl overflow-hidden max-h-56 overflow-y-auto">
+                  <div className="p-2 bg-crema/60 border-b border-trigo-100 text-[10px] font-bold text-chocolate-700 uppercase tracking-wider flex justify-between">
+                    <span>Clientes Frecuentes Guardados</span>
+                    <span>Toca para autocompletar</span>
+                  </div>
+                  {matchingClientes.map((c) => (
+                    <div
+                      key={c.id}
+                      onClick={() => {
+                        setClienteNombre(c.nombre);
+                        setClienteTelefono(c.telefono);
+                        if (c.email) setClienteEmail(c.email);
+                        setSelectedClienteCrm(c);
+                        setIsClientSuggestionsOpen(false);
+                      }}
+                      className="p-2.5 hover:bg-crema/40 cursor-pointer border-b border-trigo-50 last:border-0 transition-colors text-left"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-chocolate-900 text-xs">{c.nombre}</span>
+                        <span className="text-[10px] font-mono text-emerald-700 font-semibold">{c.telefono}</span>
+                      </div>
+                      {c.alergias_preferencias && (
+                        <p className="text-[10px] text-amber-800 truncate mt-0.5">
+                          ⚠️ {c.alergias_preferencias}
+                        </p>
+                      )}
+                      {c.cumpleanos_familiar && (
+                        <p className="text-[10px] text-chocolate-500 truncate">
+                          🎂 {c.cumpleanos_familiar}
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             <div>
@@ -537,6 +629,33 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
               />
             </div>
           </div>
+
+          {/* Ficha CRM de Cliente Frecuente */}
+          {selectedClienteCrm && (
+            <div className="p-3 bg-amber-50/90 border border-amber-200 rounded-xl text-xs space-y-1 text-amber-900 animate-fade-in">
+              <div className="flex items-center justify-between font-bold">
+                <span className="flex items-center gap-1.5 text-amber-950">
+                  <UserCheck className="w-4 h-4 text-emerald-600" />
+                  Perfil CRM: {selectedClienteCrm.nombre} ({selectedClienteCrm.total_pedidos || 1} pedidos anteriores)
+                </span>
+                {selectedClienteCrm.ultimo_pedido && (
+                  <span className="text-[10px] text-amber-700 font-normal">
+                    Último pedido: {selectedClienteCrm.ultimo_pedido}
+                  </span>
+                )}
+              </div>
+              {selectedClienteCrm.alergias_preferencias && (
+                <p className="text-xs text-amber-900 font-medium">
+                  <strong className="text-red-700">⚠️ Alergias / Preferencias:</strong> {selectedClienteCrm.alergias_preferencias}
+                </p>
+              )}
+              {selectedClienteCrm.cumpleanos_familiar && (
+                <p className="text-xs text-chocolate-700">
+                  <strong>🎂 Cumpleaños registrado:</strong> {selectedClienteCrm.cumpleanos_familiar}
+                </p>
+              )}
+            </div>
+          )}
         </div>
 
         {/* 2. Configurador Interactivo de Producto */}

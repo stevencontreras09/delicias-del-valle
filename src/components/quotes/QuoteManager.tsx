@@ -295,11 +295,11 @@ export const QuoteManager: React.FC = () => {
           recetas={recetas}
           insumosMap={insumosMap}
           initialCotizacion={editingCotizacion}
-          onSave={(data) => {
+          onSave={async (data) => {
             if (editingCotizacion) {
-              updateCotizacion(editingCotizacion.id, data);
+              return await updateCotizacion(editingCotizacion.id, data);
             } else {
-              addCotizacion(data);
+              return await addCotizacion(data);
             }
           }}
         />

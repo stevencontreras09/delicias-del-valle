@@ -1,5 +1,5 @@
 import { getSupabaseClient } from '../utils/supabaseClient';
-import { Insumo, Merma, Receta, Cotizacion, Pedido, Usuario } from '../types';
+import { Insumo, Merma, Receta, Cotizacion, Pedido, Usuario, Cliente } from '../types';
 
 export interface SyncResult {
   success: boolean;
@@ -379,6 +379,7 @@ export async function syncPedidoToSupabase(pedido: Pedido): Promise<boolean> {
     const { data: pedDb, error: pedErr } = await client.from('pedidos').upsert({
       id: pedido.id,
       cotizacion_id: pedido.cotizacion_id || null,
+      cliente_id: pedido.cliente_id || null,
       numero_factura: pedido.numero_factura,
       cliente_nombre: pedido.cliente_nombre,
       cliente_telefono: pedido.cliente_telefono,
@@ -421,14 +422,18 @@ export async function syncPedidoToSupabase(pedido: Pedido): Promise<boolean> {
       await client.from('pedido_items').insert(itemRows);
     }
 
-    // Pagos
+    // Pagos con conciliación bancaria
     await client.from('pagos').delete().eq('pedido_id', pedDb.id);
     if (pedido.pagos && pedido.pagos.length > 0) {
       const pagoRows = pedido.pagos.map(p => ({
         pedido_id: pedDb.id,
         monto: p.monto,
         metodo: p.metodo,
-        referencia: p.referencia || '',
+        referencia: p.referencia || p.numero_referencia || '',
+        numero_referencia: p.numero_referencia || p.referencia || '',
+        banco: p.banco || null,
+        comprobante_url: p.comprobante_url || null,
+        estado_conciliacion: p.estado_conciliacion || 'confirmado',
         tipo_pago: p.tipo_pago,
         fecha: p.fecha || new Date().toISOString(),
       }));
@@ -442,21 +447,21 @@ export async function syncPedidoToSupabase(pedido: Pedido): Promise<boolean> {
 }
 
 /**
- * Sube o actualiza una cotización en Supabase con sus items
+ * Sube o actualiza una cotización en Supabase con sus items, capturando errores de RLS o constraints
  */
-export async function syncCotizacionToSupabase(cotizacion: Cotizacion): Promise<boolean> {
+export async function syncCotizacionToSupabase(
+  cotizacion: Cotizacion
+): Promise<{ success: boolean; data?: Cotizacion; error?: string }> {
   const client = getSupabaseClient();
-  if (!client) return false;
+  if (!client) return { success: false, error: 'Supabase no está configurado.' };
 
   try {
-    const { data: cotDb, error: cotErr } = await client.from('cotizaciones').upsert({
+    const payload: any = {
       id: cotizacion.id,
       codigo: cotizacion.codigo,
       cliente_nombre: cotizacion.cliente_nombre,
       cliente_telefono: cotizacion.cliente_telefono,
-      cliente_email: cotizacion.cliente_email || null,
       fecha_emision: cotizacion.fecha_emision,
-      fecha_evento: cotizacion.fecha_evento || null,
       validez_dias: cotizacion.validez_dias,
       subtotal: cotizacion.subtotal,
       descuento: cotizacion.descuento || 0,
@@ -465,34 +470,57 @@ export async function syncCotizacionToSupabase(cotizacion: Cotizacion): Promise<
       notas: cotizacion.notas || '',
       estado: cotizacion.estado,
       updated_at: new Date().toISOString(),
-    }).select().single();
+    };
 
-    if (cotErr) return false;
+    if (cotizacion.cliente_id) payload.cliente_id = cotizacion.cliente_id;
+    if (cotizacion.fecha_evento) payload.fecha_evento = cotizacion.fecha_evento;
+    if (cotizacion.cliente_email) payload.cliente_email = cotizacion.cliente_email;
+
+    let { data: cotDb, error: cotErr } = await client.from('cotizaciones').upsert(payload).select().single();
+
+    // Si falla porque la columna cliente_email o fecha_evento no existe aún en la tabla de Supabase
+    if (cotErr && (cotErr.message?.includes('cliente_email') || cotErr.code === 'PGRST204')) {
+      delete payload.cliente_email;
+      const retry = await client.from('cotizaciones').upsert(payload).select().single();
+      cotDb = retry.data;
+      cotErr = retry.error;
+    }
+
+    if (cotErr) {
+      console.error('Error en INSERT/UPSERT cotizaciones en Supabase:', cotErr);
+      return { success: false, error: cotErr.message };
+    }
 
     // Eliminar e insertar items de la cotización
     await client.from('cotizacion_items').delete().eq('cotizacion_id', cotDb.id);
-    if (cotizacion.items.length > 0) {
+    if (cotizacion.items && cotizacion.items.length > 0) {
       const itemRows = cotizacion.items.map(item => ({
         cotizacion_id: cotDb.id,
         receta_id: item.receta_id || null,
         receta_nombre: item.receta_nombre,
-        tamano_porciones: item.tamano_porciones,
-        masa_base: item.masa_base || '',
-        relleno: item.relleno || '',
-        decoracion: item.decoracion || '',
+        tamano_porciones: item.tamano_porciones || '1 LB (16-20 porciones)',
+        masa_base: item.masa_base || 'Tradicional',
+        relleno: item.relleno || 'Sin relleno',
+        decoracion: item.decoracion || 'Estándar',
         dedicatoria: item.dedicatoria || '',
         extras: item.extras || [],
-        cantidad: item.cantidad,
-        precio_unitario: item.precio_unitario,
-        subtotal: item.subtotal,
+        cantidad: item.cantidad || 1,
+        precio_unitario: item.precio_unitario || 0,
+        subtotal: item.subtotal || 0,
         factor_receta: item.factor_receta || 1,
       }));
-      await client.from('cotizacion_items').insert(itemRows);
+
+      const { error: itemsErr } = await client.from('cotizacion_items').insert(itemRows);
+      if (itemsErr) {
+        console.error('Error al insertar cotizacion_items en Supabase:', itemsErr);
+        return { success: false, error: itemsErr.message };
+      }
     }
 
-    return true;
-  } catch {
-    return false;
+    return { success: true, data: { ...cotizacion, id: cotDb.id } };
+  } catch (err: any) {
+    console.error('Excepción en syncCotizacionToSupabase:', err);
+    return { success: false, error: err?.message || 'Error de conexión con Supabase' };
   }
 }
 
@@ -689,6 +717,109 @@ export async function deleteUsuarioFromSupabase(id: number): Promise<boolean> {
     return !delErr;
   } catch {
     return false;
+  }
+}
+
+// ==============================================================================
+// MINI CRM: CLIENTES FRECUENTES
+// ==============================================================================
+
+/**
+ * Obtiene todos los clientes desde Supabase
+ */
+export async function fetchClientesFromSupabase(): Promise<Cliente[]> {
+  const client = getSupabaseClient();
+  if (!client) return [];
+
+  try {
+    const { data, error } = await client
+      .from('clientes')
+      .select('*')
+      .order('nombre', { ascending: true });
+
+    if (error || !data) return [];
+    return data.map((c: any) => ({
+      ...c,
+      total_pedidos: c.total_pedidos ?? c.total_pedidos_historico ?? 0,
+      total_pedidos_historico: c.total_pedidos_historico ?? c.total_pedidos ?? 0,
+      cumpleanos_familiar: c.cumpleanos_familiar || (c.fecha_cumpleanos ? String(c.fecha_cumpleanos) : ''),
+    })) as Cliente[];
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Guarda o actualiza un cliente en Supabase
+ */
+export async function syncClienteToSupabase(cliente: Cliente): Promise<boolean> {
+  const client = getSupabaseClient();
+  if (!client) return false;
+
+  try {
+    const payload: any = {
+      id: cliente.id,
+      nombre: cliente.nombre,
+      telefono: cliente.telefono,
+      email: cliente.email || null,
+      direccion: cliente.direccion || null,
+      alergias_preferencias: cliente.alergias_preferencias || null,
+      cumpleanos_familiar: cliente.cumpleanos_familiar || null,
+      fecha_cumpleanos: cliente.fecha_cumpleanos || null,
+      total_pedidos: cliente.total_pedidos || cliente.total_pedidos_historico || 0,
+      total_pedidos_historico: cliente.total_pedidos_historico || cliente.total_pedidos || 0,
+      ultimo_pedido: cliente.ultimo_pedido || null,
+      updated_at: new Date().toISOString(),
+    };
+
+    const { error } = await client.from('clientes').upsert(payload);
+    return !error;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Elimina un cliente de Supabase
+ */
+export async function deleteClienteFromSupabase(id: number): Promise<boolean> {
+  const client = getSupabaseClient();
+  if (!client) return false;
+
+  try {
+    const { error } = await client.from('clientes').delete().eq('id', id);
+    return !error;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Ejecuta la función PL/pgSQL atómica cancelar_pedido_con_inventario en Supabase
+ */
+export async function cancelarPedidoConInventarioRpc(
+  pedidoId: number,
+  accion: 'reintegrar' | 'merma',
+  motivoDetalle?: string
+): Promise<{ success: boolean; data?: any; error?: string }> {
+  const client = getSupabaseClient();
+  if (!client) return { success: false, error: 'Sin conexión a Supabase' };
+
+  try {
+    const { data, error } = await client.rpc('cancelar_pedido_con_inventario', {
+      p_pedido_id: pedidoId,
+      p_accion: accion,
+      p_usuario_id: null,
+      p_motivo_detalle: motivoDetalle || 'Cancelación de pedido por cliente',
+    });
+
+    if (error) {
+      return { success: false, error: error.message };
+    }
+
+    return { success: !!data?.success, data };
+  } catch (e: any) {
+    return { success: false, error: e?.message };
   }
 }
 

@@ -1,4 +1,4 @@
-import { Insumo, Receta, Cotizacion, Pedido, Merma, Usuario } from '../types';
+import { Insumo, Receta, Cotizacion, Pedido, Merma, Usuario, Cliente } from '../types';
 
 // ==============================================================================
 // 106 INSUMOS DEL CATÁLOGO EXACTO DEL TALLER (DOP / RD$)
@@ -4971,5 +4971,47 @@ export const INITIAL_USUARIOS: Usuario[] = [
     "rol": "coadmin",
     "activo": true,
     "created_at": "2026-09-01T18:42:37.682035+00:00"
+  }
+];
+
+// ==============================================================================
+// CLIENTES FRECUENTES INICIALES (MINI CRM - REPÚBLICA DOMINICANA)
+// ==============================================================================
+export const INITIAL_CLIENTES: Cliente[] = [
+  {
+    id: 1,
+    nombre: 'Ana María Gómez',
+    telefono: '809-555-2144',
+    email: 'ana.gomez@gmail.com',
+    direccion: 'Calle Sol Poniente #14, Santo Domingo DN',
+    alergias_preferencias: 'Alérgica a las nueces y al maní. Prefiere masa de vainilla ligera y no muy dulce.',
+    cumpleanos_familiar: '15 de Mayo (Hija Sofía)',
+    total_pedidos: 4,
+    ultimo_pedido: '2026-08-20',
+    created_at: '2026-07-01T10:00:00Z',
+  },
+  {
+    id: 2,
+    nombre: 'Carlos Rodríguez',
+    telefono: '829-555-8932',
+    email: 'crodriguez@empresa.com.do',
+    direccion: 'Av. Winston Churchill, Torre Empresarial Piso 8',
+    alergias_preferencias: 'Sin restricciones. Le fascinan los quesillos tradicionales y el dulce de leche.',
+    cumpleanos_familiar: '28 de Septiembre (Cumpleaños personal)',
+    total_pedidos: 3,
+    ultimo_pedido: '2026-08-28',
+    created_at: '2026-07-15T14:30:00Z',
+  },
+  {
+    id: 3,
+    nombre: 'Laura Peña',
+    telefono: '849-555-4411',
+    email: 'laura.pena@hotmail.com',
+    direccion: 'Residencial Las Praderas Mz 4 Casa 12, Santiago',
+    alergias_preferencias: 'Intolerante a la lactosa. Siempre solicita crema pastelera vegana o merengue italiano.',
+    cumpleanos_familiar: '04 de Diciembre (Madre)',
+    total_pedidos: 2,
+    ultimo_pedido: '2026-08-14',
+    created_at: '2026-08-01T09:15:00Z',
   }
 ];

@@ -193,7 +193,7 @@ export const Dashboard: React.FC = () => {
             {lowStockInsumos.length} Insumos
           </p>
           <p className="mt-2 text-xs text-chocolate-500 group-hover:text-frambuesa-600 transition-colors flex items-center gap-1 font-medium">
-            <span>Ver insumos críticos</span>
+            <span>Ver insumos y balance a 7 días</span>
             <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
           </p>
         </div>

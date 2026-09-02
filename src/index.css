@@ -56,3 +56,30 @@
 .animate-scale-up {
   animation: scaleUp 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
+
+/* ===================================================
+   OPTIMIZACIÓN DE IMPRESIÓN PARA TICKETS TÉRMICOS POS
+   =================================================== */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  #thermal-ticket-container,
+  #thermal-ticket-container * {
+    visibility: visible;
+  }
+  #thermal-ticket-container {
+    position: absolute;
+    left: 0;
+    top: 0;
+    margin: 0;
+    padding: 2mm !important;
+    background: white !important;
+    color: black !important;
+    box-shadow: none !important;
+  }
+  @page {
+    margin: 0;
+    size: auto;
+  }
+}

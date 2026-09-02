@@ -17,10 +17,15 @@ import { InsumoFormModal } from './InsumoFormModal';
 import { RestockModal } from './RestockModal';
 import { WasteModal } from './WasteModal';
 import { WasteHistoryModal } from './WasteHistoryModal';
+import { CriticalStockProjection } from './CriticalStockProjection';
+import { TrendingDown, Package as PackageIcon } from 'lucide-react';
 
 export const InventoryManager: React.FC = () => {
   const {
     insumos,
+    pedidos,
+    recetas,
+    insumosMap,
     addInsumo,
     updateInsumo,
     deleteInsumo,
@@ -29,6 +34,7 @@ export const InventoryManager: React.FC = () => {
     mermas,
   } = useApp();
 
+  const [subView, setSubView] = useState<'catalogo' | 'proyeccion'>('catalogo');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [stockFilter, setStockFilter] = useState<'all' | 'low' | 'active'>('all');
@@ -120,8 +126,46 @@ export const InventoryManager: React.FC = () => {
         </div>
       </div>
 
-      {/* Barra de Búsqueda y Filtros */}
-      <div className="bg-white rounded-3xl p-4 sm:p-5 border border-trigo-200 shadow-warm space-y-4">
+      {/* Pestañas Principales: Catálogo vs Proyección 7 Días */}
+      <div className="flex items-center gap-2 border-b border-trigo-200 pb-2">
+        <button
+          type="button"
+          onClick={() => setSubView('catalogo')}
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-black transition-all ${
+            subView === 'catalogo'
+              ? 'bg-chocolate-700 text-white shadow-sm'
+              : 'bg-white text-chocolate-600 hover:bg-crema border border-trigo-200'
+          }`}
+        >
+          <PackageIcon className="w-4 h-4" />
+          <span>Catálogo de Insumos ({insumos.length})</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setSubView('proyeccion')}
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-black transition-all ${
+            subView === 'proyeccion'
+              ? 'bg-frambuesa-600 text-white shadow-sm'
+              : 'bg-white text-chocolate-600 hover:bg-crema border border-trigo-200'
+          }`}
+        >
+          <TrendingDown className="w-4 h-4" />
+          <span>🔮 Proyección a 7 Días & Balance Crítico</span>
+        </button>
+      </div>
+
+      {subView === 'proyeccion' ? (
+        <CriticalStockProjection
+          pedidos={pedidos.list}
+          insumos={insumos}
+          insumosMap={insumosMap}
+          recetas={recetas}
+        />
+      ) : (
+        <>
+          {/* Barra de Búsqueda y Filtros */}
+          <div className="bg-white rounded-3xl p-4 sm:p-5 border border-trigo-200 shadow-warm space-y-4">
         {/* Pestañas de Clasificación de Insumos: Fijos vs Variables */}
         <div className="flex flex-wrap items-center gap-2 border-b border-trigo-100 pb-3">
           <button
@@ -401,6 +445,8 @@ export const InventoryManager: React.FC = () => {
           </table>
         </div>
       </div>
+    </>
+  )}
 
       {/* Modales */}
       {isFormOpen && (

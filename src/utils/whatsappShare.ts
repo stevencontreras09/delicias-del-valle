@@ -2,6 +2,18 @@ import { Cotizacion, Pedido } from '../types';
 import { formatCurrency, formatDate } from './formatters';
 
 /**
+ * Normaliza números telefónicos para WhatsApp en República Dominicana / Internacional.
+ */
+function sanitizePhone(phone: string): string {
+  if (!phone) return '';
+  let cleaned = phone.replace(/\D/g, '');
+  if (cleaned.length === 10 && (cleaned.startsWith('809') || cleaned.startsWith('829') || cleaned.startsWith('849'))) {
+    cleaned = '1' + cleaned;
+  }
+  return cleaned;
+}
+
+/**
  * Genera un mensaje formateado y enlace de WhatsApp para enviar cotizaciones
  */
 export function generarMensajeCotizacionWhatsApp(cotizacion: Cotizacion): { mensaje: string; url: string } {
@@ -30,7 +42,7 @@ export function generarMensajeCotizacionWhatsApp(cotizacion: Cotizacion): { mens
     }
     if (item.dedicatoria) texto += `   • Dedicatoria: "${item.dedicatoria}"\n`;
     if (item.extras && item.extras.length > 0) {
-      texto += `   • Extras: ${item.extras.map(e => `${e.nombre} (${formatCurrency(e.precio)})`).join(', ')}\n`;
+      texto += `   • Extras: ${item.extras.map((e) => `${e.nombre} (${formatCurrency(e.precio)})`).join(', ')}\n`;
     }
     texto += `   • Cantidad: ${item.cantidad} | Subtotal: *${formatCurrency(item.subtotal)}*\n`;
   });
@@ -56,10 +68,11 @@ export function generarMensajeCotizacionWhatsApp(cotizacion: Cotizacion): { mens
 
   texto += `Si deseas confirmar tu pedido o tienes alguna duda, respóndenos a este mensaje. ¡Será un honor endulzar tu momento especial! 🍓❤️`;
 
-  const phoneClean = cotizacion.cliente_telefono.replace(/[^0-9]/g, '');
-  const url = `https://wa.me/${phoneClean}?text=${encodeURIComponent(texto)}`;
+  const fullMessage = texto;
+  const phoneClean = sanitizePhone(cotizacion.cliente_telefono);
+  const url = `https://wa.me/${phoneClean}?text=${encodeURIComponent(fullMessage)}`;
 
-  return { mensaje: texto, url };
+  return { mensaje: fullMessage, url };
 }
 
 /**
@@ -83,8 +96,9 @@ export function generarMensajePedidoWhatsApp(pedido: Pedido): { mensaje: string;
   texto += `⏳ *Saldo Pendiente:* *${formatCurrency(pedido.saldo_pendiente)}*\n\n`;
   texto += `¡Muchas gracias por tu confianza! Estamos preparando todo con el mayor amor y dedicación. ❤️👩‍🍳`;
 
-  const phoneClean = pedido.cliente_telefono.replace(/[^0-9]/g, '');
-  const url = `https://wa.me/${phoneClean}?text=${encodeURIComponent(texto)}`;
+  const fullMessage = texto;
+  const phoneClean = sanitizePhone(pedido.cliente_telefono);
+  const url = `https://wa.me/${phoneClean}?text=${encodeURIComponent(fullMessage)}`;
 
-  return { mensaje: texto, url };
+  return { mensaje: fullMessage, url };
 }
