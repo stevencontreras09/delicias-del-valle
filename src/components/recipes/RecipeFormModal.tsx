@@ -174,7 +174,7 @@ export const RecipeFormModal: React.FC<RecipeFormModalProps> = ({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={initialReceta ? 'Editar Escandallo / Receta' : 'Nueva Receta BOM'}
+      title={initialReceta ? 'Editar Receta' : 'Nueva Receta'}
       subtitle="Definición de ingredientes fijos, variables y porcentajes en cascada"
       maxWidth="4xl"
     >
@@ -370,7 +370,7 @@ export const RecipeFormModal: React.FC<RecipeFormModalProps> = ({
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <h3 className="text-xs font-bold text-chocolate-800 uppercase tracking-wider">
-              Ingredientes del Escandallo ({ingredientes.length})
+              Ingredientes de la Receta ({ingredientes.length})
             </h3>
 
             <div className="flex items-center gap-2">

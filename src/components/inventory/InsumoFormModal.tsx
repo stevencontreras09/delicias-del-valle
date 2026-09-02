@@ -66,6 +66,7 @@ export const InsumoFormModal: React.FC<InsumoFormModalProps> = ({
   const [stockActual, setStockActual] = useState<number | ''>(0);
   const [stockMinimo, setStockMinimo] = useState<number | ''>(0);
   const [activo, setActivo] = useState(true);
+  const [tipoCosto, setTipoCosto] = useState<'fijo' | 'variable'>('fijo');
 
   // Inicialización o reset
   useEffect(() => {
@@ -79,6 +80,7 @@ export const InsumoFormModal: React.FC<InsumoFormModalProps> = ({
       setStockActual(initialInsumo.stock_actual);
       setStockMinimo(initialInsumo.stock_minimo);
       setActivo(initialInsumo.activo);
+      setTipoCosto(initialInsumo.tipo_costo || (initialInsumo.categoria === 'Empaques y Desechables' ? 'variable' : 'fijo'));
 
       // Detectar medida si es posible
       if (initialInsumo.unidad_base === 'g') {
@@ -113,6 +115,7 @@ export const InsumoFormModal: React.FC<InsumoFormModalProps> = ({
       setStockActual('');
       setStockMinimo('');
       setActivo(true);
+      setTipoCosto('fijo');
     }
   }, [initialInsumo, isOpen]);
 
@@ -123,10 +126,8 @@ export const InsumoFormModal: React.FC<InsumoFormModalProps> = ({
 
     const info = MEDIDAS_COMPRA_MAP[nuevaMedida];
     const cant = typeof nuevaCantidad === 'number' && nuevaCantidad > 0 ? nuevaCantidad : 1;
-    const totalBase = Math.round(cant * info.factorABase * 100) / 100;
-
+    setPresentacionEmpaque(Number((cant * info.factorABase).toFixed(2)));
     setUnidadBase(info.unidadBase);
-    setPresentacionEmpaque(totalBase);
 
     // Sugerir texto descriptivo si es un insumo nuevo
     if (!initialInsumo) {
@@ -152,6 +153,7 @@ export const InsumoFormModal: React.FC<InsumoFormModalProps> = ({
       stock_actual: Number(stockActual) || 0,
       stock_minimo: Number(stockMinimo) || 0,
       activo,
+      tipo_costo: tipoCosto,
     });
     onClose();
   };
@@ -179,6 +181,50 @@ export const InsumoFormModal: React.FC<InsumoFormModalProps> = ({
               onChange={(e) => setNombre(e.target.value)}
               className="w-full px-3.5 py-2.5 rounded-xl border border-trigo-300 focus:outline-none focus:ring-2 focus:ring-frambuesa-400 text-sm font-semibold text-chocolate-900 bg-canvas/30"
             />
+          </div>
+
+          {/* Clasificación de Costo: Fijo vs Variable */}
+          <div className="sm:col-span-2 bg-canvas/60 p-3 rounded-2xl border border-trigo-200">
+            <label className="block font-bold text-chocolate-800 text-xs mb-2">
+              Clasificación del Insumo (Costo Fijo vs Variable) *
+            </label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setTipoCosto('fijo')}
+                className={`p-2.5 rounded-xl border text-left transition-all ${
+                  tipoCosto === 'fijo'
+                    ? 'bg-blue-50 border-blue-400 text-blue-900 shadow-sm ring-1 ring-blue-400'
+                    : 'bg-white border-trigo-200 text-chocolate-700 hover:bg-crema/40'
+                }`}
+              >
+                <div className="flex items-center gap-1.5 font-bold text-xs">
+                  <span>📌 Producto Fijo</span>
+                  <span className="text-[10px] bg-blue-200 text-blue-900 px-1.5 py-0.2 rounded font-semibold">Materia Prima Base</span>
+                </div>
+                <p className="text-[11px] text-gray-500 mt-0.5">
+                  Harina, azúcar, mantequilla, huevos, leche, chocolate base, levadura, etc.
+                </p>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setTipoCosto('variable')}
+                className={`p-2.5 rounded-xl border text-left transition-all ${
+                  tipoCosto === 'variable'
+                    ? 'bg-purple-50 border-purple-400 text-purple-900 shadow-sm ring-1 ring-purple-400'
+                    : 'bg-white border-trigo-200 text-chocolate-700 hover:bg-crema/40'
+                }`}
+              >
+                <div className="flex items-center gap-1.5 font-bold text-xs">
+                  <span>🎨 Producto Variable</span>
+                  <span className="text-[10px] bg-purple-200 text-purple-900 px-1.5 py-0.2 rounded font-semibold">Empaque / Decoración</span>
+                </div>
+                <p className="text-[11px] text-gray-500 mt-0.5">
+                  Cajas, stickers, capacillos, platos, envases, cintas, etc.
+                </p>
+              </button>
+            </div>
           </div>
 
           {/* Categoría */}

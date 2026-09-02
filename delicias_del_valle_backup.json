@@ -59,7 +59,8 @@
       "costo_unitario_base": 0.93178,
       "stock_actual": 0,
       "stock_minimo": 100,
-      "activo": true
+      "activo": true,
+      "tipo_costo": "fijo"
     },
     {
       "id": 2,
@@ -73,7 +74,8 @@
       "costo_unitario_base": 0.073639,
       "stock_actual": 0,
       "stock_minimo": 100,
-      "activo": true
+      "activo": true,
+      "tipo_costo": "fijo"
     },
     {
       "id": 3,
@@ -87,7 +89,8 @@
       "costo_unitario_base": 6.987,
       "stock_actual": 0,
       "stock_minimo": 100,
-      "activo": true
+      "activo": true,
+      "tipo_costo": "fijo"
     },
     {
       "id": 4,
@@ -101,7 +104,8 @@
       "costo_unitario_base": 0.076752,
       "stock_actual": 0,
       "stock_minimo": 100,
-      "activo": true
+      "activo": true,
+      "tipo_costo": "fijo"
     },
     {
       "id": 5,
@@ -115,7 +119,8 @@
       "costo_unitario_base": 0.063405,
       "stock_actual": 0,
       "stock_minimo": 100,
-      "activo": true
+      "activo": true,
+      "tipo_costo": "fijo"
     },
     {
       "id": 6,
@@ -129,7 +134,8 @@
       "costo_unitario_base": 0.10752,
       "stock_actual": 0,
       "stock_minimo": 100,
-      "activo": true
+      "activo": true,
+      "tipo_costo": "fijo"
     },
     {
       "id": 7,
@@ -143,7 +149,8 @@
       "costo_unitario_base": 1.2375,
       "stock_actual": 0,
       "stock_minimo": 100,
-      "activo": true
+      "activo": true,
+      "tipo_costo": "fijo"
     },
     {
       "id": 8,
@@ -157,7 +164,8 @@
       "costo_unitario_base": 46.43,
       "stock_actual": 0,
       "stock_minimo": 100,
-      "activo": true
+      "activo": true,
+      "tipo_costo": "fijo"
     },
     {
       "id": 9,
@@ -171,7 +179,8 @@
       "costo_unitario_base": 1.460908,
       "stock_actual": 0,
       "stock_minimo": 100,
-      "activo": true
+      "activo": true,
+      "tipo_costo": "fijo"
     },
     {
       "id": 10,
@@ -185,7 +194,8 @@
       "costo_unitario_base": 0.2625,
       "stock_actual": 0,
       "stock_minimo": 100,
-      "activo": true
+      "activo": true,
+      "tipo_costo": "fijo"
     },
     {
       "id": 11,
@@ -199,7 +209,8 @@
       "costo_unitario_base": 0.0868,
       "stock_actual": 0,
       "stock_minimo": 100,
-      "activo": true
+      "activo": true,
+      "tipo_costo": "fijo"
     },
     {
       "id": 12,
@@ -213,7 +224,8 @@
       "costo_unitario_base": 0.146316,
       "stock_actual": 0,
       "stock_minimo": 100,
-      "activo": true
+      "activo": true,
+      "tipo_costo": "fijo"
     },
     {
       "id": 13,
@@ -227,7 +239,8 @@
       "costo_unitario_base": 0.004889,
       "stock_actual": 0,
       "stock_minimo": 100,
-      "activo": true
+      "activo": true,
+      "tipo_costo": "fijo"
     },
     {
       "id": 14,
@@ -241,7 +254,8 @@
       "costo_unitario_base": 0.584052,
       "stock_actual": 0,
       "stock_minimo": 100,
-      "activo": true
+      "activo": true,
+      "tipo_costo": "fijo"
     },
     {
       "id": 15,
@@ -255,7 +269,8 @@
       "costo_unitario_base": 0.529932,
       "stock_actual": 0,
       "stock_minimo": 100,
-      "activo": true
+      "activo": true,
+      "tipo_costo": "fijo"
     },
     {
       "id": 16,
@@ -269,7 +284,8 @@
       "costo_unitario_base": 0.240505,
       "stock_actual": 0,
       "stock_minimo": 100,
-      "activo": true
+      "activo": true,
+      "tipo_costo": "fijo"
     },
     {
       "id": 17,
@@ -283,7 +299,8 @@
       "costo_unitario_base": 0.280589,
       "stock_actual": 0,
       "stock_minimo": 100,
-      "activo": true
+      "activo": true,
+      "tipo_costo": "fijo"
     },
     {
       "id": 18,
@@ -297,7 +314,8 @@
       "costo_unitario_base": 0.275579,
       "stock_actual": 0,
       "stock_minimo": 100,
-      "activo": true
+      "activo": true,
+      "tipo_costo": "fijo"
     },
     {
       "id": 19,
@@ -311,7 +329,8 @@
       "costo_unitario_base": 1.34666,
       "stock_actual": 0,
       "stock_minimo": 100,
-      "activo": true
+      "activo": true,
+      "tipo_costo": "fijo"
     },
     {
       "id": 20,
@@ -325,7 +344,8 @@
       "costo_unitario_base": 0.379,
       "stock_actual": 0,
       "stock_minimo": 100,
-      "activo": true
+      "activo": true,
+      "tipo_costo": "fijo"
     },
     {
       "id": 21,
@@ -339,7 +359,8 @@
       "costo_unitario_base": 0.236998,
       "stock_actual": 0,
       "stock_minimo": 100,
-      "activo": true
+      "activo": true,
+      "tipo_costo": "fijo"
     },
     {
       "id": 22,
@@ -353,7 +374,8 @@
       "costo_unitario_base": 0.54,
       "stock_actual": 0,
       "stock_minimo": 100,
-      "activo": true
+      "activo": true,
+      "tipo_costo": "fijo"
     },
     {
       "id": 23,
@@ -367,7 +389,8 @@
       "costo_unitario_base": 62.5,
       "stock_actual": 0,
       "stock_minimo": 100,
-      "activo": true
+      "activo": true,
+      "tipo_costo": "variable"
     },
     {
       "id": 24,
@@ -381,7 +404,8 @@
       "costo_unitario_base": 75,
       "stock_actual": 0,
       "stock_minimo": 100,
-      "activo": true
+      "activo": true,
+      "tipo_costo": "variable"
     },
     {
       "id": 25,
@@ -395,7 +419,8 @@
       "costo_unitario_base": 0.65,
       "stock_actual": 0,
       "stock_minimo": 100,
-      "activo": true
+      "activo": true,
+      "tipo_costo": "fijo"
     },
     {
       "id": 26,
@@ -409,7 +434,8 @@
       "costo_unitario_base": 0.54,
       "stock_actual": 0,
       "stock_minimo": 100,
-      "activo": true
+      "activo": true,
+      "tipo_costo": "fijo"
     },
     {
       "id": 27,
@@ -423,7 +449,8 @@
       "costo_unitario_base": 0.54,
       "stock_actual": 0,
       "stock_minimo": 100,
-      "activo": true
+      "activo": true,
+      "tipo_costo": "fijo"
     },
     {
       "id": 28,
@@ -437,7 +464,8 @@
       "costo_unitario_base": 0.077162,
       "stock_actual": 0,
       "stock_minimo": 100,
-      "activo": true
+      "activo": true,
+      "tipo_costo": "fijo"
     },
     {
       "id": 29,
@@ -451,7 +479,8 @@
       "costo_unitario_base": 0.074444,
       "stock_actual": 0,
       "stock_minimo": 100,
-      "activo": true
+      "activo": true,
+      "tipo_costo": "fijo"
     },
     {
       "id": 30,
@@ -465,7 +494,8 @@
       "costo_unitario_base": 0.110994,
       "stock_actual": 0,
       "stock_minimo": 100,
-      "activo": true
+      "activo": true,
+      "tipo_costo": "fijo"
     },
     {
       "id": 31,
@@ -479,7 +509,8 @@
       "costo_unitario_base": 1.234675,
       "stock_actual": 0,
       "stock_minimo": 100,
-      "activo": true
+      "activo": true,
+      "tipo_costo": "fijo"
     },
     {
       "id": 32,
@@ -493,7 +524,8 @@
       "costo_unitario_base": 1.435955,
       "stock_actual": 0,
       "stock_minimo": 100,
-      "activo": true
+      "activo": true,
+      "tipo_costo": "variable"
     },
     {
       "id": 33,
@@ -507,7 +539,8 @@
       "costo_unitario_base": 0.051429,
       "stock_actual": 0,
       "stock_minimo": 100,
-      "activo": true
+      "activo": true,
+      "tipo_costo": "variable"
     },
     {
       "id": 34,
@@ -521,7 +554,8 @@
       "costo_unitario_base": 1.2375,
       "stock_actual": 0,
       "stock_minimo": 100,
-      "activo": true
+      "activo": true,
+      "tipo_costo": "fijo"
     },
     {
       "id": 35,
@@ -535,7 +569,8 @@
       "costo_unitario_base": 0.08134,
       "stock_actual": 0,
       "stock_minimo": 100,
-      "activo": true
+      "activo": true,
+      "tipo_costo": "fijo"
     },
     {
       "id": 36,
@@ -549,7 +584,8 @@
       "costo_unitario_base": 0.521565,
       "stock_actual": 0,
       "stock_minimo": 100,
-      "activo": true
+      "activo": true,
+      "tipo_costo": "fijo"
     },
     {
       "id": 37,
@@ -563,7 +599,8 @@
       "costo_unitario_base": 23.5,
       "stock_actual": 0,
       "stock_minimo": 100,
-      "activo": true
+      "activo": true,
+      "tipo_costo": "variable"
     },
     {
       "id": 38,
@@ -577,7 +614,8 @@
       "costo_unitario_base": 2.1,
       "stock_actual": 0,
       "stock_minimo": 100,
-      "activo": true
+      "activo": true,
+      "tipo_costo": "variable"
     },
     {
       "id": 39,
@@ -591,7 +629,8 @@
       "costo_unitario_base": 23.5,
       "stock_actual": 0,
       "stock_minimo": 100,
-      "activo": true
+      "activo": true,
+      "tipo_costo": "variable"
     },
     {
       "id": 40,
@@ -605,7 +644,8 @@
       "costo_unitario_base": 0.280589,
       "stock_actual": 0,
       "stock_minimo": 100,
-      "activo": true
+      "activo": true,
+      "tipo_costo": "fijo"
     },
     {
       "id": 41,
@@ -619,7 +659,8 @@
       "costo_unitario_base": 0.521565,
       "stock_actual": 0,
       "stock_minimo": 100,
-      "activo": true
+      "activo": true,
+      "tipo_costo": "fijo"
     },
     {
       "id": 42,
@@ -633,7 +674,8 @@
       "costo_unitario_base": 0.651956,
       "stock_actual": 0,
       "stock_minimo": 100,
-      "activo": true
+      "activo": true,
+      "tipo_costo": "fijo"
     },
     {
       "id": 43,
@@ -647,7 +689,8 @@
       "costo_unitario_base": 0.9591,
       "stock_actual": 0,
       "stock_minimo": 100,
-      "activo": true
+      "activo": true,
+      "tipo_costo": "fijo"
     },
     {
       "id": 44,
@@ -661,7 +704,8 @@
       "costo_unitario_base": 1,
       "stock_actual": 0,
       "stock_minimo": 100,
-      "activo": true
+      "activo": true,
+      "tipo_costo": "fijo"
     },
     {
       "id": 45,
@@ -675,7 +719,8 @@
       "costo_unitario_base": 0.316197,
       "stock_actual": 0,
       "stock_minimo": 100,
-      "activo": true
+      "activo": true,
+      "tipo_costo": "fijo"
     },
     {
       "id": 46,
@@ -689,7 +734,8 @@
       "costo_unitario_base": 0.521565,
       "stock_actual": 0,
       "stock_minimo": 100,
-      "activo": true
+      "activo": true,
+      "tipo_costo": "fijo"
     },
     {
       "id": 47,
@@ -703,7 +749,8 @@
       "costo_unitario_base": 0.363821,
       "stock_actual": 0,
       "stock_minimo": 100,
-      "activo": true
+      "activo": true,
+      "tipo_costo": "fijo"
     },
     {
       "id": 48,
@@ -717,7 +764,8 @@
       "costo_unitario_base": 6.995667,
       "stock_actual": 0,
       "stock_minimo": 100,
-      "activo": true
+      "activo": true,
+      "tipo_costo": "fijo"
     },
     {
       "id": 49,
@@ -731,7 +779,8 @@
       "costo_unitario_base": 0.088,
       "stock_actual": 0,
       "stock_minimo": 100,
-      "activo": true
+      "activo": true,
+      "tipo_costo": "fijo"
     },
     {
       "id": 50,
@@ -745,7 +794,8 @@
       "costo_unitario_base": 0.077162,
       "stock_actual": 0,
       "stock_minimo": 100,
-      "activo": true
+      "activo": true,
+      "tipo_costo": "fijo"
     },
     {
       "id": 51,
@@ -759,7 +809,8 @@
       "costo_unitario_base": 20,
       "stock_actual": 0,
       "stock_minimo": 100,
-      "activo": true
+      "activo": true,
+      "tipo_costo": "fijo"
     },
     {
       "id": 52,
@@ -773,7 +824,8 @@
       "costo_unitario_base": 1,
       "stock_actual": 0,
       "stock_minimo": 100,
-      "activo": true
+      "activo": true,
+      "tipo_costo": "fijo"
     },
     {
       "id": 53,
@@ -787,7 +839,8 @@
       "costo_unitario_base": 0.5375,
       "stock_actual": 0,
       "stock_minimo": 100,
-      "activo": true
+      "activo": true,
+      "tipo_costo": "fijo"
     },
     {
       "id": 54,
@@ -801,7 +854,8 @@
       "costo_unitario_base": 0.859031,
       "stock_actual": 0,
       "stock_minimo": 100,
-      "activo": true
+      "activo": true,
+      "tipo_costo": "fijo"
     },
     {
       "id": 55,
@@ -815,7 +869,8 @@
       "costo_unitario_base": 235,
       "stock_actual": 0,
       "stock_minimo": 100,
-      "activo": true
+      "activo": true,
+      "tipo_costo": "fijo"
     },
     {
       "id": 56,
@@ -829,7 +884,8 @@
       "costo_unitario_base": 1,
       "stock_actual": 0,
       "stock_minimo": 100,
-      "activo": true
+      "activo": true,
+      "tipo_costo": "fijo"
     },
     {
       "id": 57,
@@ -843,7 +899,8 @@
       "costo_unitario_base": 0.95,
       "stock_actual": 0,
       "stock_minimo": 100,
-      "activo": true
+      "activo": true,
+      "tipo_costo": "fijo"
     },
     {
       "id": 58,
@@ -857,7 +914,8 @@
       "costo_unitario_base": 0.595251,
       "stock_actual": 0,
       "stock_minimo": 100,
-      "activo": true
+      "activo": true,
+      "tipo_costo": "fijo"
     },
     {
       "id": 59,
@@ -871,7 +929,8 @@
       "costo_unitario_base": 0.425714,
       "stock_actual": 0,
       "stock_minimo": 100,
-      "activo": true
+      "activo": true,
+      "tipo_costo": "fijo"
     },
     {
       "id": 60,
@@ -885,7 +944,8 @@
       "costo_unitario_base": 1,
       "stock_actual": 0,
       "stock_minimo": 100,
-      "activo": true
+      "activo": true,
+      "tipo_costo": "fijo"
     },
     {
       "id": 61,
@@ -899,7 +959,8 @@
       "costo_unitario_base": 0.077162,
       "stock_actual": 0,
       "stock_minimo": 100,
-      "activo": true
+      "activo": true,
+      "tipo_costo": "fijo"
     },
     {
       "id": 62,
@@ -913,7 +974,8 @@
       "costo_unitario_base": 0.232941,
       "stock_actual": 0,
       "stock_minimo": 100,
-      "activo": true
+      "activo": true,
+      "tipo_costo": "fijo"
     },
     {
       "id": 63,
@@ -927,7 +989,8 @@
       "costo_unitario_base": 0.363821,
       "stock_actual": 0,
       "stock_minimo": 100,
-      "activo": true
+      "activo": true,
+      "tipo_costo": "fijo"
     },
     {
       "id": 64,
@@ -941,7 +1004,8 @@
       "costo_unitario_base": 0.853659,
       "stock_actual": 0,
       "stock_minimo": 100,
-      "activo": true
+      "activo": true,
+      "tipo_costo": "fijo"
     },
     {
       "id": 65,
@@ -955,7 +1019,8 @@
       "costo_unitario_base": 0.240505,
       "stock_actual": 0,
       "stock_minimo": 100,
-      "activo": true
+      "activo": true,
+      "tipo_costo": "fijo"
     },
     {
       "id": 66,
@@ -969,7 +1034,8 @@
       "costo_unitario_base": 0.110262,
       "stock_actual": 0,
       "stock_minimo": 100,
-      "activo": true
+      "activo": true,
+      "tipo_costo": "fijo"
     },
     {
       "id": 67,
@@ -983,7 +1049,8 @@
       "costo_unitario_base": 0.44,
       "stock_actual": 0,
       "stock_minimo": 100,
-      "activo": true
+      "activo": true,
+      "tipo_costo": "fijo"
     },
     {
       "id": 68,
@@ -997,7 +1064,8 @@
       "costo_unitario_base": 0.672413,
       "stock_actual": 0,
       "stock_minimo": 100,
-      "activo": true
+      "activo": true,
+      "tipo_costo": "fijo"
     },
     {
       "id": 69,
@@ -1011,7 +1079,8 @@
       "costo_unitario_base": 1.366875,
       "stock_actual": 0,
       "stock_minimo": 100,
-      "activo": true
+      "activo": true,
+      "tipo_costo": "fijo"
     },
     {
       "id": 70,
@@ -1025,7 +1094,8 @@
       "costo_unitario_base": 0.249,
       "stock_actual": 0,
       "stock_minimo": 100,
-      "activo": true
+      "activo": true,
+      "tipo_costo": "fijo"
     },
     {
       "id": 71,
@@ -1039,7 +1109,8 @@
       "costo_unitario_base": 0.476,
       "stock_actual": 0,
       "stock_minimo": 100,
-      "activo": true
+      "activo": true,
+      "tipo_costo": "fijo"
     },
     {
       "id": 72,
@@ -1053,7 +1124,8 @@
       "costo_unitario_base": 20,
       "stock_actual": 0,
       "stock_minimo": 100,
-      "activo": true
+      "activo": true,
+      "tipo_costo": "variable"
     },
     {
       "id": 73,
@@ -1067,7 +1139,8 @@
       "costo_unitario_base": 5,
       "stock_actual": 0,
       "stock_minimo": 100,
-      "activo": true
+      "activo": true,
+      "tipo_costo": "variable"
     },
     {
       "id": 74,
@@ -1081,7 +1154,8 @@
       "costo_unitario_base": 0.025149,
       "stock_actual": 0,
       "stock_minimo": 100,
-      "activo": true
+      "activo": true,
+      "tipo_costo": "variable"
     },
     {
       "id": 75,
@@ -1095,7 +1169,8 @@
       "costo_unitario_base": 0.656995,
       "stock_actual": 0,
       "stock_minimo": 100,
-      "activo": true
+      "activo": true,
+      "tipo_costo": "fijo"
     },
     {
       "id": 76,
@@ -1109,7 +1184,8 @@
       "costo_unitario_base": 250,
       "stock_actual": 0,
       "stock_minimo": 100,
-      "activo": true
+      "activo": true,
+      "tipo_costo": "fijo"
     },
     {
       "id": 77,
@@ -1123,7 +1199,8 @@
       "costo_unitario_base": 0.024983,
       "stock_actual": 0,
       "stock_minimo": 100,
-      "activo": true
+      "activo": true,
+      "tipo_costo": "variable"
     },
     {
       "id": 78,
@@ -1137,7 +1214,8 @@
       "costo_unitario_base": 13.517434,
       "stock_actual": 0,
       "stock_minimo": 100,
-      "activo": true
+      "activo": true,
+      "tipo_costo": "variable"
     },
     {
       "id": 79,
@@ -1151,7 +1229,8 @@
       "costo_unitario_base": 0.302382,
       "stock_actual": 0,
       "stock_minimo": 100,
-      "activo": true
+      "activo": true,
+      "tipo_costo": "fijo"
     },
     {
       "id": 80,
@@ -1165,7 +1244,8 @@
       "costo_unitario_base": 0.85,
       "stock_actual": 0,
       "stock_minimo": 100,
-      "activo": true
+      "activo": true,
+      "tipo_costo": "fijo"
     },
     {
       "id": 81,
@@ -1179,7 +1259,8 @@
       "costo_unitario_base": 0.071111,
       "stock_actual": 0,
       "stock_minimo": 100,
-      "activo": true
+      "activo": true,
+      "tipo_costo": "fijo"
     },
     {
       "id": 82,
@@ -1193,7 +1274,8 @@
       "costo_unitario_base": 6.45,
       "stock_actual": 0,
       "stock_minimo": 100,
-      "activo": true
+      "activo": true,
+      "tipo_costo": "fijo"
     },
     {
       "id": 83,
@@ -1207,7 +1289,8 @@
       "costo_unitario_base": 3.229167,
       "stock_actual": 0,
       "stock_minimo": 100,
-      "activo": true
+      "activo": true,
+      "tipo_costo": "variable"
     },
     {
       "id": 84,
@@ -1221,7 +1304,8 @@
       "costo_unitario_base": 13.333333,
       "stock_actual": 0,
       "stock_minimo": 100,
-      "activo": true
+      "activo": true,
+      "tipo_costo": "variable"
     },
     {
       "id": 85,
@@ -1235,7 +1319,8 @@
       "costo_unitario_base": 16.5,
       "stock_actual": 0,
       "stock_minimo": 100,
-      "activo": true
+      "activo": true,
+      "tipo_costo": "variable"
     },
     {
       "id": 86,
@@ -1249,7 +1334,8 @@
       "costo_unitario_base": 60,
       "stock_actual": 0,
       "stock_minimo": 100,
-      "activo": true
+      "activo": true,
+      "tipo_costo": "fijo"
     },
     {
       "id": 87,
@@ -1263,7 +1349,8 @@
       "costo_unitario_base": 0.214744,
       "stock_actual": 0,
       "stock_minimo": 100,
-      "activo": true
+      "activo": true,
+      "tipo_costo": "fijo"
     },
     {
       "id": 88,
@@ -1277,7 +1364,8 @@
       "costo_unitario_base": 0.32,
       "stock_actual": 0,
       "stock_minimo": 100,
-      "activo": true
+      "activo": true,
+      "tipo_costo": "fijo"
     },
     {
       "id": 89,
@@ -1291,7 +1379,8 @@
       "costo_unitario_base": 0.643895,
       "stock_actual": 0,
       "stock_minimo": 100,
-      "activo": true
+      "activo": true,
+      "tipo_costo": "fijo"
     },
     {
       "id": 90,
@@ -1305,7 +1394,8 @@
       "costo_unitario_base": 5.1,
       "stock_actual": 0,
       "stock_minimo": 100,
-      "activo": true
+      "activo": true,
+      "tipo_costo": "variable"
     },
     {
       "id": 91,
@@ -1319,7 +1409,8 @@
       "costo_unitario_base": 0.421176,
       "stock_actual": 0,
       "stock_minimo": 100,
-      "activo": true
+      "activo": true,
+      "tipo_costo": "fijo"
     },
     {
       "id": 92,
@@ -1333,7 +1424,8 @@
       "costo_unitario_base": 0.324324,
       "stock_actual": 0,
       "stock_minimo": 100,
-      "activo": true
+      "activo": true,
+      "tipo_costo": "fijo"
     },
     {
       "id": 93,
@@ -1347,7 +1439,8 @@
       "costo_unitario_base": 0.222222,
       "stock_actual": 0,
       "stock_minimo": 100,
-      "activo": true
+      "activo": true,
+      "tipo_costo": "fijo"
     },
     {
       "id": 94,
@@ -1361,7 +1454,8 @@
       "costo_unitario_base": 0.354839,
       "stock_actual": 0,
       "stock_minimo": 100,
-      "activo": true
+      "activo": true,
+      "tipo_costo": "fijo"
     },
     {
       "id": 95,
@@ -1375,7 +1469,8 @@
       "costo_unitario_base": 0.350588,
       "stock_actual": 0,
       "stock_minimo": 100,
-      "activo": true
+      "activo": true,
+      "tipo_costo": "fijo"
     },
     {
       "id": 96,
@@ -1389,7 +1484,8 @@
       "costo_unitario_base": 11.5,
       "stock_actual": 0,
       "stock_minimo": 100,
-      "activo": true
+      "activo": true,
+      "tipo_costo": "fijo"
     },
     {
       "id": 97,
@@ -1403,7 +1499,8 @@
       "costo_unitario_base": 34,
       "stock_actual": 0,
       "stock_minimo": 100,
-      "activo": true
+      "activo": true,
+      "tipo_costo": "fijo"
     },
     {
       "id": 98,
@@ -1417,7 +1514,8 @@
       "costo_unitario_base": 25,
       "stock_actual": 0,
       "stock_minimo": 100,
-      "activo": true
+      "activo": true,
+      "tipo_costo": "variable"
     },
     {
       "id": 99,
@@ -1431,7 +1529,8 @@
       "costo_unitario_base": 5,
       "stock_actual": 0,
       "stock_minimo": 100,
-      "activo": true
+      "activo": true,
+      "tipo_costo": "variable"
     },
     {
       "id": 100,
@@ -1445,7 +1544,8 @@
       "costo_unitario_base": 0.097087,
       "stock_actual": 0,
       "stock_minimo": 100,
-      "activo": true
+      "activo": true,
+      "tipo_costo": "variable"
     },
     {
       "id": 101,
@@ -1459,7 +1559,8 @@
       "costo_unitario_base": 0.274635,
       "stock_actual": 0,
       "stock_minimo": 100,
-      "activo": true
+      "activo": true,
+      "tipo_costo": "fijo"
     },
     {
       "id": 102,
@@ -1473,7 +1574,8 @@
       "costo_unitario_base": 0.79646,
       "stock_actual": 0,
       "stock_minimo": 100,
-      "activo": true
+      "activo": true,
+      "tipo_costo": "fijo"
     },
     {
       "id": 103,
@@ -1487,7 +1589,8 @@
       "costo_unitario_base": 1.05,
       "stock_actual": 0,
       "stock_minimo": 100,
-      "activo": true
+      "activo": true,
+      "tipo_costo": "variable"
     },
     {
       "id": 104,
@@ -1501,7 +1604,8 @@
       "costo_unitario_base": 0.439294,
       "stock_actual": 0,
       "stock_minimo": 100,
-      "activo": true
+      "activo": true,
+      "tipo_costo": "fijo"
     },
     {
       "id": 105,
@@ -1515,7 +1619,8 @@
       "costo_unitario_base": 250,
       "stock_actual": 0,
       "stock_minimo": 100,
-      "activo": true
+      "activo": true,
+      "tipo_costo": "fijo"
     },
     {
       "id": 106,
@@ -1529,7 +1634,8 @@
       "costo_unitario_base": 0.791586,
       "stock_actual": 0,
       "stock_minimo": 100,
-      "activo": true
+      "activo": true,
+      "tipo_costo": "fijo"
     }
   ],
   "recetas": [

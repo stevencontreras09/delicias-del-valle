@@ -15,6 +15,7 @@ export interface Insumo {
   stock_actual: number; // en unidad_base
   stock_minimo: number; // en unidad_base
   activo: boolean;
+  tipo_costo?: 'fijo' | 'variable'; // Fijo (materia prima base) o Variable (empaque, decoración, etc.)
 }
 
 export type MermaMotivo = 'caducidad' | 'quemado' | 'derrame' | 'error_pesado' | 'calidad' | 'otro';
@@ -93,7 +94,9 @@ export interface Receta {
 // Estructura calculada en tiempo real
 export interface RecetaCostosCalculados {
   costo_ingredientes_fijos: number;
-  costo_ingredientes_variables: number;
+  costo_ingredientes_variables: number; // Suma total de todos los variables
+  costo_variables_aplicados?: number; // Suma de solo los variables seleccionados/activos
+  costo_variables_excluidos?: number; // Suma de los variables desmarcados
   costo_directo_materia_prima: number;
   costo_merma: number; // 3% de merma técnica de producción
   costo_materiales_indirectos: number;

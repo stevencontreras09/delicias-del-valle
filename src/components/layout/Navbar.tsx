@@ -49,7 +49,7 @@ export const Navbar: React.FC = () => {
       icon: <Package className="w-3.5 h-3.5" />,
       badge: lowStockCount > 0 ? lowStockCount : undefined,
     },
-    { id: 'recipes', label: 'Recetario BOM', icon: <BookOpen className="w-3.5 h-3.5" /> },
+    { id: 'recipes', label: 'Recetas', icon: <BookOpen className="w-3.5 h-3.5" /> },
     {
       id: 'quotes',
       label: 'Cotizador',

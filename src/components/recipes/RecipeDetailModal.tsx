@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Receta, Insumo } from '../../types';
 import { Modal } from '../ui/Modal';
 import { formatCurrency, formatUnit } from '../../utils/formatters';
@@ -65,9 +65,48 @@ export const RecipeDetailModal: React.FC<RecipeDetailModalProps> = ({
   const [customMiniCount, setCustomMiniCount] = useState<number>(12);
   const [isEditingMiniCustom, setIsEditingMiniCustom] = useState<boolean>(false);
 
+  // Set de insumos variables activos/seleccionados para aplicar en esta receta
+  const [activeVariableIds, setActiveVariableIds] = useState<Set<number>>(new Set());
+
+  // Inicializar todos los variables como activos cuando cambia la receta
+  useEffect(() => {
+    if (receta) {
+      const allVars = new Set<number>();
+      receta.ingredientes
+        .filter((i) => i.tipo === 'variable')
+        .forEach((i) => allVars.add(i.insumo_id));
+      setActiveVariableIds(allVars);
+    }
+  }, [receta?.id]);
+
+  const handleToggleVariable = (insumoId: number) => {
+    setActiveVariableIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(insumoId)) {
+        next.delete(insumoId);
+      } else {
+        next.add(insumoId);
+      }
+      return next;
+    });
+  };
+
+  const handleSelectAllVariables = () => {
+    if (!receta) return;
+    const all = new Set<number>();
+    receta.ingredientes
+      .filter((i) => i.tipo === 'variable')
+      .forEach((i) => all.add(i.insumo_id));
+    setActiveVariableIds(all);
+  };
+
+  const handleDeselectAllVariables = () => {
+    setActiveVariableIds(new Set());
+  };
+
   if (!receta) return null;
 
-  const costBreakdown = calcularCostosReceta(receta, insumosMap, multiplier);
+  const costBreakdown = calcularCostosReceta(receta, insumosMap, multiplier, activeVariableIds);
   const ingredientesEnriquecidos = enriquecerIngredientes(
     receta.ingredientes,
     insumosMap,
@@ -298,11 +337,13 @@ export const RecipeDetailModal: React.FC<RecipeDetailModalProps> = ({
           </div>
         </div>
 
-        {/* TABLA BOM: Escandallo Desglosado de Ingredientes */}
+        {/* TABLA: Desglose de Ingredientes de la Receta */}
         <div className="space-y-4">
-          <h3 className="text-sm font-bold text-chocolate-800 uppercase tracking-wider">
-            1. Desglose de Materia Prima Directa (BOM Escalado {multiplier}x)
-          </h3>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <h3 className="text-sm font-bold text-chocolate-800 uppercase tracking-wider">
+              1. Desglose de Materia Prima Directa (Receta Escalada {multiplier}x)
+            </h3>
+          </div>
 
           {/* Ingredientes Fijos (Base / Masa) */}
           <div className="border border-trigo-200 rounded-2xl overflow-hidden shadow-sm">
@@ -342,41 +383,99 @@ export const RecipeDetailModal: React.FC<RecipeDetailModalProps> = ({
             </table>
           </div>
 
-          {/* Ingredientes Variables (Relleno, Cobertura, Empaque) */}
+          {/* Ingredientes Variables (Relleno, Cobertura, Empaque) con Selector Individual */}
           {variables.length > 0 && (
-            <div className="border border-trigo-200 rounded-2xl overflow-hidden shadow-sm">
-              <div className="bg-trigo-600 text-white px-4 py-2 text-xs font-bold flex items-center justify-between">
-                <span>Ingredientes Variables (Relleno, Cobertura, Empaque) — {variables.length} items</span>
-                <span className="text-white">
-                  Subtotal Variables: {formatCurrency(costBreakdown.costo_ingredientes_variables)}
-                </span>
+            <div className="border border-trigo-200 rounded-2xl overflow-hidden shadow-sm transition-all">
+              <div className="bg-trigo-700 text-white px-4 py-2.5 text-xs font-bold flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <span className="font-extrabold text-white">
+                    🎨 Ingredientes Variables ({activeVariableIds.size} de {variables.length} aplicados)
+                  </span>
+                  <span className="text-[10px] bg-white/20 text-white px-2 py-0.5 rounded-full font-bold">
+                    Marca o desmarca cuáles aplicar
+                  </span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={handleSelectAllVariables}
+                      className="px-2.5 py-1 bg-white/20 hover:bg-white/30 text-white rounded-lg text-[11px] font-bold transition-colors"
+                    >
+                      Todos
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleDeselectAllVariables}
+                      className="px-2.5 py-1 bg-white/20 hover:bg-white/30 text-white rounded-lg text-[11px] font-bold transition-colors"
+                    >
+                      Ninguno
+                    </button>
+                  </div>
+                  <span className="text-trigo-200 font-extrabold">
+                    Subtotal Aplicado: {formatCurrency(costBreakdown.costo_variables_aplicados || 0)}
+                  </span>
+                </div>
               </div>
               <table className="w-full text-left text-xs">
                 <thead className="bg-crema/60 text-chocolate-800 font-semibold border-b border-trigo-200">
                   <tr>
-                    <th className="py-2.5 px-4">Ingrediente / Empaque</th>
+                    <th className="py-2.5 px-4">Ingrediente / Empaque (Selecciona para aplicar)</th>
                     <th className="py-2.5 px-4 text-center">Cantidad Escalada</th>
                     <th className="py-2.5 px-4 text-right">Costo Unitario</th>
                     <th className="py-2.5 px-4 text-right">Costo en Receta</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-trigo-100 bg-white">
-                  {variables.map((ing, idx) => (
-                    <tr key={idx} className="hover:bg-crema/20">
-                      <td className="py-2.5 px-4 font-bold text-chocolate-900">
-                        {ing.insumo_nombre}
-                      </td>
-                      <td className="py-2.5 px-4 text-center font-semibold text-chocolate-800">
-                        {formatUnit(ing.cantidad_escalada, ing.unidad_base)}
-                      </td>
-                      <td className="py-2.5 px-4 text-right text-gray-500">
-                        {formatCurrency(ing.costo_unitario_base)} / {ing.unidad_base}
-                      </td>
-                      <td className="py-2.5 px-4 text-right font-extrabold text-chocolate-900">
-                        {formatCurrency(ing.costo_calculado)}
-                      </td>
-                    </tr>
-                  ))}
+                  {variables.map((ing, idx) => {
+                    const isApplied = activeVariableIds.has(ing.insumo_id);
+                    return (
+                      <tr
+                        key={idx}
+                        onClick={() => handleToggleVariable(ing.insumo_id)}
+                        className={`cursor-pointer transition-all ${
+                          isApplied
+                            ? 'hover:bg-crema/30 bg-white'
+                            : 'bg-gray-50/70 opacity-60 hover:opacity-85'
+                        }`}
+                      >
+                        <td className="py-2.5 px-4">
+                          <label className="flex items-center gap-2.5 cursor-pointer select-none">
+                            <input
+                              type="checkbox"
+                              checked={isApplied}
+                              onChange={() => handleToggleVariable(ing.insumo_id)}
+                              onClick={(e) => e.stopPropagation()}
+                              className="w-4 h-4 rounded text-frambuesa-600 focus:ring-frambuesa-500 cursor-pointer"
+                            />
+                            <div>
+                              <span className={`font-bold text-xs ${isApplied ? 'text-chocolate-900' : 'text-gray-400 line-through'}`}>
+                                {ing.insumo_nombre}
+                              </span>
+                              <span className={`ml-2 text-[10px] font-extrabold px-1.5 py-0.5 rounded ${
+                                isApplied
+                                  ? 'bg-emerald-100 text-emerald-800'
+                                  : 'bg-amber-100 text-amber-800'
+                              }`}>
+                                {isApplied ? '✓ Aplicado al precio' : '✕ No aplicado'}
+                              </span>
+                            </div>
+                          </label>
+                        </td>
+                        <td className="py-2.5 px-4 text-center font-semibold text-chocolate-800">
+                          {formatUnit(ing.cantidad_escalada, ing.unidad_base)}
+                        </td>
+                        <td className="py-2.5 px-4 text-right text-gray-500">
+                          {formatCurrency(ing.costo_unitario_base)} / {ing.unidad_base}
+                        </td>
+                        <td className="py-2.5 px-4 text-right font-extrabold">
+                          <span className={isApplied ? 'text-chocolate-900' : 'text-gray-400 line-through'}>
+                            {formatCurrency(ing.costo_calculado)}
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -393,11 +492,22 @@ export const RecipeDetailModal: React.FC<RecipeDetailModalProps> = ({
             {/* Columna Izquierda: Desglose en Cascada */}
             <div className="space-y-2">
               <div className="flex justify-between py-1 border-b border-trigo-200">
-                <span className="text-gray-600 font-medium">Materia Prima Directa (Fijos + Variables):</span>
+                <span className="text-gray-600 font-medium">
+                  Materia Prima Directa (Fijos + {activeVariableIds.size} Variables aplicados):
+                </span>
                 <span className="font-bold text-chocolate-800">
                   {formatCurrency(costBreakdown.costo_directo_materia_prima)}
                 </span>
               </div>
+
+              {(costBreakdown.costo_variables_excluidos || 0) > 0 && (
+                <div className="flex justify-between py-1 border-b border-amber-200 bg-amber-50/70 px-2 rounded-lg text-amber-900 font-semibold text-[11px]">
+                  <span>* Costo de {variables.length - activeVariableIds.size} variable(s) no aplicado(s):</span>
+                  <span className="font-bold text-amber-800">
+                    {formatCurrency(costBreakdown.costo_variables_excluidos || 0)}
+                  </span>
+                </div>
+              )}
 
               {/* 3% de Merma Técnica */}
               <div className="flex justify-between py-1 border-b border-trigo-200 bg-amber-50/50 px-2 rounded-lg">

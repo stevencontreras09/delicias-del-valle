@@ -9,7 +9,8 @@ import {
 import { Modal } from '../ui/Modal';
 import { formatCurrency } from '../../utils/formatters';
 import { calcularCostosReceta } from '../../utils/calculations';
-import { Plus, Trash2, Cake, Gift, Search, ChevronDown, Check, Sparkles, Package } from 'lucide-react';
+import { Plus, Trash2, Cake, Gift, Search, ChevronDown, Check, Sparkles, Package, Settings } from 'lucide-react';
+import { OptionsManagerModal, CategoriaOpcion } from './OptionsManagerModal';
 
 interface QuoteBuilderModalProps {
   isOpen: boolean;
@@ -66,13 +67,37 @@ export const OPCIONES_DECORACION_DETALLADAS: OpcionConfigurable[] = [
   { id: 'deco_fondant_3d', nombre: 'Fondant Temático Personalizado con Figuras 3D', precio_adicional_base: 850, descripcion: 'Modelado artesanal manual en pasta de azúcar' },
 ];
 
-const EXTRAS_DISPONIBLES: CotizacionExtra[] = [
-  { id: 'topper', nombre: "Topper Acrílico 'Feliz Cumpleaños' / Personalizado", precio: 250 },
-  { id: 'caja_lujo', nombre: 'Caja de Lujo con Ventana y Lazo Satinado Frambuesa', precio: 175 },
-  { id: 'vela_volcan', nombre: 'Vela Volcán Chispas Doradas', precio: 120 },
-  { id: 'tarjeta_dedicatoria', nombre: 'Tarjeta Artesanal con Caligrafía Manual', precio: 90 },
-  { id: 'macarons_extra', nombre: 'Set de 4 Macarons de Frambuesa y Pistacho Extra', precio: 290 },
-];
+export function buildDefaultExtrasList(insumosMap?: Map<number, Insumo>): CotizacionExtra[] {
+  const baseList: CotizacionExtra[] = [
+    { id: 'topper', nombre: "Topper Acrílico 'Feliz Cumpleaños' / Personalizado", precio: 250 },
+    { id: 'caja_lujo', nombre: 'Caja de Lujo con Ventana y Lazo Satinado Frambuesa', precio: 175 },
+    { id: 'vela_volcan', nombre: 'Vela Volcán Chispas Doradas', precio: 120 },
+    { id: 'tarjeta_dedicatoria', nombre: 'Tarjeta Artesanal con Caligrafía Manual', precio: 90 },
+    { id: 'macarons_extra', nombre: 'Set de 4 Macarons de Frambuesa y Pistacho Extra', precio: 290 },
+  ];
+
+  if (insumosMap) {
+    insumosMap.forEach((insumo) => {
+      if (insumo.tipo_costo === 'variable' && insumo.activo) {
+        let precio = 5;
+        if (insumo.costo_unitario_base > 0) {
+          precio = Math.max(5, Math.ceil(insumo.costo_unitario_base));
+        } else if (insumo.precio_compra > 0) {
+          precio = Math.max(5, Math.ceil(insumo.precio_compra / (insumo.presentacion_empaque || 1)));
+        }
+        baseList.push({
+          id: `insumo_var_${insumo.id}`,
+          nombre: `${insumo.nombre} (${insumo.unidad_compra})`,
+          precio,
+        });
+      }
+    });
+  }
+
+  return baseList;
+}
+
+export const EXTRAS_DISPONIBLES: CotizacionExtra[] = buildDefaultExtrasList();
 
 export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
   isOpen,
@@ -102,6 +127,148 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
   const [factorReceta, setFactorReceta] = useState<number>(1);
   const [customMiniCount, setCustomMiniCount] = useState<number>(24);
   const [isCustomMiniSelected, setIsCustomMiniSelected] = useState<boolean>(false);
+
+  // Opciones configurables con persistencia local
+  const [masasOpciones, setMasasOpciones] = useState<OpcionConfigurable[]>(() => {
+    try {
+      const saved = localStorage.getItem('delicias_custom_quote_options');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed.masas) && parsed.masas.length > 0) return parsed.masas;
+      }
+    } catch (e) {}
+    return OPCIONES_MASA_DETALLADAS;
+  });
+
+  const [rellenosOpciones, setRellenosOpciones] = useState<OpcionConfigurable[]>(() => {
+    try {
+      const saved = localStorage.getItem('delicias_custom_quote_options');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed.rellenos) && parsed.rellenos.length > 0) return parsed.rellenos;
+      }
+    } catch (e) {}
+    return OPCIONES_RELLENO_DETALLADAS;
+  });
+
+  const [decoracionesOpciones, setDecoracionesOpciones] = useState<OpcionConfigurable[]>(() => {
+    try {
+      const saved = localStorage.getItem('delicias_custom_quote_options');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed.decoraciones) && parsed.decoraciones.length > 0) return parsed.decoraciones;
+      }
+    } catch (e) {}
+    return OPCIONES_DECORACION_DETALLADAS;
+  });
+
+  const [extrasOpciones, setExtrasOpciones] = useState<CotizacionExtra[]>(() => {
+    const defaultExtras = buildDefaultExtrasList(insumosMap);
+    try {
+      const saved = localStorage.getItem('delicias_custom_quote_options');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed.extras) && parsed.extras.length > 0) {
+          const existingIds = new Set(parsed.extras.map((e: CotizacionExtra) => e.id));
+          const missingVars = defaultExtras.filter((e) => !existingIds.has(e.id));
+          return [...parsed.extras, ...missingVars];
+        }
+      }
+    } catch (e) {}
+    return defaultExtras;
+  });
+
+  // Asegurar que todos los insumos variables aparezcan en extrasOpciones
+  useEffect(() => {
+    if (insumosMap && insumosMap.size > 0) {
+      setExtrasOpciones((prevExtras) => {
+        const existingIds = new Set(prevExtras.map((e) => e.id));
+        const newFromInsumos: CotizacionExtra[] = [];
+
+        insumosMap.forEach((insumo) => {
+          if (insumo.tipo_costo === 'variable' && insumo.activo) {
+            const id = `insumo_var_${insumo.id}`;
+            if (!existingIds.has(id)) {
+              let precio = 5;
+              if (insumo.costo_unitario_base > 0) {
+                precio = Math.max(5, Math.ceil(insumo.costo_unitario_base));
+              } else if (insumo.precio_compra > 0) {
+                precio = Math.max(5, Math.ceil(insumo.precio_compra / (insumo.presentacion_empaque || 1)));
+              }
+              newFromInsumos.push({
+                id,
+                nombre: `${insumo.nombre} (${insumo.unidad_compra})`,
+                precio,
+              });
+            }
+          }
+        });
+
+        if (newFromInsumos.length > 0) {
+          return [...prevExtras, ...newFromInsumos];
+        }
+        return prevExtras;
+      });
+    }
+  }, [insumosMap]);
+
+  // Filtros y búsqueda para el catálogo completo de extras
+  const [searchExtraTerm, setSearchExtraTerm] = useState('');
+  const [filterExtraCategory, setFilterExtraCategory] = useState<'all' | 'empaques' | 'detalles'>('all');
+
+  const filteredExtrasList = useMemo(() => {
+    return extrasOpciones.filter((extra) => {
+      const matchesSearch = extra.nombre.toLowerCase().includes(searchExtraTerm.toLowerCase());
+      const isEmpaque = extra.id.startsWith('insumo_var_');
+      let matchesCategory = true;
+      if (filterExtraCategory === 'empaques') {
+        matchesCategory = isEmpaque;
+      } else if (filterExtraCategory === 'detalles') {
+        matchesCategory = !isEmpaque;
+      }
+      return matchesSearch && matchesCategory;
+    });
+  }, [extrasOpciones, searchExtraTerm, filterExtraCategory]);
+
+  const empaquesCount = useMemo(
+    () => extrasOpciones.filter((e) => e.id.startsWith('insumo_var_')).length,
+    [extrasOpciones]
+  );
+  const detallesCount = useMemo(
+    () => extrasOpciones.filter((e) => !e.id.startsWith('insumo_var_')).length,
+    [extrasOpciones]
+  );
+
+  const [isOptionsManagerOpen, setIsOptionsManagerOpen] = useState(false);
+  const [optionsManagerTab, setOptionsManagerTab] = useState<CategoriaOpcion>('masas');
+
+  const openOptionsManager = (tab: CategoriaOpcion) => {
+    setOptionsManagerTab(tab);
+    setIsOptionsManagerOpen(true);
+  };
+
+  const handleSaveCustomOptions = (data: {
+    masas: OpcionConfigurable[];
+    rellenos: OpcionConfigurable[];
+    decoraciones: OpcionConfigurable[];
+    extras: CotizacionExtra[];
+  }) => {
+    setMasasOpciones(data.masas);
+    setRellenosOpciones(data.rellenos);
+    setDecoracionesOpciones(data.decoraciones);
+    setExtrasOpciones(data.extras);
+    localStorage.setItem('delicias_custom_quote_options', JSON.stringify(data));
+  };
+
+  const handleResetCustomOptions = () => {
+    setMasasOpciones(OPCIONES_MASA_DETALLADAS);
+    setRellenosOpciones(OPCIONES_RELLENO_DETALLADAS);
+    setDecoracionesOpciones(OPCIONES_DECORACION_DETALLADAS);
+    const defaults = buildDefaultExtrasList(insumosMap);
+    setExtrasOpciones(defaults);
+    localStorage.removeItem('delicias_custom_quote_options');
+  };
+
   const [masaBase, setMasaBase] = useState(OPCIONES_MASA_DETALLADAS[0].nombre);
   const [relleno, setRelleno] = useState(OPCIONES_RELLENO_DETALLADAS[0].nombre);
   const [decoracion, setDecoracion] = useState(OPCIONES_DECORACION_DETALLADAS[0].nombre);
@@ -202,23 +369,23 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
 
   // Costo adicional dinámico de la Masa
   const opcionMasaObj =
-    OPCIONES_MASA_DETALLADAS.find((m) => m.nombre === masaBase) || OPCIONES_MASA_DETALLADAS[0];
+    masasOpciones.find((m) => m.nombre === masaBase) || masasOpciones[0] || { precio_adicional_base: 0 };
   const costoMasa = (opcionMasaObj.precio_adicional_base || 0) * factorReceta;
 
   // Costo adicional dinámico del Relleno
   const opcionRellenoObj =
-    OPCIONES_RELLENO_DETALLADAS.find((r) => r.nombre === relleno) || OPCIONES_RELLENO_DETALLADAS[0];
+    rellenosOpciones.find((r) => r.nombre === relleno) || rellenosOpciones[0] || { precio_adicional_base: 0 };
   const costoRelleno = (opcionRellenoObj.precio_adicional_base || 0) * factorReceta;
 
   // Costo adicional dinámico de la Decoración
   const opcionDecoObj =
-    OPCIONES_DECORACION_DETALLADAS.find((d) => d.nombre === decoracion) || OPCIONES_DECORACION_DETALLADAS[0];
+    decoracionesOpciones.find((d) => d.nombre === decoracion) || decoracionesOpciones[0] || { precio_adicional_base: 0 };
   const factorDeco = factorReceta >= 1 ? Math.min(2.5, factorReceta) : 0.7;
   const costoDecoracion = (opcionDecoObj.precio_adicional_base || 0) * factorDeco;
 
   // Extras adicionales por unidad
   const totalExtrasUnitario = selectedExtras.reduce((sum, extId) => {
-    const ext = EXTRAS_DISPONIBLES.find((e) => e.id === extId);
+    const ext = extrasOpciones.find((e) => e.id === extId);
     return sum + (ext ? ext.precio : 0);
   }, 0);
 
@@ -238,7 +405,7 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
     if (!currentReceta) return;
 
     const extrasObj: CotizacionExtra[] = selectedExtras
-      .map((id) => EXTRAS_DISPONIBLES.find((e) => e.id === id))
+      .map((id) => extrasOpciones.find((e) => e.id === id))
       .filter(Boolean) as CotizacionExtra[];
 
     const newItem: CotizacionItem = {
@@ -277,14 +444,14 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!clienteNombre.trim() || !clienteTelefono.trim() || items.length === 0) {
-      alert('Por favor agrega los datos del cliente y al menos un producto a la cotización.');
+    if (!clienteNombre.trim() || items.length === 0) {
+      alert('Por favor completa el nombre del cliente y agrega al menos un producto a la cotización.');
       return;
     }
 
     onSave({
       cliente_nombre: clienteNombre.trim(),
-      cliente_telefono: clienteTelefono.trim(),
+      cliente_telefono: clienteTelefono.trim() || 'N/A',
       cliente_email: clienteEmail.trim(),
       fecha_emision: new Date().toISOString().split('T')[0],
       fecha_evento: fechaEvento || undefined,
@@ -333,11 +500,10 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
 
             <div>
               <label className="block font-semibold text-chocolate-700 mb-1">
-                WhatsApp / Teléfono *
+                WhatsApp / Teléfono <span className="text-gray-400 font-normal">(Opcional)</span>
               </label>
               <input
                 type="tel"
-                required
                 placeholder="+1 (809) 555-0142"
                 value={clienteTelefono}
                 onChange={(e) => setClienteTelefono(e.target.value)}
@@ -581,15 +747,25 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
 
             {/* Tipo de Masa con Precio Dinámico */}
             <div>
-              <label className="block font-bold text-chocolate-700 mb-1">
-                Tipo de Masa / Bizcocho
-              </label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="font-bold text-chocolate-700 text-xs">
+                  Tipo de Masa / Bizcocho
+                </label>
+                <button
+                  type="button"
+                  onClick={() => openOptionsManager('masas')}
+                  className="text-[11px] text-frambuesa-600 hover:text-frambuesa-700 font-bold flex items-center gap-1 hover:underline"
+                >
+                  <Settings className="w-3 h-3" />
+                  <span>Editar Opciones</span>
+                </button>
+              </div>
               <select
                 value={masaBase}
                 onChange={(e) => setMasaBase(e.target.value)}
                 className="w-full px-3 py-2.5 rounded-xl border border-trigo-300 focus:ring-2 focus:ring-frambuesa-400 focus:outline-none bg-white font-medium text-chocolate-900"
               >
-                {OPCIONES_MASA_DETALLADAS.map((m) => {
+                {masasOpciones.map((m) => {
                   const addPrice = m.precio_adicional_base * factorReceta;
                   return (
                     <option key={m.id} value={m.nombre}>
@@ -602,15 +778,25 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
 
             {/* Relleno Artesanal con Precio Dinámico */}
             <div>
-              <label className="block font-bold text-chocolate-700 mb-1">
-                Relleno Artesanal
-              </label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="font-bold text-chocolate-700 text-xs">
+                  Relleno Artesanal
+                </label>
+                <button
+                  type="button"
+                  onClick={() => openOptionsManager('rellenos')}
+                  className="text-[11px] text-frambuesa-600 hover:text-frambuesa-700 font-bold flex items-center gap-1 hover:underline"
+                >
+                  <Settings className="w-3 h-3" />
+                  <span>Editar Opciones</span>
+                </button>
+              </div>
               <select
                 value={relleno}
                 onChange={(e) => setRelleno(e.target.value)}
                 className="w-full px-3 py-2.5 rounded-xl border border-trigo-300 focus:ring-2 focus:ring-frambuesa-400 focus:outline-none bg-white font-medium text-chocolate-900"
               >
-                {OPCIONES_RELLENO_DETALLADAS.map((r) => {
+                {rellenosOpciones.map((r) => {
                   const addPrice = r.precio_adicional_base * factorReceta;
                   return (
                     <option key={r.id} value={r.nombre}>
@@ -623,15 +809,25 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
 
             {/* Estilo de Decoración con Precio Dinámico */}
             <div>
-              <label className="block font-bold text-chocolate-700 mb-1">
-                Estilo de Decoración & Cobertura
-              </label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="font-bold text-chocolate-700 text-xs">
+                  Estilo de Decoración & Cobertura
+                </label>
+                <button
+                  type="button"
+                  onClick={() => openOptionsManager('decoraciones')}
+                  className="text-[11px] text-frambuesa-600 hover:text-frambuesa-700 font-bold flex items-center gap-1 hover:underline"
+                >
+                  <Settings className="w-3 h-3" />
+                  <span>Editar Opciones</span>
+                </button>
+              </div>
               <select
                 value={decoracion}
                 onChange={(e) => setDecoracion(e.target.value)}
                 className="w-full px-3 py-2.5 rounded-xl border border-trigo-300 focus:ring-2 focus:ring-frambuesa-400 focus:outline-none bg-white font-medium text-chocolate-900"
               >
-                {OPCIONES_DECORACION_DETALLADAS.map((d) => {
+                {decoracionesOpciones.map((d) => {
                   const addPrice = d.precio_adicional_base * factorDeco;
                   return (
                     <option key={d.id} value={d.nombre}>
@@ -688,44 +884,137 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
               />
             </div>
 
-            {/* Extras */}
-            <div className="sm:col-span-2 md:col-span-3 bg-canvas p-3.5 rounded-xl border border-trigo-200">
-              <span className="block font-bold text-chocolate-700 mb-2 flex items-center gap-1.5">
-                <Gift className="w-3.5 h-3.5 text-frambuesa-500" />
-                <span>Adicionales & Extras Opcionales:</span>
-              </span>
+            {/* Extras y Productos Variables Opcionales */}
+            <div className="sm:col-span-2 md:col-span-3 bg-canvas p-4 rounded-2xl border border-trigo-200 space-y-3">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <span className="font-bold text-chocolate-800 flex items-center gap-1.5 text-xs">
+                    <Gift className="w-4 h-4 text-frambuesa-500" />
+                    <span>Adicionales, Extras & Productos Variables Opcionales:</span>
+                  </span>
+                  {selectedExtras.length > 0 && (
+                    <span className="text-[10px] font-extrabold bg-frambuesa-100 text-frambuesa-800 px-2 py-0.5 rounded-full">
+                      {selectedExtras.length} seleccionados (+{formatCurrency(totalExtrasUnitario)})
+                    </span>
+                  )}
+                </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
-                {EXTRAS_DISPONIBLES.map((extra) => {
-                  const isChecked = selectedExtras.includes(extra.id);
-                  return (
-                    <label
-                      key={extra.id}
-                      className={`flex items-center gap-2 p-2.5 rounded-xl border text-xs cursor-pointer select-none transition-all ${
-                        isChecked
-                          ? 'bg-frambuesa-50 border-frambuesa-300 text-frambuesa-900 font-bold shadow-sm'
-                          : 'bg-white border-trigo-200 text-chocolate-700 hover:bg-crema/40'
-                      }`}
+                <div className="flex items-center gap-2">
+                  {selectedExtras.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setSelectedExtras([])}
+                      className="text-[11px] text-gray-500 hover:text-chocolate-800 font-semibold underline"
                     >
-                      <input
-                        type="checkbox"
-                        checked={isChecked}
-                        onChange={() => {
-                          if (isChecked) {
-                            setSelectedExtras((prev) => prev.filter((id) => id !== extra.id));
-                          } else {
-                            setSelectedExtras((prev) => [...prev, extra.id]);
-                          }
-                        }}
-                        className="rounded text-frambuesa-600 focus:ring-frambuesa-400"
-                      />
-                      <span className="flex-1">{extra.nombre}</span>
-                      <span className="text-frambuesa-700 whitespace-nowrap font-bold">
-                        +{formatCurrency(extra.precio)}
-                      </span>
-                    </label>
-                  );
-                })}
+                      Deseleccionar Todos
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => openOptionsManager('extras')}
+                    className="text-[11px] text-frambuesa-600 hover:text-frambuesa-700 font-bold flex items-center gap-1 hover:underline"
+                  >
+                    <Settings className="w-3 h-3" />
+                    <span>Gestionar Extras / Precios</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Barra de Búsqueda y Píldoras de Filtro de Extras */}
+              <div className="flex flex-col sm:flex-row items-center gap-2">
+                <div className="relative flex-1 w-full">
+                  <Search className="w-3.5 h-3.5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    placeholder="Buscar producto variable o extra (ej. Caja, Plato, Topper, Sticker)..."
+                    value={searchExtraTerm}
+                    onChange={(e) => setSearchExtraTerm(e.target.value)}
+                    className="w-full pl-8 pr-3 py-1.5 rounded-xl border border-trigo-200 text-xs bg-white text-chocolate-900 placeholder:text-gray-400"
+                  />
+                </div>
+                <div className="flex items-center gap-1 w-full sm:w-auto overflow-x-auto text-[11px]">
+                  <button
+                    type="button"
+                    onClick={() => setFilterExtraCategory('all')}
+                    className={`px-2.5 py-1 rounded-lg font-bold transition-colors whitespace-nowrap ${
+                      filterExtraCategory === 'all'
+                        ? 'bg-chocolate-700 text-white shadow-sm'
+                        : 'bg-white text-chocolate-600 border border-trigo-200 hover:bg-crema'
+                    }`}
+                  >
+                    Todos ({extrasOpciones.length})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFilterExtraCategory('empaques')}
+                    className={`px-2.5 py-1 rounded-lg font-bold transition-colors whitespace-nowrap ${
+                      filterExtraCategory === 'empaques'
+                        ? 'bg-purple-600 text-white shadow-sm'
+                        : 'bg-purple-50 text-purple-700 border border-purple-200 hover:bg-purple-100'
+                    }`}
+                  >
+                    📦 Empaques ({empaquesCount})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFilterExtraCategory('detalles')}
+                    className={`px-2.5 py-1 rounded-lg font-bold transition-colors whitespace-nowrap ${
+                      filterExtraCategory === 'detalles'
+                        ? 'bg-frambuesa-600 text-white shadow-sm'
+                        : 'bg-frambuesa-50 text-frambuesa-700 border border-frambuesa-200 hover:bg-frambuesa-100'
+                    }`}
+                  >
+                    ✨ Detalles & Toppers ({detallesCount})
+                  </button>
+                </div>
+              </div>
+
+              {/* Grid Scrollable de Extras */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 max-h-56 overflow-y-auto p-1 border border-trigo-100 rounded-xl bg-white/70">
+                {filteredExtrasList.length === 0 ? (
+                  <p className="sm:col-span-3 text-center py-4 text-xs text-gray-400">
+                    No se encontraron productos variables o extras con ese término.
+                  </p>
+                ) : (
+                  filteredExtrasList.map((extra) => {
+                    const isChecked = selectedExtras.includes(extra.id);
+                    const isEmpaque = extra.id.startsWith('insumo_var_');
+                    return (
+                      <label
+                        key={extra.id}
+                        className={`flex items-center gap-2 p-2 rounded-xl border text-xs cursor-pointer select-none transition-all ${
+                          isChecked
+                            ? 'bg-frambuesa-50 border-frambuesa-400 text-frambuesa-900 font-bold shadow-sm ring-1 ring-frambuesa-300'
+                            : 'bg-white border-trigo-200 text-chocolate-700 hover:bg-crema/40'
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={isChecked}
+                          onChange={() => {
+                            if (isChecked) {
+                              setSelectedExtras((prev) => prev.filter((id) => id !== extra.id));
+                            } else {
+                              setSelectedExtras((prev) => [...prev, extra.id]);
+                            }
+                          }}
+                          className="w-4 h-4 rounded text-frambuesa-600 focus:ring-frambuesa-400 cursor-pointer"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <span className="block truncate text-[11px]">{extra.nombre}</span>
+                          <span className={`text-[8px] font-semibold px-1 py-0.2 rounded inline-block mt-0.5 ${
+                            isEmpaque ? 'bg-purple-100 text-purple-700' : 'bg-amber-100 text-amber-800'
+                          }`}>
+                            {isEmpaque ? 'Insumo Variable' : 'Detalle Especial'}
+                          </span>
+                        </div>
+                        <span className="text-frambuesa-700 whitespace-nowrap font-extrabold text-xs">
+                          +{formatCurrency(extra.precio)}
+                        </span>
+                      </label>
+                    );
+                  })
+                )}
               </div>
             </div>
           </div>
@@ -914,6 +1203,19 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
           </button>
         </div>
       </form>
+
+      {/* Modal Gestor de Opciones Personalizadas */}
+      <OptionsManagerModal
+        isOpen={isOptionsManagerOpen}
+        onClose={() => setIsOptionsManagerOpen(false)}
+        initialTab={optionsManagerTab}
+        masas={masasOpciones}
+        rellenos={rellenosOpciones}
+        decoraciones={decoracionesOpciones}
+        extras={extrasOpciones}
+        onSave={handleSaveCustomOptions}
+        onResetDefaults={handleResetCustomOptions}
+      />
     </Modal>
   );
 };

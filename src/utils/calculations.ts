@@ -36,10 +36,24 @@ export function calcularCostoIngrediente(
 export function calcularCostosReceta(
   receta: Receta,
   insumosMap: Map<number, Insumo>,
-  factorEscalado: number = 1
+  factorEscalado: number = 1,
+  variablesActivas: boolean | Set<number> | number[] = true
 ): RecetaCostosCalculados {
   let costoFijos = 0;
-  let costoVariables = 0;
+  let costoVariablesTotal = 0;
+  let costoVariablesAplicados = 0;
+
+  // Analizar selector de variables activas
+  const isSet = variablesActivas instanceof Set;
+  const isArray = Array.isArray(variablesActivas);
+  const activeSet = isSet
+    ? (variablesActivas as Set<number>)
+    : isArray
+    ? new Set(variablesActivas as number[])
+    : null;
+
+  const allDisabled = variablesActivas === false;
+  const allEnabled = variablesActivas === true;
 
   for (const ing of receta.ingredientes) {
     const insumo = insumosMap.get(ing.insumo_id);
@@ -49,11 +63,21 @@ export function calcularCostosReceta(
     if (ing.tipo === 'fijo') {
       costoFijos += costo;
     } else {
-      costoVariables += costo;
+      costoVariablesTotal += costo;
+
+      const estaAplicada =
+        !allDisabled && (allEnabled || (activeSet !== null && activeSet.has(ing.insumo_id)));
+
+      if (estaAplicada) {
+        costoVariablesAplicados += costo;
+      }
     }
   }
 
-  const mpd = costoFijos + costoVariables; // Materia Prima Directa
+  const costoVariablesExcluidos = Math.max(0, costoVariablesTotal - costoVariablesAplicados);
+
+  // Materia Prima Directa computada con fijos + variables seleccionados
+  const mpd = costoFijos + costoVariablesAplicados;
 
   // 3% de Merma Técnica / Desperdicio Operativo de Cocina
   const costoMerma = mpd * 0.03;
@@ -93,7 +117,9 @@ export function calcularCostosReceta(
 
   return {
     costo_ingredientes_fijos: costoFijos,
-    costo_ingredientes_variables: costoVariables,
+    costo_ingredientes_variables: costoVariablesTotal,
+    costo_variables_aplicados: costoVariablesAplicados,
+    costo_variables_excluidos: costoVariablesExcluidos,
     costo_directo_materia_prima: mpd,
     costo_merma: costoMerma,
     costo_materiales_indirectos: costoMaterialesIndirectos,

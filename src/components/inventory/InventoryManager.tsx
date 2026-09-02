@@ -32,6 +32,7 @@ export const InventoryManager: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [stockFilter, setStockFilter] = useState<'all' | 'low' | 'active'>('all');
+  const [tipoCostoFilter, setTipoCostoFilter] = useState<'all' | 'fijo' | 'variable'>('all');
 
   // Modales
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -39,6 +40,10 @@ export const InventoryManager: React.FC = () => {
   const [restockInsumo, setRestockInsumo] = useState<Insumo | null>(null);
   const [wasteInsumo, setWasteInsumo] = useState<Insumo | null>(null);
   const [isWasteHistoryOpen, setIsWasteHistoryOpen] = useState(false);
+
+  // Conteos de Fijos vs Variables
+  const fijosCount = useMemo(() => insumos.filter((i) => (i.tipo_costo || 'fijo') === 'fijo').length, [insumos]);
+  const variablesCount = useMemo(() => insumos.filter((i) => i.tipo_costo === 'variable').length, [insumos]);
 
   // Lista de categorías únicas extraídas de los insumos
   const categories = useMemo(() => {
@@ -65,9 +70,12 @@ export const InventoryManager: React.FC = () => {
         matchesStock = item.activo;
       }
 
-      return matchesSearch && matchesCat && matchesStock;
+      const itemTipo = item.tipo_costo || 'fijo';
+      const matchesTipo = tipoCostoFilter === 'all' || itemTipo === tipoCostoFilter;
+
+      return matchesSearch && matchesCat && matchesStock && matchesTipo;
     });
-  }, [insumos, searchTerm, selectedCategory, stockFilter]);
+  }, [insumos, searchTerm, selectedCategory, stockFilter, tipoCostoFilter]);
 
   const lowStockTotal = insumos.filter((i) => i.activo && i.stock_actual <= i.stock_minimo).length;
 
@@ -114,6 +122,60 @@ export const InventoryManager: React.FC = () => {
 
       {/* Barra de Búsqueda y Filtros */}
       <div className="bg-white rounded-3xl p-4 sm:p-5 border border-trigo-200 shadow-warm space-y-4">
+        {/* Pestañas de Clasificación de Insumos: Fijos vs Variables */}
+        <div className="flex flex-wrap items-center gap-2 border-b border-trigo-100 pb-3">
+          <button
+            type="button"
+            onClick={() => setTipoCostoFilter('all')}
+            className={`px-4 py-2 rounded-2xl text-xs font-bold transition-all flex items-center gap-2 ${
+              tipoCostoFilter === 'all'
+                ? 'bg-chocolate-700 text-white shadow-sm'
+                : 'bg-canvas text-chocolate-700 hover:bg-crema border border-trigo-200'
+            }`}
+          >
+            <span>Todos los Insumos</span>
+            <span className={`text-[10px] px-2 py-0.5 rounded-full font-extrabold ${
+              tipoCostoFilter === 'all' ? 'bg-white/20 text-white' : 'bg-trigo-200 text-chocolate-800'
+            }`}>
+              {insumos.length}
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setTipoCostoFilter('fijo')}
+            className={`px-4 py-2 rounded-2xl text-xs font-bold transition-all flex items-center gap-2 ${
+              tipoCostoFilter === 'fijo'
+                ? 'bg-blue-600 text-white shadow-sm'
+                : 'bg-blue-50/70 text-blue-800 hover:bg-blue-100 border border-blue-200'
+            }`}
+          >
+            <span>📌 Productos Fijos (Harina, Huevos, Mantequilla...)</span>
+            <span className={`text-[10px] px-2 py-0.5 rounded-full font-extrabold ${
+              tipoCostoFilter === 'fijo' ? 'bg-white/20 text-white' : 'bg-blue-200 text-blue-900'
+            }`}>
+              {fijosCount}
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setTipoCostoFilter('variable')}
+            className={`px-4 py-2 rounded-2xl text-xs font-bold transition-all flex items-center gap-2 ${
+              tipoCostoFilter === 'variable'
+                ? 'bg-purple-600 text-white shadow-sm'
+                : 'bg-purple-50/70 text-purple-800 hover:bg-purple-100 border border-purple-200'
+            }`}
+          >
+            <span>🎨 Productos Variables (Cajas, Stickers, Empaques...)</span>
+            <span className={`text-[10px] px-2 py-0.5 rounded-full font-extrabold ${
+              tipoCostoFilter === 'variable' ? 'bg-white/20 text-white' : 'bg-purple-200 text-purple-900'
+            }`}>
+              {variablesCount}
+            </span>
+          </button>
+        </div>
+
         <div className="flex flex-col md:flex-row items-center gap-3">
           {/* Campo de Búsqueda */}
           <div className="relative flex-1 w-full">
@@ -227,9 +289,18 @@ export const InventoryManager: React.FC = () => {
                             <p className="font-bold text-chocolate-900 text-xs leading-snug">
                               {item.nombre}
                             </p>
-                            <p className="text-[11px] text-chocolate-500 font-medium">
-                              {item.categoria}
-                            </p>
+                            <div className="flex items-center gap-2 mt-0.5">
+                              <span className="text-[11px] text-chocolate-500 font-medium">
+                                {item.categoria}
+                              </span>
+                              <span className={`text-[9px] font-extrabold px-1.5 py-0.5 rounded-md ${
+                                item.tipo_costo === 'variable'
+                                  ? 'bg-purple-100 text-purple-800 border border-purple-200'
+                                  : 'bg-blue-100 text-blue-800 border border-blue-200'
+                              }`}>
+                                {item.tipo_costo === 'variable' ? 'Variable' : 'Fijo'}
+                              </span>
+                            </div>
                           </div>
                         </div>
                       </td>

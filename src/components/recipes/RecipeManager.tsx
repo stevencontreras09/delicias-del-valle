@@ -65,7 +65,7 @@ export const RecipeManager: React.FC = () => {
         <div>
           <div className="flex items-center gap-3">
             <h1 className="text-2xl sm:text-3xl font-bold text-chocolate-700 font-serif">
-              Recetario Maestro & Escandallos (BOM)
+              Recetas Maestras & Costeo
             </h1>
             <span className="bg-crema text-chocolate-800 text-xs font-bold px-3 py-1 rounded-full border border-trigo-300">
               {recetas.length} Recetas
@@ -229,7 +229,7 @@ export const RecipeManager: React.FC = () => {
                     className="flex-1 py-2 px-3 rounded-xl bg-chocolate-700 hover:bg-chocolate-800 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-colors shadow-sm"
                   >
                     <BookOpen className="w-3.5 h-3.5" />
-                    <span>Ver Escandallo</span>
+                    <span>Ver Receta</span>
                     <ArrowRight className="w-3 h-3" />
                   </button>
 
