@@ -1491,256 +1491,12 @@ export const INITIAL_INSUMOS: Insumo[] = [
 ];
 
 // ==============================================================================
-// 60 RECETAS MAESTRAS EXACTAS DEL TALLER (BOM)
+// 28 RECETAS MAESTRAS EXACTAS DEL TALLER (BOM)
 // ==============================================================================
 export const INITIAL_RECETAS: Receta[] = [
   {
-    "id": 1,
-    "nombre": "TORTA DE VAINILLA",
-    "categoria": "Tortas",
-    "descripcion": "",
-    "rendimiento_base": 1,
-    "rendimiento_unidad": "LB",
-    "tiempo_preparacion_min": 30,
-    "tiempo_horneado_min": 45,
-    "temperatura_horno_c": 180,
-    "materiales_indirectos_pct": 10,
-    "costos_operativos_pct": 15,
-    "reposicion_equipos_pct": 10,
-    "mano_obra_pct": 30,
-    "margen_beneficio_pct": 50,
-    "activa": true,
-    "instrucciones": [],
-    "ingredientes": [
-      {
-        "insumo_id": 1,
-        "cantidad": 450,
-        "tipo": "fijo"
-      },
-      {
-        "insumo_id": 2,
-        "cantidad": 660,
-        "tipo": "fijo"
-      },
-      {
-        "insumo_id": 3,
-        "cantidad": 8,
-        "tipo": "fijo"
-      },
-      {
-        "insumo_id": 4,
-        "cantidad": 500,
-        "tipo": "fijo"
-      },
-      {
-        "insumo_id": 5,
-        "cantidad": 200,
-        "tipo": "fijo"
-      },
-      {
-        "insumo_id": 6,
-        "cantidad": 40,
-        "tipo": "fijo"
-      },
-      {
-        "insumo_id": 7,
-        "cantidad": 15,
-        "tipo": "fijo"
-      },
-      {
-        "insumo_id": 8,
-        "cantidad": 1,
-        "tipo": "fijo"
-      }
-    ],
-    "nombre_base": "Torta de Vainilla"
-  },
-  {
-    "id": 2,
-    "nombre": "TORTA DE VAINILLA",
-    "categoria": "Tortas",
-    "descripcion": "",
-    "rendimiento_base": 1,
-    "rendimiento_unidad": "LB",
-    "tiempo_preparacion_min": 30,
-    "tiempo_horneado_min": 45,
-    "temperatura_horno_c": 180,
-    "materiales_indirectos_pct": 10,
-    "costos_operativos_pct": 15,
-    "reposicion_equipos_pct": 10,
-    "mano_obra_pct": 30,
-    "margen_beneficio_pct": 50,
-    "activa": true,
-    "instrucciones": [],
-    "ingredientes": [
-      {
-        "insumo_id": 1,
-        "cantidad": 450,
-        "tipo": "fijo"
-      },
-      {
-        "insumo_id": 2,
-        "cantidad": 660,
-        "tipo": "fijo"
-      },
-      {
-        "insumo_id": 3,
-        "cantidad": 8,
-        "tipo": "fijo"
-      },
-      {
-        "insumo_id": 4,
-        "cantidad": 500,
-        "tipo": "fijo"
-      },
-      {
-        "insumo_id": 5,
-        "cantidad": 200,
-        "tipo": "fijo"
-      },
-      {
-        "insumo_id": 6,
-        "cantidad": 40,
-        "tipo": "fijo"
-      },
-      {
-        "insumo_id": 7,
-        "cantidad": 15,
-        "tipo": "fijo"
-      },
-      {
-        "insumo_id": 8,
-        "cantidad": 1,
-        "tipo": "fijo"
-      }
-    ],
-    "nombre_base": "Torta de Vainilla"
-  },
-  {
-    "id": 3,
-    "nombre": "TORTA DE VAINILLA",
-    "categoria": "Tortas",
-    "descripcion": "",
-    "rendimiento_base": 0.5,
-    "rendimiento_unidad": "LB",
-    "tiempo_preparacion_min": 30,
-    "tiempo_horneado_min": 45,
-    "temperatura_horno_c": 180,
-    "materiales_indirectos_pct": 10,
-    "costos_operativos_pct": 15,
-    "reposicion_equipos_pct": 10,
-    "mano_obra_pct": 30,
-    "margen_beneficio_pct": 50,
-    "activa": true,
-    "instrucciones": [],
-    "ingredientes": [
-      {
-        "insumo_id": 1,
-        "cantidad": 225,
-        "tipo": "fijo"
-      },
-      {
-        "insumo_id": 2,
-        "cantidad": 440,
-        "tipo": "fijo"
-      },
-      {
-        "insumo_id": 3,
-        "cantidad": 6,
-        "tipo": "fijo"
-      },
-      {
-        "insumo_id": 4,
-        "cantidad": 375,
-        "tipo": "fijo"
-      },
-      {
-        "insumo_id": 5,
-        "cantidad": 150,
-        "tipo": "fijo"
-      },
-      {
-        "insumo_id": 6,
-        "cantidad": 30,
-        "tipo": "fijo"
-      },
-      {
-        "insumo_id": 7,
-        "cantidad": 11,
-        "tipo": "fijo"
-      },
-      {
-        "insumo_id": 8,
-        "cantidad": 1,
-        "tipo": "fijo"
-      }
-    ],
-    "nombre_base": "Torta de Vainilla"
-  },
-  {
-    "id": 4,
-    "nombre": "TORTA DE CHCATE",
-    "categoria": "Tortas",
-    "descripcion": "",
-    "rendimiento_base": 1,
-    "rendimiento_unidad": "B",
-    "tiempo_preparacion_min": 30,
-    "tiempo_horneado_min": 45,
-    "temperatura_horno_c": 180,
-    "materiales_indirectos_pct": 10,
-    "costos_operativos_pct": 15,
-    "reposicion_equipos_pct": 10,
-    "mano_obra_pct": 30,
-    "margen_beneficio_pct": 50,
-    "activa": true,
-    "instrucciones": [],
-    "ingredientes": [
-      {
-        "insumo_id": 1,
-        "cantidad": 200,
-        "tipo": "fijo"
-      },
-      {
-        "insumo_id": 3,
-        "cantidad": 4,
-        "tipo": "fijo"
-      },
-      {
-        "insumo_id": 4,
-        "cantidad": 350,
-        "tipo": "fijo"
-      },
-      {
-        "insumo_id": 9,
-        "cantidad": 100,
-        "tipo": "fijo"
-      },
-      {
-        "insumo_id": 6,
-        "cantidad": 20,
-        "tipo": "fijo"
-      },
-      {
-        "insumo_id": 10,
-        "cantidad": 10,
-        "tipo": "fijo"
-      },
-      {
-        "insumo_id": 11,
-        "cantidad": 3,
-        "tipo": "fijo"
-      },
-      {
-        "insumo_id": 12,
-        "cantidad": 375,
-        "tipo": "fijo"
-      }
-    ],
-    "nombre_base": "Torta de Chocolate"
-  },
-  {
     "id": 5,
-    "nombre": "TORTA DE CHCATE",
+    "nombre": "TORTA DE Chocolate",
     "categoria": "Tortas",
     "descripcion": "",
     "rendimiento_base": 0.5,
@@ -1754,6 +1510,9 @@ export const INITIAL_RECETAS: Receta[] = [
     "mano_obra_pct": 30,
     "margen_beneficio_pct": 50,
     "activa": true,
+    "nombre_base": "Torta de Chocolate",
+    "orden_variante": 0,
+    "created_at": "2026-09-01T19:27:53.886339+00:00",
     "instrucciones": [],
     "ingredientes": [
       {
@@ -1801,13 +1560,12 @@ export const INITIAL_RECETAS: Receta[] = [
         "cantidad": 187.5,
         "tipo": "fijo"
       }
-    ],
-    "nombre_base": "Torta de Chocolate"
+    ]
   },
   {
     "id": 6,
     "nombre": "SUSPIRO PARA TORTA",
-    "categoria": "Tortas",
+    "categoria": "Rellenos y Coberturas",
     "descripcion": "",
     "rendimiento_base": 1,
     "rendimiento_unidad": "LB",
@@ -1820,6 +1578,9 @@ export const INITIAL_RECETAS: Receta[] = [
     "mano_obra_pct": 30,
     "margen_beneficio_pct": 50,
     "activa": true,
+    "nombre_base": "Suspiro para Torta",
+    "orden_variante": 0,
+    "created_at": "2026-09-01T19:27:53.886339+00:00",
     "instrucciones": [],
     "ingredientes": [
       {
@@ -1847,796 +1608,38 @@ export const INITIAL_RECETAS: Receta[] = [
         "cantidad": 3,
         "tipo": "fijo"
       }
-    ],
-    "nombre_base": "Suspiro para Torta"
-  },
-  {
-    "id": 7,
-    "nombre": "TORTA DE VAINILLA SENCILLA/SENCILLA/DULCE DE LECHE",
-    "categoria": "Tortas",
-    "descripcion": "",
-    "rendimiento_base": 8,
-    "rendimiento_unidad": ")",
-    "tiempo_preparacion_min": 30,
-    "tiempo_horneado_min": 45,
-    "temperatura_horno_c": 180,
-    "materiales_indirectos_pct": 10,
-    "costos_operativos_pct": 15,
-    "reposicion_equipos_pct": 10,
-    "mano_obra_pct": 30,
-    "margen_beneficio_pct": 50,
-    "activa": true,
-    "instrucciones": [],
-    "ingredientes": [
-      {
-        "insumo_id": 14,
-        "cantidad": 350,
-        "tipo": "variable"
-      },
-      {
-        "insumo_id": 15,
-        "cantidad": 500,
-        "tipo": "variable"
-      }
-    ],
-    "nombre_base": "Torta de Vainilla"
-  },
-  {
-    "id": 8,
-    "nombre": "TORTA DE VAINILLA SENCILLA/SENCILLA/Merm Guayaba",
-    "categoria": "Tortas",
-    "descripcion": "",
-    "rendimiento_base": 8,
-    "rendimiento_unidad": ")",
-    "tiempo_preparacion_min": 30,
-    "tiempo_horneado_min": 45,
-    "temperatura_horno_c": 180,
-    "materiales_indirectos_pct": 10,
-    "costos_operativos_pct": 15,
-    "reposicion_equipos_pct": 10,
-    "mano_obra_pct": 30,
-    "margen_beneficio_pct": 50,
-    "activa": true,
-    "instrucciones": [],
-    "ingredientes": [
-      {
-        "insumo_id": 16,
-        "cantidad": 300,
-        "tipo": "variable"
-      },
-      {
-        "insumo_id": 15,
-        "cantidad": 400,
-        "tipo": "variable"
-      }
-    ],
-    "nombre_base": "Torta de Vainilla"
-  },
-  {
-    "id": 9,
-    "nombre": "TORTA DE VAINILLA SENCILLA/SENCILLA/Merm Fresa",
-    "categoria": "Tortas",
-    "descripcion": "",
-    "rendimiento_base": 8,
-    "rendimiento_unidad": ")",
-    "tiempo_preparacion_min": 30,
-    "tiempo_horneado_min": 45,
-    "temperatura_horno_c": 180,
-    "materiales_indirectos_pct": 10,
-    "costos_operativos_pct": 15,
-    "reposicion_equipos_pct": 10,
-    "mano_obra_pct": 30,
-    "margen_beneficio_pct": 50,
-    "activa": true,
-    "instrucciones": [],
-    "ingredientes": [
-      {
-        "insumo_id": 17,
-        "cantidad": 300,
-        "tipo": "variable"
-      },
-      {
-        "insumo_id": 15,
-        "cantidad": 400,
-        "tipo": "variable"
-      }
-    ],
-    "nombre_base": "Torta de Vainilla"
-  },
-  {
-    "id": 10,
-    "nombre": "TORTA DE VAINILLA SENCILLA/SENCILLA/MERM PINA",
-    "categoria": "Tortas",
-    "descripcion": "",
-    "rendimiento_base": 8,
-    "rendimiento_unidad": ")",
-    "tiempo_preparacion_min": 30,
-    "tiempo_horneado_min": 45,
-    "temperatura_horno_c": 180,
-    "materiales_indirectos_pct": 10,
-    "costos_operativos_pct": 15,
-    "reposicion_equipos_pct": 10,
-    "mano_obra_pct": 30,
-    "margen_beneficio_pct": 50,
-    "activa": true,
-    "instrucciones": [],
-    "ingredientes": [
-      {
-        "insumo_id": 18,
-        "cantidad": 300,
-        "tipo": "variable"
-      },
-      {
-        "insumo_id": 15,
-        "cantidad": 400,
-        "tipo": "variable"
-      }
-    ],
-    "nombre_base": "Torta de Vainilla"
-  },
-  {
-    "id": 11,
-    "nombre": "TORTA DE VAINILLA SENCILLA/SENCILLA/Ganac Chocolate",
-    "categoria": "Tortas",
-    "descripcion": "",
-    "rendimiento_base": 8,
-    "rendimiento_unidad": ")",
-    "tiempo_preparacion_min": 30,
-    "tiempo_horneado_min": 45,
-    "temperatura_horno_c": 180,
-    "materiales_indirectos_pct": 10,
-    "costos_operativos_pct": 15,
-    "reposicion_equipos_pct": 10,
-    "mano_obra_pct": 30,
-    "margen_beneficio_pct": 50,
-    "activa": true,
-    "instrucciones": [],
-    "ingredientes": [
-      {
-        "insumo_id": 19,
-        "cantidad": 300,
-        "tipo": "variable"
-      },
-      {
-        "insumo_id": 20,
-        "cantidad": 500,
-        "tipo": "variable"
-      },
-      {
-        "insumo_id": 15,
-        "cantidad": 400,
-        "tipo": "variable"
-      }
-    ],
-    "nombre_base": "Torta de Vainilla"
-  },
-  {
-    "id": 12,
-    "nombre": "TORTA DE VAINILLA SENCILLA - Crema pastelera (Bavarian)",
-    "categoria": "Tortas",
-    "descripcion": "",
-    "rendimiento_base": 1,
-    "rendimiento_unidad": "LB",
-    "tiempo_preparacion_min": 30,
-    "tiempo_horneado_min": 45,
-    "temperatura_horno_c": 180,
-    "materiales_indirectos_pct": 10,
-    "costos_operativos_pct": 15,
-    "reposicion_equipos_pct": 10,
-    "mano_obra_pct": 30,
-    "margen_beneficio_pct": 50,
-    "activa": true,
-    "instrucciones": [],
-    "ingredientes": [
-      {
-        "insumo_id": 21,
-        "cantidad": 315,
-        "tipo": "variable"
-      },
-      {
-        "insumo_id": 15,
-        "cantidad": 400,
-        "tipo": "variable"
-      }
-    ],
-    "nombre_base": "Torta de Vainilla"
-  },
-  {
-    "id": 13,
-    "nombre": "TORTA DE VAINILLA SENCILLA - CREMA CACA Y NUECES",
-    "categoria": "Tortas",
-    "descripcion": "",
-    "rendimiento_base": 0.5,
-    "rendimiento_unidad": "LB",
-    "tiempo_preparacion_min": 30,
-    "tiempo_horneado_min": 45,
-    "temperatura_horno_c": 180,
-    "materiales_indirectos_pct": 10,
-    "costos_operativos_pct": 15,
-    "reposicion_equipos_pct": 10,
-    "mano_obra_pct": 30,
-    "margen_beneficio_pct": 50,
-    "activa": true,
-    "instrucciones": [],
-    "ingredientes": [
-      {
-        "insumo_id": 22,
-        "cantidad": 350,
-        "tipo": "variable"
-      },
-      {
-        "insumo_id": 15,
-        "cantidad": 400,
-        "tipo": "variable"
-      }
-    ],
-    "nombre_base": "Torta de Vainilla"
-  },
-  {
-    "id": 14,
-    "nombre": "TORTA DE VAINILLA SENCILLA/SENCILLA/DULCE DE LECHE",
-    "categoria": "Tortas",
-    "descripcion": "",
-    "rendimiento_base": 8,
-    "rendimiento_unidad": ")",
-    "tiempo_preparacion_min": 30,
-    "tiempo_horneado_min": 45,
-    "temperatura_horno_c": 180,
-    "materiales_indirectos_pct": 10,
-    "costos_operativos_pct": 15,
-    "reposicion_equipos_pct": 10,
-    "mano_obra_pct": 30,
-    "margen_beneficio_pct": 50,
-    "activa": true,
-    "instrucciones": [],
-    "ingredientes": [
-      {
-        "insumo_id": 14,
-        "cantidad": 400,
-        "tipo": "variable"
-      }
-    ],
-    "nombre_base": "Torta de Vainilla"
-  },
-  {
-    "id": 15,
-    "nombre": "TORTA DE VAINILLA SENCILLA/SENCILLA/Merm Guayaba",
-    "categoria": "Tortas",
-    "descripcion": "",
-    "rendimiento_base": 8,
-    "rendimiento_unidad": ")",
-    "tiempo_preparacion_min": 30,
-    "tiempo_horneado_min": 45,
-    "temperatura_horno_c": 180,
-    "materiales_indirectos_pct": 10,
-    "costos_operativos_pct": 15,
-    "reposicion_equipos_pct": 10,
-    "mano_obra_pct": 30,
-    "margen_beneficio_pct": 50,
-    "activa": true,
-    "instrucciones": [],
-    "ingredientes": [
-      {
-        "insumo_id": 1,
-        "cantidad": 450,
-        "tipo": "fijo"
-      },
-      {
-        "insumo_id": 2,
-        "cantidad": 660,
-        "tipo": "fijo"
-      },
-      {
-        "insumo_id": 3,
-        "cantidad": 8,
-        "tipo": "fijo"
-      },
-      {
-        "insumo_id": 4,
-        "cantidad": 480,
-        "tipo": "fijo"
-      },
-      {
-        "insumo_id": 5,
-        "cantidad": 192,
-        "tipo": "fijo"
-      },
-      {
-        "insumo_id": 6,
-        "cantidad": 40,
-        "tipo": "fijo"
-      },
-      {
-        "insumo_id": 7,
-        "cantidad": 15,
-        "tipo": "fijo"
-      },
-      {
-        "insumo_id": 8,
-        "cantidad": 1,
-        "tipo": "fijo"
-      },
-      {
-        "insumo_id": 16,
-        "cantidad": 300,
-        "tipo": "variable"
-      }
-    ],
-    "nombre_base": "Torta de Vainilla"
-  },
-  {
-    "id": 16,
-    "nombre": "TORTA DE VAINILLA SENCILLA/SENCILLA/Merm Fresa",
-    "categoria": "Tortas",
-    "descripcion": "",
-    "rendimiento_base": 8,
-    "rendimiento_unidad": ")",
-    "tiempo_preparacion_min": 30,
-    "tiempo_horneado_min": 45,
-    "temperatura_horno_c": 180,
-    "materiales_indirectos_pct": 10,
-    "costos_operativos_pct": 15,
-    "reposicion_equipos_pct": 10,
-    "mano_obra_pct": 30,
-    "margen_beneficio_pct": 50,
-    "activa": true,
-    "instrucciones": [],
-    "ingredientes": [
-      {
-        "insumo_id": 1,
-        "cantidad": 450,
-        "tipo": "fijo"
-      },
-      {
-        "insumo_id": 2,
-        "cantidad": 660,
-        "tipo": "fijo"
-      },
-      {
-        "insumo_id": 3,
-        "cantidad": 8,
-        "tipo": "fijo"
-      },
-      {
-        "insumo_id": 4,
-        "cantidad": 480,
-        "tipo": "fijo"
-      },
-      {
-        "insumo_id": 5,
-        "cantidad": 192,
-        "tipo": "fijo"
-      },
-      {
-        "insumo_id": 6,
-        "cantidad": 40,
-        "tipo": "fijo"
-      },
-      {
-        "insumo_id": 7,
-        "cantidad": 15,
-        "tipo": "fijo"
-      },
-      {
-        "insumo_id": 8,
-        "cantidad": 1,
-        "tipo": "fijo"
-      },
-      {
-        "insumo_id": 17,
-        "cantidad": 300,
-        "tipo": "variable"
-      }
-    ],
-    "nombre_base": "Torta de Vainilla"
-  },
-  {
-    "id": 17,
-    "nombre": "TORTA DE VAINILLA SENCILLA/SENCILLA/MERM PINA",
-    "categoria": "Tortas",
-    "descripcion": "",
-    "rendimiento_base": 8,
-    "rendimiento_unidad": ")",
-    "tiempo_preparacion_min": 30,
-    "tiempo_horneado_min": 45,
-    "temperatura_horno_c": 180,
-    "materiales_indirectos_pct": 10,
-    "costos_operativos_pct": 15,
-    "reposicion_equipos_pct": 10,
-    "mano_obra_pct": 30,
-    "margen_beneficio_pct": 50,
-    "activa": true,
-    "instrucciones": [],
-    "ingredientes": [
-      {
-        "insumo_id": 1,
-        "cantidad": 450,
-        "tipo": "fijo"
-      },
-      {
-        "insumo_id": 2,
-        "cantidad": 660,
-        "tipo": "fijo"
-      },
-      {
-        "insumo_id": 3,
-        "cantidad": 8,
-        "tipo": "fijo"
-      },
-      {
-        "insumo_id": 4,
-        "cantidad": 480,
-        "tipo": "fijo"
-      },
-      {
-        "insumo_id": 5,
-        "cantidad": 192,
-        "tipo": "fijo"
-      },
-      {
-        "insumo_id": 6,
-        "cantidad": 40,
-        "tipo": "fijo"
-      },
-      {
-        "insumo_id": 7,
-        "cantidad": 15,
-        "tipo": "fijo"
-      },
-      {
-        "insumo_id": 8,
-        "cantidad": 1,
-        "tipo": "fijo"
-      },
-      {
-        "insumo_id": 18,
-        "cantidad": 300,
-        "tipo": "variable"
-      }
-    ],
-    "nombre_base": "Torta de Vainilla"
-  },
-  {
-    "id": 18,
-    "nombre": "TORTA DE VAINILLA SENCILLA/SENCILLA/Ganac Chocolate",
-    "categoria": "Tortas",
-    "descripcion": "",
-    "rendimiento_base": 8,
-    "rendimiento_unidad": ")",
-    "tiempo_preparacion_min": 30,
-    "tiempo_horneado_min": 45,
-    "temperatura_horno_c": 180,
-    "materiales_indirectos_pct": 10,
-    "costos_operativos_pct": 15,
-    "reposicion_equipos_pct": 10,
-    "mano_obra_pct": 30,
-    "margen_beneficio_pct": 50,
-    "activa": true,
-    "instrucciones": [],
-    "ingredientes": [
-      {
-        "insumo_id": 1,
-        "cantidad": 450,
-        "tipo": "fijo"
-      },
-      {
-        "insumo_id": 2,
-        "cantidad": 660,
-        "tipo": "fijo"
-      },
-      {
-        "insumo_id": 3,
-        "cantidad": 8,
-        "tipo": "fijo"
-      },
-      {
-        "insumo_id": 4,
-        "cantidad": 480,
-        "tipo": "fijo"
-      },
-      {
-        "insumo_id": 5,
-        "cantidad": 192,
-        "tipo": "fijo"
-      },
-      {
-        "insumo_id": 6,
-        "cantidad": 40,
-        "tipo": "fijo"
-      },
-      {
-        "insumo_id": 7,
-        "cantidad": 15,
-        "tipo": "fijo"
-      },
-      {
-        "insumo_id": 8,
-        "cantidad": 1,
-        "tipo": "fijo"
-      },
-      {
-        "insumo_id": 19,
-        "cantidad": 300,
-        "tipo": "variable"
-      },
-      {
-        "insumo_id": 20,
-        "cantidad": 500,
-        "tipo": "variable"
-      }
-    ],
-    "nombre_base": "Torta de Vainilla"
-  },
-  {
-    "id": 19,
-    "nombre": "TORTA DE VAINILLA SENCILLA/SENCILLA/Crema pastelera (Bavarian)",
-    "categoria": "Tortas",
-    "descripcion": "",
-    "rendimiento_base": 1,
-    "rendimiento_unidad": "LB",
-    "tiempo_preparacion_min": 30,
-    "tiempo_horneado_min": 45,
-    "temperatura_horno_c": 180,
-    "materiales_indirectos_pct": 10,
-    "costos_operativos_pct": 15,
-    "reposicion_equipos_pct": 10,
-    "mano_obra_pct": 30,
-    "margen_beneficio_pct": 50,
-    "activa": true,
-    "instrucciones": [],
-    "ingredientes": [
-      {
-        "insumo_id": 1,
-        "cantidad": 450,
-        "tipo": "fijo"
-      },
-      {
-        "insumo_id": 2,
-        "cantidad": 660,
-        "tipo": "fijo"
-      },
-      {
-        "insumo_id": 3,
-        "cantidad": 8,
-        "tipo": "fijo"
-      },
-      {
-        "insumo_id": 4,
-        "cantidad": 480,
-        "tipo": "fijo"
-      },
-      {
-        "insumo_id": 5,
-        "cantidad": 192,
-        "tipo": "fijo"
-      },
-      {
-        "insumo_id": 6,
-        "cantidad": 40,
-        "tipo": "fijo"
-      },
-      {
-        "insumo_id": 7,
-        "cantidad": 15,
-        "tipo": "fijo"
-      },
-      {
-        "insumo_id": 8,
-        "cantidad": 1,
-        "tipo": "fijo"
-      },
-      {
-        "insumo_id": 19,
-        "cantidad": 300,
-        "tipo": "variable"
-      },
-      {
-        "insumo_id": 20,
-        "cantidad": 500,
-        "tipo": "variable"
-      }
-    ],
-    "nombre_base": "Torta de Vainilla"
-  },
-  {
-    "id": 20,
-    "nombre": "TORTA DE CHOCOLATE/CUBIERTA GANACHE/DULCE LECHE",
-    "categoria": "Tortas",
-    "descripcion": "",
-    "rendimiento_base": 8,
-    "rendimiento_unidad": "TROZOS",
-    "tiempo_preparacion_min": 30,
-    "tiempo_horneado_min": 45,
-    "temperatura_horno_c": 180,
-    "materiales_indirectos_pct": 10,
-    "costos_operativos_pct": 15,
-    "reposicion_equipos_pct": 10,
-    "mano_obra_pct": 30,
-    "margen_beneficio_pct": 50,
-    "activa": true,
-    "instrucciones": [],
-    "ingredientes": [
-      {
-        "insumo_id": 14,
-        "cantidad": 350,
-        "tipo": "variable"
-      },
-      {
-        "insumo_id": 19,
-        "cantidad": 350,
-        "tipo": "variable"
-      },
-      {
-        "insumo_id": 20,
-        "cantidad": 600,
-        "tipo": "variable"
-      },
-      {
-        "insumo_id": 23,
-        "cantidad": 1,
-        "tipo": "variable"
-      },
-      {
-        "insumo_id": 24,
-        "cantidad": 1,
-        "tipo": "variable"
-      }
-    ],
-    "nombre_base": "Torta de Chocolate"
-  },
-  {
-    "id": 21,
-    "nombre": "TORTA DE CHOCOLATE/CREMA CHOCOLATE/DULCE LECHE",
-    "categoria": "Tortas",
-    "descripcion": "",
-    "rendimiento_base": 0.5,
-    "rendimiento_unidad": "LB",
-    "tiempo_preparacion_min": 30,
-    "tiempo_horneado_min": 45,
-    "temperatura_horno_c": 180,
-    "materiales_indirectos_pct": 10,
-    "costos_operativos_pct": 15,
-    "reposicion_equipos_pct": 10,
-    "mano_obra_pct": 30,
-    "margen_beneficio_pct": 50,
-    "activa": true,
-    "instrucciones": [],
-    "ingredientes": [
-      {
-        "insumo_id": 14,
-        "cantidad": 400,
-        "tipo": "variable"
-      },
-      {
-        "insumo_id": 25,
-        "cantidad": 400,
-        "tipo": "variable"
-      },
-      {
-        "insumo_id": 23,
-        "cantidad": 1,
-        "tipo": "variable"
-      },
-      {
-        "insumo_id": 24,
-        "cantidad": 1,
-        "tipo": "variable"
-      }
-    ],
-    "nombre_base": "Torta de Chocolate"
-  },
-  {
-    "id": 22,
-    "nombre": "TORTA DE CHOCOLATE/CREMA CHOCOLATE/NUTELLA",
-    "categoria": "Tortas",
-    "descripcion": "",
-    "rendimiento_base": 8,
-    "rendimiento_unidad": "TROZOS",
-    "tiempo_preparacion_min": 30,
-    "tiempo_horneado_min": 45,
-    "temperatura_horno_c": 180,
-    "materiales_indirectos_pct": 10,
-    "costos_operativos_pct": 15,
-    "reposicion_equipos_pct": 10,
-    "mano_obra_pct": 30,
-    "margen_beneficio_pct": 50,
-    "activa": true,
-    "instrucciones": [],
-    "ingredientes": [
-      {
-        "insumo_id": 26,
-        "cantidad": 400,
-        "tipo": "variable"
-      },
-      {
-        "insumo_id": 25,
-        "cantidad": 400,
-        "tipo": "variable"
-      },
-      {
-        "insumo_id": 23,
-        "cantidad": 1,
-        "tipo": "variable"
-      },
-      {
-        "insumo_id": 24,
-        "cantidad": 1,
-        "tipo": "variable"
-      }
-    ],
-    "nombre_base": "Torta de Chocolate"
-  },
-  {
-    "id": 23,
-    "nombre": "TORTA DE CHOCOLATE/GANACHE DE CHOCOLATE /nutella",
-    "categoria": "Tortas",
-    "descripcion": "",
-    "rendimiento_base": 8,
-    "rendimiento_unidad": "TROZOS",
-    "tiempo_preparacion_min": 30,
-    "tiempo_horneado_min": 45,
-    "temperatura_horno_c": 180,
-    "materiales_indirectos_pct": 10,
-    "costos_operativos_pct": 15,
-    "reposicion_equipos_pct": 10,
-    "mano_obra_pct": 30,
-    "margen_beneficio_pct": 50,
-    "activa": true,
-    "instrucciones": [],
-    "ingredientes": [
-      {
-        "insumo_id": 27,
-        "cantidad": 400,
-        "tipo": "variable"
-      },
-      {
-        "insumo_id": 19,
-        "cantidad": 350,
-        "tipo": "variable"
-      },
-      {
-        "insumo_id": 20,
-        "cantidad": 600,
-        "tipo": "variable"
-      },
-      {
-        "insumo_id": 24,
-        "cantidad": 1,
-        "tipo": "variable"
-      },
-      {
-        "insumo_id": 23,
-        "cantidad": 1,
-        "tipo": "variable"
-      }
-    ],
-    "nombre_base": "Torta de Chocolate"
+    ]
   },
   {
     "id": 24,
-    "nombre": "BROWNIE",
+    "nombre": "BROWNIE Porciones",
     "categoria": "Brownies",
     "descripcion": "",
-    "rendimiento_base": 1,
+    "rendimiento_base": 18,
     "rendimiento_unidad": "unidad",
-    "tiempo_preparacion_min": 30,
-    "tiempo_horneado_min": 45,
+    "tiempo_preparacion_min": 45,
+    "tiempo_horneado_min": 25,
     "temperatura_horno_c": 180,
     "materiales_indirectos_pct": 10,
-    "costos_operativos_pct": 15,
+    "costos_operativos_pct": 10,
     "reposicion_equipos_pct": 10,
     "mano_obra_pct": 30,
     "margen_beneficio_pct": 50,
     "activa": true,
-    "instrucciones": [],
+    "nombre_base": "Brownie",
+    "orden_variante": 0,
+    "created_at": "2026-09-01T19:27:53.886339+00:00",
+    "instrucciones": [
+      "Brownie puede estar decorado"
+    ],
     "ingredientes": [
       {
-        "insumo_id": 28,
+        "insumo_id": 4,
         "cantidad": 300,
         "tipo": "fijo"
       },
       {
-        "insumo_id": 29,
+        "insumo_id": 2,
         "cantidad": 385,
         "tipo": "fijo"
       },
@@ -2651,12 +1654,12 @@ export const INITIAL_RECETAS: Receta[] = [
         "tipo": "fijo"
       },
       {
-        "insumo_id": 19,
+        "insumo_id": 58,
         "cantidad": 250,
         "tipo": "fijo"
       },
       {
-        "insumo_id": 30,
+        "insumo_id": 6,
         "cantidad": 15,
         "tipo": "fijo"
       },
@@ -2666,74 +1669,21 @@ export const INITIAL_RECETAS: Receta[] = [
         "tipo": "fijo"
       },
       {
-        "insumo_id": 31,
-        "cantidad": 10,
+        "insumo_id": 9,
+        "cantidad": 15,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 103,
+        "cantidad": 18,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 73,
+        "cantidad": 18,
         "tipo": "fijo"
       }
-    ],
-    "nombre_base": "Brownie"
-  },
-  {
-    "id": 25,
-    "nombre": "BROWNIE CON DULCE DE LECHE",
-    "categoria": "Brownies",
-    "descripcion": "",
-    "rendimiento_base": 1,
-    "rendimiento_unidad": "unidad",
-    "tiempo_preparacion_min": 30,
-    "tiempo_horneado_min": 45,
-    "temperatura_horno_c": 180,
-    "materiales_indirectos_pct": 10,
-    "costos_operativos_pct": 15,
-    "reposicion_equipos_pct": 10,
-    "mano_obra_pct": 30,
-    "margen_beneficio_pct": 50,
-    "activa": true,
-    "instrucciones": [],
-    "ingredientes": [
-      {
-        "insumo_id": 14,
-        "cantidad": 80,
-        "tipo": "variable"
-      },
-      {
-        "insumo_id": 23,
-        "cantidad": 1,
-        "tipo": "variable"
-      },
-      {
-        "insumo_id": 32,
-        "cantidad": 18,
-        "tipo": "variable"
-      }
-    ],
-    "nombre_base": "Brownie"
-  },
-  {
-    "id": 26,
-    "nombre": "BROWNIE EN FUNDA EN TROZOS",
-    "categoria": "Brownies",
-    "descripcion": "",
-    "rendimiento_base": 18,
-    "rendimiento_unidad": "unidad",
-    "tiempo_preparacion_min": 30,
-    "tiempo_horneado_min": 45,
-    "temperatura_horno_c": 180,
-    "materiales_indirectos_pct": 10,
-    "costos_operativos_pct": 15,
-    "reposicion_equipos_pct": 10,
-    "mano_obra_pct": 30,
-    "margen_beneficio_pct": 50,
-    "activa": true,
-    "instrucciones": [],
-    "ingredientes": [
-      {
-        "insumo_id": 33,
-        "cantidad": 18,
-        "tipo": "variable"
-      }
-    ],
-    "nombre_base": "Brownie"
+    ]
   },
   {
     "id": 27,
@@ -2751,6 +1701,9 @@ export const INITIAL_RECETAS: Receta[] = [
     "mano_obra_pct": 30,
     "margen_beneficio_pct": 50,
     "activa": true,
+    "nombre_base": "Cupcake",
+    "orden_variante": 0,
+    "created_at": "2026-09-01T19:27:53.886339+00:00",
     "instrucciones": [],
     "ingredientes": [
       {
@@ -2784,7 +1737,7 @@ export const INITIAL_RECETAS: Receta[] = [
         "tipo": "fijo"
       },
       {
-        "insumo_id": 35,
+        "insumo_id": 11,
         "cantidad": 2,
         "tipo": "fijo"
       },
@@ -2803,403 +1756,7 @@ export const INITIAL_RECETAS: Receta[] = [
         "cantidad": 3,
         "tipo": "variable"
       }
-    ],
-    "nombre_base": "Cupcake"
-  },
-  {
-    "id": 28,
-    "nombre": "CUPCAKE DECORADOS VELVET TOP",
-    "categoria": "Cupcakes",
-    "descripcion": "",
-    "rendimiento_base": 22,
-    "rendimiento_unidad": "unidad",
-    "tiempo_preparacion_min": 30,
-    "tiempo_horneado_min": 45,
-    "temperatura_horno_c": 180,
-    "materiales_indirectos_pct": 10,
-    "costos_operativos_pct": 15,
-    "reposicion_equipos_pct": 10,
-    "mano_obra_pct": 30,
-    "margen_beneficio_pct": 50,
-    "activa": true,
-    "instrucciones": [],
-    "ingredientes": [
-      {
-        "insumo_id": 2,
-        "cantidad": 240,
-        "tipo": "fijo"
-      },
-      {
-        "insumo_id": 3,
-        "cantidad": 4,
-        "tipo": "fijo"
-      },
-      {
-        "insumo_id": 4,
-        "cantidad": 350,
-        "tipo": "fijo"
-      },
-      {
-        "insumo_id": 34,
-        "cantidad": 5,
-        "tipo": "fijo"
-      },
-      {
-        "insumo_id": 6,
-        "cantidad": 30,
-        "tipo": "fijo"
-      },
-      {
-        "insumo_id": 35,
-        "cantidad": 2,
-        "tipo": "fijo"
-      },
-      {
-        "insumo_id": 8,
-        "cantidad": 1,
-        "tipo": "fijo"
-      },
-      {
-        "insumo_id": 32,
-        "cantidad": 1,
-        "tipo": "variable"
-      },
-      {
-        "insumo_id": 36,
-        "cantidad": 250,
-        "tipo": "variable"
-      },
-      {
-        "insumo_id": 37,
-        "cantidad": 4,
-        "tipo": "variable"
-      },
-      {
-        "insumo_id": 1,
-        "cantidad": 240,
-        "tipo": "fijo"
-      }
-    ],
-    "nombre_base": "Cupcake"
-  },
-  {
-    "id": 29,
-    "nombre": "CUPCAKE DECORADOS DE VAINILLA RELLENOS FRESA/ VELVEL TOP",
-    "categoria": "Cupcakes",
-    "descripcion": "",
-    "rendimiento_base": 22,
-    "rendimiento_unidad": "unidad",
-    "tiempo_preparacion_min": 30,
-    "tiempo_horneado_min": 45,
-    "temperatura_horno_c": 180,
-    "materiales_indirectos_pct": 10,
-    "costos_operativos_pct": 15,
-    "reposicion_equipos_pct": 10,
-    "mano_obra_pct": 30,
-    "margen_beneficio_pct": 50,
-    "activa": true,
-    "instrucciones": [],
-    "ingredientes": [
-      {
-        "insumo_id": 1,
-        "cantidad": 240,
-        "tipo": "fijo"
-      },
-      {
-        "insumo_id": 2,
-        "cantidad": 240,
-        "tipo": "fijo"
-      },
-      {
-        "insumo_id": 3,
-        "cantidad": 4,
-        "tipo": "fijo"
-      },
-      {
-        "insumo_id": 4,
-        "cantidad": 350,
-        "tipo": "fijo"
-      },
-      {
-        "insumo_id": 34,
-        "cantidad": 5,
-        "tipo": "fijo"
-      },
-      {
-        "insumo_id": 6,
-        "cantidad": 30,
-        "tipo": "fijo"
-      },
-      {
-        "insumo_id": 35,
-        "cantidad": 2,
-        "tipo": "fijo"
-      },
-      {
-        "insumo_id": 8,
-        "cantidad": 1,
-        "tipo": "fijo"
-      },
-      {
-        "insumo_id": 38,
-        "cantidad": 1,
-        "tipo": "variable"
-      },
-      {
-        "insumo_id": 36,
-        "cantidad": 250,
-        "tipo": "variable"
-      },
-      {
-        "insumo_id": 39,
-        "cantidad": 4,
-        "tipo": "variable"
-      },
-      {
-        "insumo_id": 40,
-        "cantidad": 50,
-        "tipo": "variable"
-      }
-    ],
-    "nombre_base": "Cupcake"
-  },
-  {
-    "id": 30,
-    "nombre": "CUPCAKE DECORADOS DE VAINILLA RELLENOS DULCE LECHE/ VELVEL TOP",
-    "categoria": "Cupcakes",
-    "descripcion": "",
-    "rendimiento_base": 22,
-    "rendimiento_unidad": "unidad",
-    "tiempo_preparacion_min": 30,
-    "tiempo_horneado_min": 45,
-    "temperatura_horno_c": 180,
-    "materiales_indirectos_pct": 10,
-    "costos_operativos_pct": 15,
-    "reposicion_equipos_pct": 10,
-    "mano_obra_pct": 30,
-    "margen_beneficio_pct": 50,
-    "activa": true,
-    "instrucciones": [],
-    "ingredientes": [
-      {
-        "insumo_id": 1,
-        "cantidad": 240,
-        "tipo": "fijo"
-      },
-      {
-        "insumo_id": 2,
-        "cantidad": 240,
-        "tipo": "fijo"
-      },
-      {
-        "insumo_id": 3,
-        "cantidad": 4,
-        "tipo": "fijo"
-      },
-      {
-        "insumo_id": 4,
-        "cantidad": 350,
-        "tipo": "fijo"
-      },
-      {
-        "insumo_id": 34,
-        "cantidad": 5,
-        "tipo": "fijo"
-      },
-      {
-        "insumo_id": 6,
-        "cantidad": 30,
-        "tipo": "fijo"
-      },
-      {
-        "insumo_id": 35,
-        "cantidad": 2,
-        "tipo": "fijo"
-      },
-      {
-        "insumo_id": 8,
-        "cantidad": 1,
-        "tipo": "fijo"
-      },
-      {
-        "insumo_id": 38,
-        "cantidad": 1,
-        "tipo": "variable"
-      },
-      {
-        "insumo_id": 41,
-        "cantidad": 300,
-        "tipo": "variable"
-      },
-      {
-        "insumo_id": 39,
-        "cantidad": 4,
-        "tipo": "variable"
-      },
-      {
-        "insumo_id": 14,
-        "cantidad": 50,
-        "tipo": "variable"
-      }
-    ],
-    "nombre_base": "Cupcake"
-  },
-  {
-    "id": 31,
-    "nombre": "CUPCAKE DECORADOS DE VAINILLA VELVET TOP DE CHOCOLATE",
-    "categoria": "Cupcakes",
-    "descripcion": "",
-    "rendimiento_base": 22,
-    "rendimiento_unidad": "unidad",
-    "tiempo_preparacion_min": 30,
-    "tiempo_horneado_min": 45,
-    "temperatura_horno_c": 180,
-    "materiales_indirectos_pct": 10,
-    "costos_operativos_pct": 15,
-    "reposicion_equipos_pct": 10,
-    "mano_obra_pct": 30,
-    "margen_beneficio_pct": 50,
-    "activa": true,
-    "instrucciones": [],
-    "ingredientes": [
-      {
-        "insumo_id": 1,
-        "cantidad": 240,
-        "tipo": "fijo"
-      },
-      {
-        "insumo_id": 2,
-        "cantidad": 240,
-        "tipo": "fijo"
-      },
-      {
-        "insumo_id": 3,
-        "cantidad": 4,
-        "tipo": "fijo"
-      },
-      {
-        "insumo_id": 4,
-        "cantidad": 350,
-        "tipo": "fijo"
-      },
-      {
-        "insumo_id": 34,
-        "cantidad": 5,
-        "tipo": "fijo"
-      },
-      {
-        "insumo_id": 6,
-        "cantidad": 30,
-        "tipo": "fijo"
-      },
-      {
-        "insumo_id": 35,
-        "cantidad": 2,
-        "tipo": "fijo"
-      },
-      {
-        "insumo_id": 8,
-        "cantidad": 1,
-        "tipo": "fijo"
-      },
-      {
-        "insumo_id": 32,
-        "cantidad": 1,
-        "tipo": "variable"
-      },
-      {
-        "insumo_id": 42,
-        "cantidad": 300,
-        "tipo": "variable"
-      },
-      {
-        "insumo_id": 39,
-        "cantidad": 2,
-        "tipo": "variable"
-      }
-    ],
-    "nombre_base": "Cupcake"
-  },
-  {
-    "id": 32,
-    "nombre": "CUPCAKE DECORADOS DE chocolate VELVET TOP DE Vainilla",
-    "categoria": "Cupcakes",
-    "descripcion": "",
-    "rendimiento_base": 12,
-    "rendimiento_unidad": "unidad",
-    "tiempo_preparacion_min": 30,
-    "tiempo_horneado_min": 45,
-    "temperatura_horno_c": 180,
-    "materiales_indirectos_pct": 10,
-    "costos_operativos_pct": 15,
-    "reposicion_equipos_pct": 10,
-    "mano_obra_pct": 30,
-    "margen_beneficio_pct": 50,
-    "activa": true,
-    "instrucciones": [],
-    "ingredientes": [
-      {
-        "insumo_id": 2,
-        "cantidad": 220,
-        "tipo": "fijo"
-      },
-      {
-        "insumo_id": 3,
-        "cantidad": 2,
-        "tipo": "fijo"
-      },
-      {
-        "insumo_id": 4,
-        "cantidad": 150,
-        "tipo": "fijo"
-      },
-      {
-        "insumo_id": 34,
-        "cantidad": 10,
-        "tipo": "fijo"
-      },
-      {
-        "insumo_id": 35,
-        "cantidad": 2,
-        "tipo": "fijo"
-      },
-      {
-        "insumo_id": 43,
-        "cantidad": 50,
-        "tipo": "fijo"
-      },
-      {
-        "insumo_id": 44,
-        "cantidad": 25,
-        "tipo": "fijo"
-      },
-      {
-        "insumo_id": 45,
-        "cantidad": 125,
-        "tipo": "fijo"
-      },
-      {
-        "insumo_id": 5,
-        "cantidad": 125,
-        "tipo": "fijo"
-      },
-      {
-        "insumo_id": 32,
-        "cantidad": 1,
-        "tipo": "variable"
-      },
-      {
-        "insumo_id": 46,
-        "cantidad": 300,
-        "tipo": "variable"
-      },
-      {
-        "insumo_id": 39,
-        "cantidad": 2,
-        "tipo": "variable"
-      }
-    ],
-    "nombre_base": "Cupcake"
+    ]
   },
   {
     "id": 33,
@@ -3217,6 +1774,9 @@ export const INITIAL_RECETAS: Receta[] = [
     "mano_obra_pct": 30,
     "margen_beneficio_pct": 50,
     "activa": true,
+    "nombre_base": "Pasta Seca",
+    "orden_variante": 0,
+    "created_at": "2026-09-01T19:27:53.984274+00:00",
     "instrucciones": [],
     "ingredientes": [
       {
@@ -3230,12 +1790,12 @@ export const INITIAL_RECETAS: Receta[] = [
         "tipo": "fijo"
       },
       {
-        "insumo_id": 48,
+        "insumo_id": 3,
         "cantidad": 1,
         "tipo": "fijo"
       },
       {
-        "insumo_id": 49,
+        "insumo_id": 11,
         "cantidad": 2,
         "tipo": "fijo"
       },
@@ -3250,7 +1810,7 @@ export const INITIAL_RECETAS: Receta[] = [
         "tipo": "fijo"
       },
       {
-        "insumo_id": 50,
+        "insumo_id": 4,
         "cantidad": 300,
         "tipo": "fijo"
       },
@@ -3269,8 +1829,7 @@ export const INITIAL_RECETAS: Receta[] = [
         "cantidad": 1,
         "tipo": "variable"
       }
-    ],
-    "nombre_base": "Pasta Seca"
+    ]
   },
   {
     "id": 34,
@@ -3288,6 +1847,9 @@ export const INITIAL_RECETAS: Receta[] = [
     "mano_obra_pct": 30,
     "margen_beneficio_pct": 50,
     "activa": true,
+    "nombre_base": "Galletas de Mantequilla",
+    "orden_variante": 0,
+    "created_at": "2026-09-01T19:27:53.984274+00:00",
     "instrucciones": [],
     "ingredientes": [
       {
@@ -3301,7 +1863,7 @@ export const INITIAL_RECETAS: Receta[] = [
         "tipo": "fijo"
       },
       {
-        "insumo_id": 48,
+        "insumo_id": 3,
         "cantidad": 1,
         "tipo": "fijo"
       },
@@ -3330,8 +1892,7 @@ export const INITIAL_RECETAS: Receta[] = [
         "cantidad": 250,
         "tipo": "variable"
       }
-    ],
-    "nombre_base": "Galletas de Mantequilla"
+    ]
   },
   {
     "id": 35,
@@ -3349,6 +1910,9 @@ export const INITIAL_RECETAS: Receta[] = [
     "mano_obra_pct": 30,
     "margen_beneficio_pct": 50,
     "activa": true,
+    "nombre_base": "Galletas de Mantequilla",
+    "orden_variante": 0,
+    "created_at": "2026-09-01T19:27:53.984274+00:00",
     "instrucciones": [],
     "ingredientes": [
       {
@@ -3362,7 +1926,7 @@ export const INITIAL_RECETAS: Receta[] = [
         "tipo": "fijo"
       },
       {
-        "insumo_id": 48,
+        "insumo_id": 3,
         "cantidad": 1,
         "tipo": "fijo"
       },
@@ -3401,8 +1965,7 @@ export const INITIAL_RECETAS: Receta[] = [
         "cantidad": 10,
         "tipo": "variable"
       }
-    ],
-    "nombre_base": "Galletas de Mantequilla"
+    ]
   },
   {
     "id": 36,
@@ -3420,6 +1983,9 @@ export const INITIAL_RECETAS: Receta[] = [
     "mano_obra_pct": 30,
     "margen_beneficio_pct": 50,
     "activa": true,
+    "nombre_base": "Galletas de Mantequilla",
+    "orden_variante": 0,
+    "created_at": "2026-09-01T19:27:53.984274+00:00",
     "instrucciones": [],
     "ingredientes": [
       {
@@ -3433,7 +1999,7 @@ export const INITIAL_RECETAS: Receta[] = [
         "tipo": "fijo"
       },
       {
-        "insumo_id": 48,
+        "insumo_id": 3,
         "cantidad": 1,
         "tipo": "fijo"
       },
@@ -3458,7 +2024,7 @@ export const INITIAL_RECETAS: Receta[] = [
         "tipo": "fijo"
       },
       {
-        "insumo_id": 57,
+        "insumo_id": 22,
         "cantidad": 50,
         "tipo": "variable"
       },
@@ -3467,8 +2033,7 @@ export const INITIAL_RECETAS: Receta[] = [
         "cantidad": 50,
         "tipo": "variable"
       }
-    ],
-    "nombre_base": "Galletas de Mantequilla"
+    ]
   },
   {
     "id": 37,
@@ -3486,6 +2051,9 @@ export const INITIAL_RECETAS: Receta[] = [
     "mano_obra_pct": 30,
     "margen_beneficio_pct": 50,
     "activa": true,
+    "nombre_base": "Galletas de Formas",
+    "orden_variante": 0,
+    "created_at": "2026-09-01T19:27:53.984274+00:00",
     "instrucciones": [],
     "ingredientes": [
       {
@@ -3504,7 +2072,7 @@ export const INITIAL_RECETAS: Receta[] = [
         "tipo": "fijo"
       },
       {
-        "insumo_id": 48,
+        "insumo_id": 3,
         "cantidad": 1,
         "tipo": "fijo"
       },
@@ -3523,8 +2091,7 @@ export const INITIAL_RECETAS: Receta[] = [
         "cantidad": 16,
         "tipo": "fijo"
       }
-    ],
-    "nombre_base": "Galletas de Formas"
+    ]
   },
   {
     "id": 38,
@@ -3542,6 +2109,9 @@ export const INITIAL_RECETAS: Receta[] = [
     "mano_obra_pct": 30,
     "margen_beneficio_pct": 50,
     "activa": true,
+    "nombre_base": "Galletas Lunette",
+    "orden_variante": 0,
+    "created_at": "2026-09-01T19:27:53.984274+00:00",
     "instrucciones": [],
     "ingredientes": [
       {
@@ -3555,7 +2125,7 @@ export const INITIAL_RECETAS: Receta[] = [
         "tipo": "fijo"
       },
       {
-        "insumo_id": 48,
+        "insumo_id": 3,
         "cantidad": 1,
         "tipo": "fijo"
       },
@@ -3584,8 +2154,7 @@ export const INITIAL_RECETAS: Receta[] = [
         "cantidad": 50,
         "tipo": "variable"
       }
-    ],
-    "nombre_base": "Galletas Lunette"
+    ]
   },
   {
     "id": 39,
@@ -3603,6 +2172,9 @@ export const INITIAL_RECETAS: Receta[] = [
     "mano_obra_pct": 30,
     "margen_beneficio_pct": 50,
     "activa": true,
+    "nombre_base": "Galletas Lunette",
+    "orden_variante": 0,
+    "created_at": "2026-09-01T19:27:53.984274+00:00",
     "instrucciones": [],
     "ingredientes": [
       {
@@ -3616,7 +2188,7 @@ export const INITIAL_RECETAS: Receta[] = [
         "tipo": "fijo"
       },
       {
-        "insumo_id": 48,
+        "insumo_id": 3,
         "cantidad": 1,
         "tipo": "fijo"
       },
@@ -3636,7 +2208,7 @@ export const INITIAL_RECETAS: Receta[] = [
         "tipo": "fijo"
       },
       {
-        "insumo_id": 43,
+        "insumo_id": 9,
         "cantidad": 30,
         "tipo": "fijo"
       },
@@ -3650,8 +2222,7 @@ export const INITIAL_RECETAS: Receta[] = [
         "cantidad": 50,
         "tipo": "variable"
       }
-    ],
-    "nombre_base": "Galletas Lunette"
+    ]
   },
   {
     "id": 40,
@@ -3669,15 +2240,18 @@ export const INITIAL_RECETAS: Receta[] = [
     "mano_obra_pct": 30,
     "margen_beneficio_pct": 50,
     "activa": true,
+    "nombre_base": "Alfajor",
+    "orden_variante": 0,
+    "created_at": "2026-09-01T19:27:53.984274+00:00",
     "instrucciones": [],
     "ingredientes": [
       {
-        "insumo_id": 60,
+        "insumo_id": 1,
         "cantidad": 150,
         "tipo": "fijo"
       },
       {
-        "insumo_id": 61,
+        "insumo_id": 4,
         "cantidad": 110,
         "tipo": "fijo"
       },
@@ -3687,7 +2261,7 @@ export const INITIAL_RECETAS: Receta[] = [
         "tipo": "fijo"
       },
       {
-        "insumo_id": 30,
+        "insumo_id": 6,
         "cantidad": 15,
         "tipo": "fijo"
       },
@@ -3711,8 +2285,7 @@ export const INITIAL_RECETAS: Receta[] = [
         "cantidad": 40,
         "tipo": "variable"
       }
-    ],
-    "nombre_base": "Alfajor"
+    ]
   },
   {
     "id": 41,
@@ -3730,15 +2303,18 @@ export const INITIAL_RECETAS: Receta[] = [
     "mano_obra_pct": 30,
     "margen_beneficio_pct": 50,
     "activa": true,
+    "nombre_base": "Alfajor",
+    "orden_variante": 0,
+    "created_at": "2026-09-01T19:27:53.984274+00:00",
     "instrucciones": [],
     "ingredientes": [
       {
-        "insumo_id": 60,
+        "insumo_id": 1,
         "cantidad": 150,
         "tipo": "fijo"
       },
       {
-        "insumo_id": 61,
+        "insumo_id": 4,
         "cantidad": 110,
         "tipo": "fijo"
       },
@@ -3748,7 +2324,7 @@ export const INITIAL_RECETAS: Receta[] = [
         "tipo": "fijo"
       },
       {
-        "insumo_id": 30,
+        "insumo_id": 6,
         "cantidad": 15,
         "tipo": "fijo"
       },
@@ -3767,8 +2343,7 @@ export const INITIAL_RECETAS: Receta[] = [
         "cantidad": 1,
         "tipo": "variable"
       }
-    ],
-    "nombre_base": "Alfajor"
+    ]
   },
   {
     "id": 42,
@@ -3777,24 +2352,27 @@ export const INITIAL_RECETAS: Receta[] = [
     "descripcion": "",
     "rendimiento_base": 2,
     "rendimiento_unidad": "unidad",
-    "tiempo_preparacion_min": 30,
-    "tiempo_horneado_min": 45,
+    "tiempo_preparacion_min": 120,
+    "tiempo_horneado_min": 55,
     "temperatura_horno_c": 180,
     "materiales_indirectos_pct": 10,
     "costos_operativos_pct": 15,
     "reposicion_equipos_pct": 10,
     "mano_obra_pct": 30,
-    "margen_beneficio_pct": 50,
+    "margen_beneficio_pct": 45,
     "activa": true,
+    "nombre_base": "Pan de Jamón",
+    "orden_variante": 0,
+    "created_at": "2026-09-01T19:27:53.984274+00:00",
     "instrucciones": [],
     "ingredientes": [
       {
         "insumo_id": 66,
-        "cantidad": 500,
+        "cantidad": 534,
         "tipo": "fijo"
       },
       {
-        "insumo_id": 48,
+        "insumo_id": 3,
         "cantidad": 2,
         "tipo": "fijo"
       },
@@ -3805,22 +2383,22 @@ export const INITIAL_RECETAS: Receta[] = [
       },
       {
         "insumo_id": 5,
-        "cantidad": 260,
+        "cantidad": 220,
         "tipo": "fijo"
       },
       {
         "insumo_id": 1,
-        "cantidad": 80,
+        "cantidad": 90,
         "tipo": "fijo"
       },
       {
         "insumo_id": 2,
-        "cantidad": 110,
+        "cantidad": 85,
         "tipo": "fijo"
       },
       {
         "insumo_id": 11,
-        "cantidad": 5,
+        "cantidad": 6,
         "tipo": "fijo"
       },
       {
@@ -3849,7 +2427,7 @@ export const INITIAL_RECETAS: Receta[] = [
         "tipo": "variable"
       },
       {
-        "insumo_id": 48,
+        "insumo_id": 3,
         "cantidad": 1,
         "tipo": "variable"
       },
@@ -3868,8 +2446,7 @@ export const INITIAL_RECETAS: Receta[] = [
         "cantidad": 30,
         "tipo": "variable"
       }
-    ],
-    "nombre_base": "Pan de Jamón"
+    ]
   },
   {
     "id": 43,
@@ -3885,8 +2462,11 @@ export const INITIAL_RECETAS: Receta[] = [
     "costos_operativos_pct": 15,
     "reposicion_equipos_pct": 10,
     "mano_obra_pct": 30,
-    "margen_beneficio_pct": 50,
+    "margen_beneficio_pct": 45,
     "activa": true,
+    "nombre_base": "Pan de Jamón",
+    "orden_variante": 0,
+    "created_at": "2026-09-01T19:27:53.984274+00:00",
     "instrucciones": [],
     "ingredientes": [
       {
@@ -3895,7 +2475,7 @@ export const INITIAL_RECETAS: Receta[] = [
         "tipo": "fijo"
       },
       {
-        "insumo_id": 48,
+        "insumo_id": 3,
         "cantidad": 2,
         "tipo": "fijo"
       },
@@ -3950,7 +2530,7 @@ export const INITIAL_RECETAS: Receta[] = [
         "tipo": "variable"
       },
       {
-        "insumo_id": 48,
+        "insumo_id": 3,
         "cantidad": 1,
         "tipo": "variable"
       },
@@ -3974,8 +2554,7 @@ export const INITIAL_RECETAS: Receta[] = [
         "cantidad": 30,
         "tipo": "variable"
       }
-    ],
-    "nombre_base": "Pan de Jamón"
+    ]
   },
   {
     "id": 44,
@@ -3991,8 +2570,11 @@ export const INITIAL_RECETAS: Receta[] = [
     "costos_operativos_pct": 15,
     "reposicion_equipos_pct": 10,
     "mano_obra_pct": 30,
-    "margen_beneficio_pct": 50,
+    "margen_beneficio_pct": 40,
     "activa": true,
+    "nombre_base": "Pan de Jamón",
+    "orden_variante": 0,
+    "created_at": "2026-09-01T19:27:53.984274+00:00",
     "instrucciones": [],
     "ingredientes": [
       {
@@ -4021,7 +2603,7 @@ export const INITIAL_RECETAS: Receta[] = [
         "tipo": "variable"
       },
       {
-        "insumo_id": 48,
+        "insumo_id": 3,
         "cantidad": 1,
         "tipo": "variable"
       },
@@ -4040,8 +2622,7 @@ export const INITIAL_RECETAS: Receta[] = [
         "cantidad": 30,
         "tipo": "variable"
       }
-    ],
-    "nombre_base": "Pan de Jamón"
+    ]
   },
   {
     "id": 45,
@@ -4057,8 +2638,11 @@ export const INITIAL_RECETAS: Receta[] = [
     "costos_operativos_pct": 15,
     "reposicion_equipos_pct": 10,
     "mano_obra_pct": 30,
-    "margen_beneficio_pct": 50,
+    "margen_beneficio_pct": 45,
     "activa": true,
+    "nombre_base": "Cachito",
+    "orden_variante": 0,
+    "created_at": "2026-09-01T19:27:53.984274+00:00",
     "instrucciones": [],
     "ingredientes": [
       {
@@ -4067,7 +2651,7 @@ export const INITIAL_RECETAS: Receta[] = [
         "tipo": "fijo"
       },
       {
-        "insumo_id": 48,
+        "insumo_id": 3,
         "cantidad": 3,
         "tipo": "fijo"
       },
@@ -4121,8 +2705,7 @@ export const INITIAL_RECETAS: Receta[] = [
         "cantidad": 1,
         "tipo": "variable"
       }
-    ],
-    "nombre_base": "Cachito"
+    ]
   },
   {
     "id": 46,
@@ -4140,6 +2723,9 @@ export const INITIAL_RECETAS: Receta[] = [
     "mano_obra_pct": 30,
     "margen_beneficio_pct": 50,
     "activa": true,
+    "nombre_base": "Quesillo",
+    "orden_variante": 0,
+    "created_at": "2026-09-01T19:27:53.984274+00:00",
     "instrucciones": [],
     "ingredientes": [
       {
@@ -4168,7 +2754,7 @@ export const INITIAL_RECETAS: Receta[] = [
         "tipo": "fijo"
       },
       {
-        "insumo_id": 81,
+        "insumo_id": 2,
         "cantidad": 100,
         "tipo": "fijo"
       },
@@ -4182,135 +2768,12 @@ export const INITIAL_RECETAS: Receta[] = [
         "cantidad": 1,
         "tipo": "variable"
       }
-    ],
-    "nombre_base": "Quesillo"
+    ]
   },
   {
-    "id": 47,
-    "nombre": "QUESILLO",
-    "categoria": "Postres",
-    "descripcion": "",
-    "rendimiento_base": 14,
-    "rendimiento_unidad": "porciones cortadas",
-    "tiempo_preparacion_min": 30,
-    "tiempo_horneado_min": 45,
-    "temperatura_horno_c": 180,
-    "materiales_indirectos_pct": 10,
-    "costos_operativos_pct": 15,
-    "reposicion_equipos_pct": 10,
-    "mano_obra_pct": 30,
-    "margen_beneficio_pct": 50,
-    "activa": true,
-    "instrucciones": [],
-    "ingredientes": [
-      {
-        "insumo_id": 2,
-        "cantidad": 100,
-        "tipo": "variable"
-      },
-      {
-        "insumo_id": 82,
-        "cantidad": 6,
-        "tipo": "variable"
-      },
-      {
-        "insumo_id": 83,
-        "cantidad": 12,
-        "tipo": "variable"
-      },
-      {
-        "insumo_id": 84,
-        "cantidad": 12,
-        "tipo": "variable"
-      },
-      {
-        "insumo_id": 79,
-        "cantidad": 403,
-        "tipo": "fijo"
-      },
-      {
-        "insumo_id": 3,
-        "cantidad": 6,
-        "tipo": "fijo"
-      },
-      {
-        "insumo_id": 5,
-        "cantidad": 403,
-        "tipo": "fijo"
-      },
-      {
-        "insumo_id": 6,
-        "cantidad": 15,
-        "tipo": "fijo"
-      },
-      {
-        "insumo_id": 80,
-        "cantidad": 5,
-        "tipo": "fijo"
-      }
-    ],
-    "nombre_base": "Quesillo"
-  },
-  {
-    "id": 48,
-    "nombre": "QUESILLO",
-    "categoria": "Postres",
-    "descripcion": "",
-    "rendimiento_base": 12,
-    "rendimiento_unidad": "porciones cortadas",
-    "tiempo_preparacion_min": 30,
-    "tiempo_horneado_min": 45,
-    "temperatura_horno_c": 180,
-    "materiales_indirectos_pct": 10,
-    "costos_operativos_pct": 15,
-    "reposicion_equipos_pct": 10,
-    "mano_obra_pct": 30,
-    "margen_beneficio_pct": 50,
-    "activa": true,
-    "instrucciones": [],
-    "ingredientes": [
-      {
-        "insumo_id": 79,
-        "cantidad": 403,
-        "tipo": "fijo"
-      },
-      {
-        "insumo_id": 3,
-        "cantidad": 6,
-        "tipo": "fijo"
-      },
-      {
-        "insumo_id": 5,
-        "cantidad": 403,
-        "tipo": "fijo"
-      },
-      {
-        "insumo_id": 6,
-        "cantidad": 15,
-        "tipo": "fijo"
-      },
-      {
-        "insumo_id": 80,
-        "cantidad": 5,
-        "tipo": "fijo"
-      },
-      {
-        "insumo_id": 2,
-        "cantidad": 100,
-        "tipo": "variable"
-      },
-      {
-        "insumo_id": 85,
-        "cantidad": 12,
-        "tipo": "variable"
-      }
-    ],
-    "nombre_base": "Quesillo"
-  },
-  {
-    "id": 49,
-    "nombre": "BIZCOCHO",
-    "categoria": "Tortas",
+    "id": 50,
+    "nombre": "TRES LECHE",
+    "categoria": "Tres Leches",
     "descripcion": "",
     "rendimiento_base": 1,
     "rendimiento_unidad": "unidad",
@@ -4323,11 +2786,39 @@ export const INITIAL_RECETAS: Receta[] = [
     "mano_obra_pct": 30,
     "margen_beneficio_pct": 50,
     "activa": true,
+    "nombre_base": "Tres Leches",
+    "orden_variante": 0,
+    "created_at": "2026-09-01T19:27:53.984274+00:00",
     "instrucciones": [],
     "ingredientes": [
       {
         "insumo_id": 3,
         "cantidad": 5,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 79,
+        "cantidad": 403,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 93,
+        "cantidad": 312,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 78,
+        "cantidad": 1,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 89,
+        "cantidad": 250,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 2,
+        "cantidad": 150,
         "tipo": "fijo"
       },
       {
@@ -4341,109 +2832,11 @@ export const INITIAL_RECETAS: Receta[] = [
         "tipo": "fijo"
       },
       {
-        "insumo_id": 64,
-        "cantidad": 30,
+        "insumo_id": 20,
+        "cantidad": 400,
         "tipo": "fijo"
       }
-    ],
-    "nombre_base": "Bizcocho"
-  },
-  {
-    "id": 50,
-    "nombre": "TRES LECHE MEDIANO",
-    "categoria": "Tres Leches",
-    "descripcion": "",
-    "rendimiento_base": 1,
-    "rendimiento_unidad": "unidad",
-    "tiempo_preparacion_min": 30,
-    "tiempo_horneado_min": 45,
-    "temperatura_horno_c": 180,
-    "materiales_indirectos_pct": 10,
-    "costos_operativos_pct": 15,
-    "reposicion_equipos_pct": 10,
-    "mano_obra_pct": 30,
-    "margen_beneficio_pct": 50,
-    "activa": true,
-    "instrucciones": [],
-    "ingredientes": [
-      {
-        "insumo_id": 86,
-        "cantidad": 1,
-        "tipo": "fijo"
-      },
-      {
-        "insumo_id": 79,
-        "cantidad": 403,
-        "tipo": "fijo"
-      },
-      {
-        "insumo_id": 87,
-        "cantidad": 312,
-        "tipo": "fijo"
-      },
-      {
-        "insumo_id": 78,
-        "cantidad": 1,
-        "tipo": "variable"
-      },
-      {
-        "insumo_id": 89,
-        "cantidad": 250,
-        "tipo": "variable"
-      }
-    ],
-    "nombre_base": "Tres Leches"
-  },
-  {
-    "id": 51,
-    "nombre": "TRES LECHE SHOTS",
-    "categoria": "Tres Leches",
-    "descripcion": "",
-    "rendimiento_base": 12,
-    "rendimiento_unidad": "unidad",
-    "tiempo_preparacion_min": 30,
-    "tiempo_horneado_min": 45,
-    "temperatura_horno_c": 180,
-    "materiales_indirectos_pct": 10,
-    "costos_operativos_pct": 15,
-    "reposicion_equipos_pct": 10,
-    "mano_obra_pct": 30,
-    "margen_beneficio_pct": 50,
-    "activa": true,
-    "instrucciones": [],
-    "ingredientes": [
-      {
-        "insumo_id": 86,
-        "cantidad": 1,
-        "tipo": "fijo"
-      },
-      {
-        "insumo_id": 79,
-        "cantidad": 403,
-        "tipo": "fijo"
-      },
-      {
-        "insumo_id": 87,
-        "cantidad": 312,
-        "tipo": "fijo"
-      },
-      {
-        "insumo_id": 89,
-        "cantidad": 200,
-        "tipo": "variable"
-      },
-      {
-        "insumo_id": 83,
-        "cantidad": 12,
-        "tipo": "variable"
-      },
-      {
-        "insumo_id": 90,
-        "cantidad": 12,
-        "tipo": "variable"
-      }
-    ],
-    "nombre_base": "Tres Leches"
+    ]
   },
   {
     "id": 52,
@@ -4459,15 +2852,13 @@ export const INITIAL_RECETAS: Receta[] = [
     "costos_operativos_pct": 15,
     "reposicion_equipos_pct": 10,
     "mano_obra_pct": 30,
-    "margen_beneficio_pct": 50,
+    "margen_beneficio_pct": 30,
     "activa": true,
+    "nombre_base": "Tres Leches",
+    "orden_variante": 0,
+    "created_at": "2026-09-01T19:27:53.984274+00:00",
     "instrucciones": [],
     "ingredientes": [
-      {
-        "insumo_id": 86,
-        "cantidad": 1,
-        "tipo": "fijo"
-      },
       {
         "insumo_id": 79,
         "cantidad": 403,
@@ -4490,118 +2881,40 @@ export const INITIAL_RECETAS: Receta[] = [
       },
       {
         "insumo_id": 89,
-        "cantidad": 150,
+        "cantidad": 250,
         "tipo": "variable"
       },
       {
         "insumo_id": 78,
-        "cantidad": 12,
-        "tipo": "variable"
-      }
-    ],
-    "nombre_base": "Tres Leches"
-  },
-  {
-    "id": 53,
-    "nombre": "TORTA DE VAINILLA",
-    "categoria": "Tortas",
-    "descripcion": "",
-    "rendimiento_base": 1,
-    "rendimiento_unidad": "LB",
-    "tiempo_preparacion_min": 30,
-    "tiempo_horneado_min": 45,
-    "temperatura_horno_c": 180,
-    "materiales_indirectos_pct": 10,
-    "costos_operativos_pct": 15,
-    "reposicion_equipos_pct": 10,
-    "mano_obra_pct": 30,
-    "margen_beneficio_pct": 50,
-    "activa": true,
-    "instrucciones": [],
-    "ingredientes": [
-      {
-        "insumo_id": 94,
-        "cantidad": 453.59,
-        "tipo": "fijo"
-      },
-      {
-        "insumo_id": 95,
-        "cantidad": 200,
-        "tipo": "fijo"
-      },
-      {
-        "insumo_id": 96,
-        "cantidad": 0.5,
-        "tipo": "fijo"
-      },
-      {
-        "insumo_id": 11,
-        "cantidad": 3,
-        "tipo": "fijo"
-      },
-      {
-        "insumo_id": 97,
-        "cantidad": 0.25,
-        "tipo": "fijo"
-      },
-      {
-        "insumo_id": 98,
         "cantidad": 1,
         "tipo": "variable"
       },
       {
-        "insumo_id": 99,
-        "cantidad": 2,
-        "tipo": "variable"
-      },
-      {
-        "insumo_id": 100,
-        "cantidad": 100,
-        "tipo": "variable"
-      }
-    ],
-    "nombre_base": "Torta de Vainilla"
-  },
-  {
-    "id": 54,
-    "nombre": "SUSPIRITOS",
-    "categoria": "Galletas",
-    "descripcion": "",
-    "rendimiento_base": 24,
-    "rendimiento_unidad": "MINIMO",
-    "tiempo_preparacion_min": 30,
-    "tiempo_horneado_min": 45,
-    "temperatura_horno_c": 180,
-    "materiales_indirectos_pct": 10,
-    "costos_operativos_pct": 15,
-    "reposicion_equipos_pct": 10,
-    "mano_obra_pct": 30,
-    "margen_beneficio_pct": 50,
-    "activa": true,
-    "instrucciones": [],
-    "ingredientes": [
-      {
         "insumo_id": 2,
-        "cantidad": 200,
+        "cantidad": 150,
         "tipo": "fijo"
       },
       {
         "insumo_id": 3,
-        "cantidad": 4,
+        "cantidad": 5,
         "tipo": "fijo"
       },
       {
         "insumo_id": 6,
-        "cantidad": 10,
+        "cantidad": 15,
         "tipo": "fijo"
       },
       {
-        "insumo_id": 98,
-        "cantidad": 1,
-        "tipo": "variable"
+        "insumo_id": 4,
+        "cantidad": 120,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 64,
+        "cantidad": 30,
+        "tipo": "fijo"
       }
-    ],
-    "nombre_base": "Suspiritos"
+    ]
   },
   {
     "id": 55,
@@ -4619,25 +2932,17 @@ export const INITIAL_RECETAS: Receta[] = [
     "mano_obra_pct": 30,
     "margen_beneficio_pct": 50,
     "activa": true,
+    "nombre_base": "Marquesa de Limón",
+    "orden_variante": 0,
+    "created_at": "2026-09-01T19:27:53.984274+00:00",
     "instrucciones": [],
     "ingredientes": [
       {
-        "insumo_id": 79,
-        "cantidad": 403,
-        "tipo": "fijo"
-      },
-      {
-        "insumo_id": 82,
-        "cantidad": 6,
-        "tipo": "variable"
-      },
-      {
-        "insumo_id": 78,
+        "insumo_id": 13,
         "cantidad": 1,
-        "tipo": "variable"
+        "tipo": "fijo"
       }
-    ],
-    "nombre_base": "Marquesa de Limón"
+    ]
   },
   {
     "id": 56,
@@ -4655,6 +2960,9 @@ export const INITIAL_RECETAS: Receta[] = [
     "mano_obra_pct": 30,
     "margen_beneficio_pct": 50,
     "activa": true,
+    "nombre_base": "Deditos de Novia",
+    "orden_variante": 0,
+    "created_at": "2026-09-01T19:27:53.984274+00:00",
     "instrucciones": [],
     "ingredientes": [
       {
@@ -4668,7 +2976,7 @@ export const INITIAL_RECETAS: Receta[] = [
         "tipo": "fijo"
       },
       {
-        "insumo_id": 48,
+        "insumo_id": 3,
         "cantidad": 1,
         "tipo": "fijo"
       },
@@ -4702,64 +3010,7 @@ export const INITIAL_RECETAS: Receta[] = [
         "cantidad": 227,
         "tipo": "fijo"
       }
-    ],
-    "nombre_base": "Deditos de Novia"
-  },
-  {
-    "id": 57,
-    "nombre": "Polvorones",
-    "categoria": "Galletas",
-    "descripcion": "",
-    "rendimiento_base": 45,
-    "rendimiento_unidad": "- de 15Grm",
-    "tiempo_preparacion_min": 30,
-    "tiempo_horneado_min": 45,
-    "temperatura_horno_c": 180,
-    "materiales_indirectos_pct": 10,
-    "costos_operativos_pct": 15,
-    "reposicion_equipos_pct": 10,
-    "mano_obra_pct": 30,
-    "margen_beneficio_pct": 50,
-    "activa": true,
-    "instrucciones": [],
-    "ingredientes": [
-      {
-        "insumo_id": 1,
-        "cantidad": 200,
-        "tipo": "fijo"
-      },
-      {
-        "insumo_id": 4,
-        "cantidad": 338,
-        "tipo": "fijo"
-      },
-      {
-        "insumo_id": 47,
-        "cantidad": 75,
-        "tipo": "fijo"
-      },
-      {
-        "insumo_id": 6,
-        "cantidad": 15,
-        "tipo": "fijo"
-      },
-      {
-        "insumo_id": 7,
-        "cantidad": 10,
-        "tipo": "fijo"
-      },
-      {
-        "insumo_id": 102,
-        "cantidad": 80,
-        "tipo": "fijo"
-      },
-      {
-        "insumo_id": 63,
-        "cantidad": 30,
-        "tipo": "variable"
-      }
-    ],
-    "nombre_base": "Polvorones"
+    ]
   },
   {
     "id": 58,
@@ -4777,6 +3028,9 @@ export const INITIAL_RECETAS: Receta[] = [
     "mano_obra_pct": 30,
     "margen_beneficio_pct": 50,
     "activa": true,
+    "nombre_base": "Polvorones",
+    "orden_variante": 0,
+    "created_at": "2026-09-01T19:27:53.984274+00:00",
     "instrucciones": [],
     "ingredientes": [
       {
@@ -4810,7 +3064,7 @@ export const INITIAL_RECETAS: Receta[] = [
         "tipo": "fijo"
       },
       {
-        "insumo_id": 63,
+        "insumo_id": 47,
         "cantidad": 40,
         "tipo": "variable"
       },
@@ -4819,8 +3073,7 @@ export const INITIAL_RECETAS: Receta[] = [
         "cantidad": 1,
         "tipo": "variable"
       }
-    ],
-    "nombre_base": "Polvorones"
+    ]
   },
   {
     "id": 59,
@@ -4838,6 +3091,9 @@ export const INITIAL_RECETAS: Receta[] = [
     "mano_obra_pct": 30,
     "margen_beneficio_pct": 50,
     "activa": true,
+    "nombre_base": "Besitos de Nuez",
+    "orden_variante": 0,
+    "created_at": "2026-09-01T19:27:53.984274+00:00",
     "instrucciones": [],
     "ingredientes": [
       {
@@ -4876,12 +3132,11 @@ export const INITIAL_RECETAS: Receta[] = [
         "tipo": "fijo"
       },
       {
-        "insumo_id": 63,
+        "insumo_id": 47,
         "cantidad": 30,
         "tipo": "variable"
       }
-    ],
-    "nombre_base": "Besitos de Nuez"
+    ]
   },
   {
     "id": 60,
@@ -4897,8 +3152,11 @@ export const INITIAL_RECETAS: Receta[] = [
     "costos_operativos_pct": 15,
     "reposicion_equipos_pct": 10,
     "mano_obra_pct": 30,
-    "margen_beneficio_pct": 50,
+    "margen_beneficio_pct": 45,
     "activa": true,
+    "nombre_base": "Taquitos de Hojaldre",
+    "orden_variante": 0,
+    "created_at": "2026-09-01T19:27:53.984274+00:00",
     "instrucciones": [],
     "ingredientes": [
       {
@@ -4922,12 +3180,192 @@ export const INITIAL_RECETAS: Receta[] = [
         "tipo": "variable"
       },
       {
-        "insumo_id": 48,
+        "insumo_id": 3,
         "cantidad": 1,
         "tipo": "variable"
       }
+    ]
+  },
+  {
+    "id": 61,
+    "nombre": "Brownie media receta",
+    "categoria": "Tortas y Pasteles",
+    "descripcion": "",
+    "rendimiento_base": 18,
+    "rendimiento_unidad": "1/2 libra de 18 prociones",
+    "tiempo_preparacion_min": 30,
+    "tiempo_horneado_min": 45,
+    "temperatura_horno_c": 180,
+    "materiales_indirectos_pct": 10,
+    "costos_operativos_pct": 15,
+    "reposicion_equipos_pct": 10,
+    "mano_obra_pct": 30,
+    "margen_beneficio_pct": 50,
+    "activa": true,
+    "orden_variante": 0,
+    "created_at": "2026-09-02T00:09:38.850379+00:00",
+    "instrucciones": [
+      "Precalentar el horno a 180°C y engrasar moldes."
     ],
-    "nombre_base": "Taquitos de Hojaldre"
+    "ingredientes": [
+      {
+        "insumo_id": 1,
+        "cantidad": 100,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 4,
+        "cantidad": 150,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 2,
+        "cantidad": 193,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 3,
+        "cantidad": 2,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 58,
+        "cantidad": 125,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 6,
+        "cantidad": 8,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 11,
+        "cantidad": 2,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 9,
+        "cantidad": 8,
+        "tipo": "fijo"
+      }
+    ]
+  },
+  {
+    "id": 62,
+    "nombre": "Torta de Vainilla 1/2 libra",
+    "categoria": "Tortas y Pasteles",
+    "descripcion": "",
+    "rendimiento_base": 1,
+    "rendimiento_unidad": "1 Libra (16-20 porciones)",
+    "tiempo_preparacion_min": 30,
+    "tiempo_horneado_min": 45,
+    "temperatura_horno_c": 180,
+    "materiales_indirectos_pct": 10,
+    "costos_operativos_pct": 15,
+    "reposicion_equipos_pct": 10,
+    "mano_obra_pct": 30,
+    "margen_beneficio_pct": 50,
+    "activa": true,
+    "orden_variante": 0,
+    "created_at": "2026-09-08T02:56:02.013912+00:00",
+    "instrucciones": [
+      "Precalentar el horno a 180°C y engrasar moldes."
+    ],
+    "ingredientes": [
+      {
+        "insumo_id": 1,
+        "cantidad": 225,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 2,
+        "cantidad": 330,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 3,
+        "cantidad": 4,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 4,
+        "cantidad": 250,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 5,
+        "cantidad": 100,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 6,
+        "cantidad": 20,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 7,
+        "cantidad": 7,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 8,
+        "cantidad": 1,
+        "tipo": "fijo"
+      },
+      {
+        "insumo_id": 14,
+        "cantidad": 100,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 16,
+        "cantidad": 100,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 17,
+        "cantidad": 100,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 18,
+        "cantidad": 100,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 23,
+        "cantidad": 1,
+        "tipo": "variable"
+      },
+      {
+        "insumo_id": 24,
+        "cantidad": 1,
+        "tipo": "variable"
+      }
+    ]
+  },
+  {
+    "id": 63,
+    "nombre": "Torta de Vainilla 1lb",
+    "categoria": "Tortas y Pasteles",
+    "descripcion": "",
+    "rendimiento_base": 8,
+    "rendimiento_unidad": "8 porciones",
+    "tiempo_preparacion_min": 30,
+    "tiempo_horneado_min": 45,
+    "temperatura_horno_c": 180,
+    "materiales_indirectos_pct": 10,
+    "costos_operativos_pct": 15,
+    "reposicion_equipos_pct": 10,
+    "mano_obra_pct": 30,
+    "margen_beneficio_pct": 50,
+    "activa": true,
+    "orden_variante": 0,
+    "created_at": "2026-09-08T04:30:59.463352+00:00",
+    "instrucciones": [
+      "Precalentar el horno a 180°C y engrasar moldes."
+    ],
+    "ingredientes": []
   }
 ];
 

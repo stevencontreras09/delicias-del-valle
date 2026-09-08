@@ -585,29 +585,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (res.success && res.data) {
         const { insumos: dbInsumos, recetas: dbRecetas, cotizaciones: dbCotizaciones, pedidos: dbPedidos, mermas: dbMermas } = res.data;
         if (dbInsumos && dbInsumos.length > 0) {
-          setInsumos((prev) => {
-            const map = new Map<number, Insumo>();
-            dbInsumos.forEach((i) => map.set(i.id, i));
-            prev.forEach((local) => {
-              if (!map.has(local.id)) {
-                map.set(local.id, local);
-              }
-            });
-            return Array.from(map.values());
-          });
+          setInsumos(dbInsumos);
         }
         if (dbRecetas && dbRecetas.length > 0) {
           setRecetas((prev) => {
             const map = new Map<number, Receta>();
             dbRecetas.forEach((r) => map.set(r.id, r));
             const now = Date.now();
-            // Preservar recetas locales recientes (< 30s) o aún no sincronizadas para no borrarlas al crearlas
+            // Preservar ÚNICAMENTE recetas locales creadas recientemente (< 30s) en tránsito hacia Supabase
             prev.forEach((local) => {
-              const isRecent = local.created_at && (now - new Date(local.created_at).getTime() < 30000);
-              if (!map.has(local.id) || isRecent) {
-                if (!map.has(local.id)) {
-                  map.set(local.id, local);
-                }
+              const isRecent = Boolean(local.created_at && (now - new Date(local.created_at).getTime() < 30000));
+              if (!map.has(local.id) && isRecent) {
+                map.set(local.id, local);
               }
             });
             return Array.from(map.values()).sort((a, b) => a.id - b.id);
