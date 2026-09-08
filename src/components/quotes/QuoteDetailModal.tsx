@@ -312,6 +312,11 @@ export const QuoteDetailModal: React.FC<QuoteDetailModalProps> = ({
                     {item.decoracion && !item.decoracion.toLowerCase().startsWith('ningun') && (
                       <p className="text-xs text-gray-500">Decoración: {item.decoracion}</p>
                     )}
+                    {item.variables_receta && item.variables_receta.length > 0 && (
+                      <p className="text-[11px] text-emerald-700 font-semibold mt-1">
+                        🎨 Variables de receta: {item.variables_receta.join(', ')}
+                      </p>
+                    )}
                     {item.dedicatoria && (
                       <p className="text-xs text-frambuesa-700 font-semibold italic mt-0.5">
                         Dedicatoria: "{item.dedicatoria}"

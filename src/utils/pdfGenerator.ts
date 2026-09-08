@@ -102,6 +102,9 @@ export function generarPdfCotizacion(cotizacion: Cotizacion): void {
       descripcion += `\n• Decoración: ${item.decoracion}`;
     }
     if (item.dedicatoria) descripcion += `\n• Dedicatoria: "${item.dedicatoria}"`;
+    if (item.variables_receta && item.variables_receta.length > 0) {
+      descripcion += `\n• Variables de Receta: ${item.variables_receta.join(', ')}`;
+    }
     if (item.extras && item.extras.length > 0) {
       descripcion += `\n• Extras: ${item.extras.map(e => e.nombre).join(', ')}`;
     }

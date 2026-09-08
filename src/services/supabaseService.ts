@@ -170,7 +170,14 @@ export async function fetchAllFromSupabase(): Promise<{
         relleno: item.relleno,
         decoracion: item.decoracion,
         dedicatoria: item.dedicatoria || '',
-        extras: Array.isArray(item.extras) ? item.extras : [],
+        extras: Array.isArray(item.extras)
+          ? item.extras.filter((e: any) => e.id !== 'variables_receta')
+          : [],
+        variables_receta: item.variables_receta || (
+          Array.isArray(item.extras)
+            ? item.extras.find((e: any) => e.id === 'variables_receta')?.nombre?.replace(/^Variables:\s*/, '').split(', ')
+            : undefined
+        ),
         cantidad: Number(item.cantidad),
         precio_unitario: Number(item.precio_unitario),
         subtotal: Number(item.subtotal),
@@ -503,7 +510,12 @@ export async function syncCotizacionToSupabase(
         relleno: item.relleno || 'Sin relleno',
         decoracion: item.decoracion || 'Estándar',
         dedicatoria: item.dedicatoria || '',
-        extras: item.extras || [],
+        extras: [
+          ...(Array.isArray(item.extras) ? item.extras.filter((e: any) => e.id !== 'variables_receta') : []),
+          ...(item.variables_receta && item.variables_receta.length > 0
+            ? [{ id: 'variables_receta', nombre: `Variables: ${item.variables_receta.join(', ')}`, precio: 0 }]
+            : [])
+        ],
         cantidad: item.cantidad || 1,
         precio_unitario: item.precio_unitario || 0,
         subtotal: item.subtotal || 0,

@@ -1380,7 +1380,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       relleno: item.relleno,
       decoracion: item.decoracion,
       dedicatoria: item.dedicatoria,
-      extras_texto: item.extras?.map((e) => `${e.nombre}`).join(', ') || '',
+      extras_texto: [
+        item.variables_receta && item.variables_receta.length > 0 ? `Variables: ${item.variables_receta.join(', ')}` : '',
+        item.extras?.map((e) => `${e.nombre}`).join(', ') || ''
+      ].filter(Boolean).join(' | '),
       cantidad: item.cantidad,
       precio_unitario: item.precio_unitario,
       subtotal: item.subtotal,

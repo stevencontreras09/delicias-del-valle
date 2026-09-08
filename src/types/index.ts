@@ -130,6 +130,8 @@ export interface CotizacionItem {
   precio_unitario: number;
   subtotal: number;
   factor_receta: number; // escala respecto al rendimiento base (ej: 0.5, 1, 1.5, 2)
+  variables_receta?: string[]; // Nombres descriptivos de variables de la receta seleccionadas
+  variables_seleccionadas?: number[]; // IDs de insumos variables seleccionados de la receta
 }
 
 export type EstadoCotizacion = 'pendiente' | 'enviada' | 'aprobada' | 'rechazada' | 'convertida';

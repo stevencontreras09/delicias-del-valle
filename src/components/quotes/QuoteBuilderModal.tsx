@@ -9,9 +9,10 @@ import {
 } from '../../types';
 import { useApp } from '../../context/AppContext';
 import { Modal } from '../ui/Modal';
-import { formatCurrency } from '../../utils/formatters';
+import { formatCurrency, formatUnit } from '../../utils/formatters';
 import {
   calcularCostosReceta,
+  calcularCostoIngrediente,
   getRecipePortionsCount,
   getPorcionOpciones,
 } from '../../utils/calculations';
@@ -380,6 +381,45 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
     return getPorcionOpciones(basePorcionesQuote, currentReceta?.rendimiento_unidad);
   }, [basePorcionesQuote, currentReceta?.rendimiento_unidad]);
 
+  // Set de insumos variables seleccionados para la receta actual
+  const [activeRecipeVariableIds, setActiveRecipeVariableIds] = useState<Set<number>>(new Set());
+
+  // Limpiar variables seleccionadas al cambiar de receta
+  useEffect(() => {
+    setActiveRecipeVariableIds(new Set());
+  }, [currentReceta?.id]);
+
+  // Lista de ingredientes variables de la receta seleccionada
+  const variablesReceta = useMemo(() => {
+    if (!currentReceta || !Array.isArray(currentReceta.ingredientes)) return [];
+    return currentReceta.ingredientes.filter((i) => i.tipo === 'variable');
+  }, [currentReceta]);
+
+  const handleToggleRecipeVariable = (insumoId: number) => {
+    setActiveRecipeVariableIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(insumoId)) {
+        next.delete(insumoId);
+      } else {
+        next.add(insumoId);
+      }
+      return next;
+    });
+  };
+
+  const handleSelectAllRecipeVariables = () => {
+    if (!currentReceta) return;
+    const all = new Set<number>();
+    currentReceta.ingredientes
+      .filter((i) => i.tipo === 'variable')
+      .forEach((i) => all.add(i.insumo_id));
+    setActiveRecipeVariableIds(all);
+  };
+
+  const handleDeselectAllRecipeVariables = () => {
+    setActiveRecipeVariableIds(new Set());
+  };
+
   // Inicializar nombre del producto en el buscador
   useEffect(() => {
     if (currentReceta && !searchProductTerm) {
@@ -409,12 +449,19 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
   };
 
   // =========================================================================
-  // CÁLCULO DINÁMICO DE COSTO BOM + MASA + RELLENO + DECORACIÓN ESCALADOS
+  // CÁLCULO DINÁMICO DE COSTO BOM + VARIABLES + MASA + RELLENO + DECORACIÓN
   // =========================================================================
   const calcReceta = currentReceta
-    ? calcularCostosReceta(currentReceta, insumosMap, factorReceta)
+    ? calcularCostosReceta(currentReceta, insumosMap, factorReceta, activeRecipeVariableIds)
     : null;
+  const calcRecetaBasePuro = currentReceta
+    ? calcularCostosReceta(currentReceta, insumosMap, factorReceta, false)
+    : null;
+
   const precioBaseRecetaCalculado = calcReceta ? calcReceta.precio_sugerido_margen_venta : 1500;
+  const diferenciaPrecioVariablesReceta = calcReceta && calcRecetaBasePuro
+    ? Math.max(0, calcReceta.precio_sugerido_margen_venta - calcRecetaBasePuro.precio_sugerido_margen_venta)
+    : 0;
 
   // Costo adicional dinámico de la Masa
   const opcionMasaObj =
@@ -457,6 +504,14 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
       .map((id) => extrasOpciones.find((e) => e.id === id))
       .filter(Boolean) as CotizacionExtra[];
 
+    const variablesRecetaNombres: string[] = currentReceta.ingredientes
+      .filter((i) => i.tipo === 'variable' && activeRecipeVariableIds.has(i.insumo_id))
+      .map((i) => {
+        const ins = insumosMap.get(i.insumo_id);
+        const cant = formatUnit(i.cantidad * factorReceta, ins?.unidad_base || 'g');
+        return `${ins?.nombre || `Insumo #${i.insumo_id}`} (${cant})`;
+      });
+
     const newItem: CotizacionItem = {
       id: `item-${Date.now()}`,
       receta_id: currentReceta.id,
@@ -471,13 +526,16 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
       precio_unitario: precioUnitarioFinal + totalExtrasUnitario,
       subtotal: subtotalItemActual,
       factor_receta: factorReceta,
+      variables_receta: variablesRecetaNombres,
+      variables_seleccionadas: Array.from(activeRecipeVariableIds),
     };
 
     setItems((prev) => [...prev, newItem]);
 
-    // Limpiar dedicatoria y extras para el siguiente item
+    // Limpiar dedicatoria, extras y variables para el siguiente item
     setDedicatoria('');
     setSelectedExtras([]);
+    setActiveRecipeVariableIds(new Set());
     setCantidad(1);
     setPrecioBaseManual('');
   };
@@ -878,6 +936,96 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
               )}
             </div>
 
+            {/* ================================================================= */}
+            {/* INSUMOS VARIABLES ESPECÍFICOS DE LA RECETA SELECCIONADA          */}
+            {/* ================================================================= */}
+            {variablesReceta.length > 0 && (
+              <div className="sm:col-span-2 md:col-span-3 bg-white p-4 rounded-2xl border-2 border-emerald-300/80 shadow-sm space-y-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-emerald-100 pb-2.5">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
+                      <Sparkles className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <span className="font-extrabold text-chocolate-900 text-xs flex items-center gap-1.5">
+                        Insumos Variables de la Receta:
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300">
+                          {activeRecipeVariableIds.size} de {variablesReceta.length} seleccionados
+                        </span>
+                      </span>
+                      <span className="text-[11px] text-gray-500 block">
+                        Marca los rellenos, coberturas o empaques propios de esta receta que deseas incluir en esta cotización.
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={handleSelectAllRecipeVariables}
+                      className="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-300 rounded-lg text-[11px] font-bold transition-colors"
+                    >
+                      Todos
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleDeselectAllRecipeVariables}
+                      className="px-2.5 py-1 bg-gray-50 hover:bg-gray-100 text-gray-600 border border-gray-200 rounded-lg text-[11px] font-bold transition-colors"
+                    >
+                      Ninguno
+                    </button>
+                    {diferenciaPrecioVariablesReceta > 0 && (
+                      <span className="text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-300 font-extrabold text-xs">
+                        +{formatCurrency(diferenciaPrecioVariablesReceta)}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5">
+                  {variablesReceta.map((ing) => {
+                    const insumo = insumosMap.get(ing.insumo_id);
+                    const isApplied = activeRecipeVariableIds.has(ing.insumo_id);
+                    const cantidadEscalada = ing.cantidad * factorReceta;
+                    const nombreInsumo = insumo?.nombre || `Insumo #${ing.insumo_id}`;
+                    const unidadBase = insumo?.unidad_base || 'g';
+                    const costoCalculado = calcularCostoIngrediente(cantidadEscalada, insumo);
+
+                    return (
+                      <label
+                        key={ing.insumo_id}
+                        className={`flex items-center gap-2.5 p-2.5 rounded-xl border text-xs cursor-pointer select-none transition-all ${
+                          isApplied
+                            ? 'bg-emerald-50/70 border-emerald-400 text-emerald-950 font-bold shadow-sm ring-1 ring-emerald-300'
+                            : 'bg-canvas/50 border-trigo-200 text-gray-500 hover:bg-white'
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={isApplied}
+                          onChange={() => handleToggleRecipeVariable(ing.insumo_id)}
+                          className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 cursor-pointer"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <span className={`block truncate text-xs ${isApplied ? 'text-chocolate-900 font-bold' : 'text-gray-500'}`}>
+                            {nombreInsumo}
+                          </span>
+                          <span className="text-[10px] text-gray-400 font-normal block">
+                            {formatUnit(cantidadEscalada, unidadBase)} • Costo: {formatCurrency(costoCalculado)}
+                          </span>
+                        </div>
+                        <span className={`text-[10px] font-extrabold px-1.5 py-0.5 rounded whitespace-nowrap ${
+                          isApplied ? 'bg-emerald-200/80 text-emerald-900' : 'bg-gray-100 text-gray-400'
+                        }`}>
+                          {isApplied ? '✓ Aplicado' : 'Opcional'}
+                        </span>
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             {/* Tipo de Masa con Precio Dinámico */}
             <div>
               <div className="flex items-center justify-between mb-1">
@@ -1156,7 +1304,12 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3 border-t border-trigo-200 bg-crema/50 p-4 rounded-2xl">
             <div className="text-xs text-chocolate-700 space-y-1">
               <div className="flex flex-wrap items-center gap-x-2 gap-y-1 font-medium text-[11px]">
-                <span>Base Receta: <b className="text-chocolate-900">{formatCurrency(precioBaseRecetaCalculado)}</b></span>
+                <span>Base Receta: <b className="text-chocolate-900">{formatCurrency(calcRecetaBasePuro ? calcRecetaBasePuro.precio_sugerido_margen_venta : precioBaseRecetaCalculado)}</b></span>
+                {diferenciaPrecioVariablesReceta > 0 && (
+                  <span className="text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
+                    + Variables ({activeRecipeVariableIds.size}): <b>+{formatCurrency(diferenciaPrecioVariablesReceta)}</b>
+                  </span>
+                )}
                 {costoMasa > 0 && <span className="text-amber-800">+ Masa: <b>+{formatCurrency(costoMasa)}</b></span>}
                 {costoRelleno > 0 && <span className="text-indigo-800">+ Relleno: <b>+{formatCurrency(costoRelleno)}</b></span>}
                 {costoDecoracion > 0 && <span className="text-purple-800">+ Deco: <b>+{formatCurrency(costoDecoracion)}</b></span>}
@@ -1216,6 +1369,11 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
                         {item.decoracion && !item.decoracion.toLowerCase().startsWith('ningun') && (
                           <p className="text-[11px] text-gray-500">
                             Decoración: {item.decoracion}
+                          </p>
+                        )}
+                        {item.variables_receta && item.variables_receta.length > 0 && (
+                          <p className="text-[10px] text-emerald-700 font-semibold mt-0.5">
+                            🎨 Variables: {item.variables_receta.join(', ')}
                           </p>
                         )}
                         {item.dedicatoria && (
