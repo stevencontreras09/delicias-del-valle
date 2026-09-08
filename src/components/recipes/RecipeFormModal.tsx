@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Receta, CategoriaReceta, RecetaIngrediente, Insumo } from '../../types';
 import { Modal } from '../ui/Modal';
 import { formatCurrency } from '../../utils/formatters';
@@ -39,11 +39,12 @@ export const RecipeFormModal: React.FC<RecipeFormModalProps> = ({
   const [categoria, setCategoria] = useState<CategoriaReceta>(
     initialReceta?.categoria || 'Tortas y Pasteles'
   );
+  // Rendimiento sin valores sugeridos por defecto cuando se crea una nueva receta
   const [rendimientoBase, setRendimientoBase] = useState<number | ''>(
-    initialReceta?.rendimiento_base || 1
+    initialReceta?.rendimiento_base ?? ''
   );
   const [rendimientoUnidad, setRendimientoUnidad] = useState(
-    initialReceta?.rendimiento_unidad || '1 Libra (16-20 porciones)'
+    initialReceta?.rendimiento_unidad || ''
   );
   const [tiempoPrep, setTiempoPrep] = useState<number | ''>(
     initialReceta?.tiempo_preparacion_min || 30
@@ -83,6 +84,54 @@ export const RecipeFormModal: React.FC<RecipeFormModalProps> = ({
   const [instrucciones, setInstrucciones] = useState<string[]>(
     initialReceta?.instrucciones || ['Precalentar el horno a 180°C y engrasar moldes.']
   );
+
+  // Sincronizar y limpiar formulario al abrir/cerrar o cambiar de receta
+  useEffect(() => {
+    if (isOpen) {
+      if (initialReceta) {
+        setNombre(initialReceta.nombre || '');
+        setCategoria(initialReceta.categoria || 'Tortas y Pasteles');
+        setRendimientoBase(initialReceta.rendimiento_base ?? '');
+        setRendimientoUnidad(initialReceta.rendimiento_unidad || '');
+        setTiempoPrep(initialReceta.tiempo_preparacion_min ?? 30);
+        setTiempoHorneado(initialReceta.tiempo_horneado_min ?? 45);
+        setTempHorno(initialReceta.temperatura_horno_c ?? 180);
+        setIndirectosPct(initialReceta.materiales_indirectos_pct ?? 10);
+        setOperativosPct(initialReceta.costos_operativos_pct ?? 15);
+        setReposicionPct(initialReceta.reposicion_equipos_pct ?? 10);
+        setManoObraPct(initialReceta.mano_obra_pct ?? 30);
+        setMargenBeneficioPct(initialReceta.margen_beneficio_pct ?? 50);
+        setIngredientes(
+          initialReceta.ingredientes && initialReceta.ingredientes.length > 0
+            ? initialReceta.ingredientes
+            : [{ insumo_id: insumos[0]?.id || 1, cantidad: 500, tipo: 'fijo' }]
+        );
+        setInstrucciones(
+          initialReceta.instrucciones && initialReceta.instrucciones.length > 0
+            ? initialReceta.instrucciones
+            : ['Precalentar el horno a 180°C y engrasar moldes.']
+        );
+      } else {
+        // Al crear nueva receta: Limpiar completamente sin sugerir porciones por defecto
+        setNombre('');
+        setCategoria('Tortas y Pasteles');
+        setRendimientoBase('');
+        setRendimientoUnidad('');
+        setTiempoPrep(30);
+        setTiempoHorneado(45);
+        setTempHorno(180);
+        setIndirectosPct(10);
+        setOperativosPct(15);
+        setReposicionPct(10);
+        setManoObraPct(30);
+        setMargenBeneficioPct(50);
+        setIngredientes([
+          { insumo_id: insumos[0]?.id || 1, cantidad: 500, tipo: 'fijo' },
+        ]);
+        setInstrucciones(['Precalentar el horno a 180°C y engrasar moldes.']);
+      }
+    }
+  }, [isOpen, initialReceta, insumos]);
 
   // Insumos Map para cálculo rápido
   const insumosMap = new Map<number, Insumo>();
@@ -149,11 +198,14 @@ export const RecipeFormModal: React.FC<RecipeFormModalProps> = ({
       return;
     }
 
+    const finalRendimientoBase = typeof rendimientoBase === 'number' && rendimientoBase > 0 ? rendimientoBase : 1;
+    const finalRendimientoUnidad = rendimientoUnidad.trim() || `${finalRendimientoBase} porciones`;
+
     onSave({
       nombre: nombre.trim(),
       categoria,
-      rendimiento_base: Number(rendimientoBase) || 1,
-      rendimiento_unidad: rendimientoUnidad.trim(),
+      rendimiento_base: finalRendimientoBase,
+      rendimiento_unidad: finalRendimientoUnidad,
       tiempo_preparacion_min: Number(tiempoPrep) || 30,
       tiempo_horneado_min: Number(tiempoHorneado) || 45,
       temperatura_horno_c: Number(tempHorno) || 180,
@@ -214,33 +266,44 @@ export const RecipeFormModal: React.FC<RecipeFormModalProps> = ({
 
           <div>
             <label className="block text-xs font-bold text-chocolate-700 uppercase tracking-wider mb-1">
-              Rendimiento Base (Número) *
+              ¿Para cuántas porciones rinde la receta? *
             </label>
             <input
               type="number"
-              step="0.1"
-              min="0.1"
+              step="1"
+              min="1"
               required
+              placeholder="Ingresa número de porciones (ej. 16)"
               value={rendimientoBase}
-              onChange={(e) =>
-                setRendimientoBase(e.target.value === '' ? '' : parseFloat(e.target.value))
-              }
+              onChange={(e) => {
+                const val = e.target.value === '' ? '' : parseFloat(e.target.value);
+                setRendimientoBase(val);
+                if (!rendimientoUnidad || rendimientoUnidad.includes('porciones')) {
+                  setRendimientoUnidad(val ? `${val} porciones` : '');
+                }
+              }}
               className="w-full px-3.5 py-2.5 rounded-xl border border-trigo-300 focus:ring-2 focus:ring-frambuesa-400 text-xs"
             />
+            <span className="text-[10px] text-gray-400 mt-0.5 block">
+              Cantidad manual de porciones o unidades que produce esta receta.
+            </span>
           </div>
 
           <div>
             <label className="block text-xs font-bold text-chocolate-700 uppercase tracking-wider mb-1">
-              Unidad de Rendimiento *
+              Descripción / Unidad de Rendimiento *
             </label>
             <input
               type="text"
               required
-              placeholder="Ej. 1 Libra (16 porciones), 12 Cupcakes..."
+              placeholder="Ej. 16 porciones, 12 unidades, 24 galletas..."
               value={rendimientoUnidad}
               onChange={(e) => setRendimientoUnidad(e.target.value)}
               className="w-full px-3.5 py-2.5 rounded-xl border border-trigo-300 focus:ring-2 focus:ring-frambuesa-400 text-xs"
             />
+            <span className="text-[10px] text-gray-400 mt-0.5 block">
+              Texto descriptivo que aparecerá en catálogo y cotizaciones.
+            </span>
           </div>
 
           <div>
