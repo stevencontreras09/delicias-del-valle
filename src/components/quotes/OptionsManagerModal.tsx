@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Modal } from '../ui/Modal';
-import { OpcionConfigurable } from './QuoteBuilderModal';
-import { CotizacionExtra } from '../../types';
+import { OpcionConfigurable, getExtraCategory } from './QuoteBuilderModal';
+import { CotizacionExtra, CategoriaExtra } from '../../types';
 import { formatCurrency } from '../../utils/formatters';
 import { Plus, Trash2, Edit2, RotateCcw, Check, Sparkles, AlertCircle } from 'lucide-react';
 
@@ -42,6 +42,9 @@ export const OptionsManagerModal: React.FC<OptionsManagerModalProps> = ({
   const [decoraciones, setDecoraciones] = useState<OpcionConfigurable[]>(initialDecoraciones);
   const [extras, setExtras] = useState<CotizacionExtra[]>(initialExtras);
 
+  // Filtro secundario para la pestaña de extras
+  const [filterExtrasTab, setFilterExtrasTab] = useState<'all' | CategoriaExtra>('all');
+
   // Sincronizar estado cuando se abre el modal o cambian los items
   useEffect(() => {
     if (isOpen) {
@@ -58,18 +61,23 @@ export const OptionsManagerModal: React.FC<OptionsManagerModalProps> = ({
   const [newName, setNewName] = useState('');
   const [newPrice, setNewPrice] = useState<number | ''>(0);
   const [newDesc, setNewDesc] = useState('');
+  const [newCategoriaExtra, setNewCategoriaExtra] = useState<CategoriaExtra>('empaque');
 
   // Estado para editar opción existente
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
   const [editPrice, setEditPrice] = useState<number | ''>(0);
   const [editDesc, setEditDesc] = useState('');
+  const [editCategoriaExtra, setEditCategoriaExtra] = useState<CategoriaExtra>('empaque');
 
   const handleStartEdit = (item: OpcionConfigurable | CotizacionExtra) => {
     setEditingId(item.id);
     setEditName(item.nombre);
     setEditPrice('precio_adicional_base' in item ? item.precio_adicional_base : item.precio);
     setEditDesc('descripcion' in item ? (item.descripcion || '') : '');
+    if (activeTab === 'extras') {
+      setEditCategoriaExtra(getExtraCategory(item as CotizacionExtra));
+    }
   };
 
   const handleSaveEdit = () => {
@@ -83,7 +91,7 @@ export const OptionsManagerModal: React.FC<OptionsManagerModalProps> = ({
     } else if (activeTab === 'decoraciones') {
       setDecoraciones(prev => prev.map(d => d.id === editingId ? { ...d, nombre: editName.trim(), precio_adicional_base: finalPrice, descripcion: editDesc.trim() } : d));
     } else if (activeTab === 'extras') {
-      setExtras(prev => prev.map(e => e.id === editingId ? { ...e, nombre: editName.trim(), precio: finalPrice } : e));
+      setExtras(prev => prev.map(e => e.id === editingId ? { ...e, nombre: editName.trim(), precio: finalPrice, categoria: editCategoriaExtra } : e));
     }
 
     setEditingId(null);
@@ -110,7 +118,7 @@ export const OptionsManagerModal: React.FC<OptionsManagerModalProps> = ({
     const id = `${activeTab}_${Date.now()}`;
 
     if (activeTab === 'extras') {
-      setExtras(prev => [...prev, { id, nombre: newName.trim(), precio: finalPrice }]);
+      setExtras(prev => [...prev, { id, nombre: newName.trim(), precio: finalPrice, categoria: newCategoriaExtra }]);
     } else {
       const newOption: OpcionConfigurable = {
         id,
@@ -134,7 +142,15 @@ export const OptionsManagerModal: React.FC<OptionsManagerModalProps> = ({
     onClose();
   };
 
-  const currentItems = activeTab === 'masas' ? masas : activeTab === 'rellenos' ? rellenos : activeTab === 'decoraciones' ? decoraciones : extras;
+  const currentItems = activeTab === 'masas'
+    ? masas
+    : activeTab === 'rellenos'
+    ? rellenos
+    : activeTab === 'decoraciones'
+    ? decoraciones
+    : filterExtrasTab === 'all'
+    ? extras
+    : extras.filter(e => getExtraCategory(e) === filterExtrasTab);
 
   return (
     <Modal
@@ -240,6 +256,24 @@ export const OptionsManagerModal: React.FC<OptionsManagerModalProps> = ({
                 />
               </div>
             </div>
+
+            {activeTab === 'extras' && (
+              <div>
+                <label className="block text-[11px] font-bold text-chocolate-700 mb-1">Categoría del Extra *</label>
+                <select
+                  value={newCategoriaExtra}
+                  onChange={(e) => setNewCategoriaExtra(e.target.value as CategoriaExtra)}
+                  className="w-full px-3 py-1.5 rounded-xl border border-trigo-300 text-xs text-chocolate-900 bg-white font-medium"
+                >
+                  <option value="empaque">📦 Empaque (Cajas, Bases, Domos, Bolsas)</option>
+                  <option value="topper">🎂 Topper (Acrílicos, Nombres, Temáticos)</option>
+                  <option value="sticker">🏷️ Sticker (Etiquetas, Personalizados, Sellos)</option>
+                  <option value="tarjeta">💌 Tarjeta con Mensaje (Dedicatorias, Postales)</option>
+                  <option value="otro">✨ Otro / Detalle Especial (Velas, Dulces, etc.)</option>
+                </select>
+              </div>
+            )}
+
             {activeTab !== 'extras' && (
               <div>
                 <label className="block text-[11px] font-bold text-chocolate-700 mb-1">Descripción / Detalle (Opcional)</label>
@@ -272,96 +306,212 @@ export const OptionsManagerModal: React.FC<OptionsManagerModalProps> = ({
           </div>
         )}
 
+        {/* Sub-Filtro para la pestaña de Extras */}
+        {activeTab === 'extras' && (
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-[11px]">
+            <button
+              type="button"
+              onClick={() => setFilterExtrasTab('all')}
+              className={`px-2.5 py-1 rounded-lg font-bold transition-colors whitespace-nowrap ${
+                filterExtrasTab === 'all'
+                  ? 'bg-chocolate-700 text-white shadow-sm'
+                  : 'bg-white text-chocolate-600 border border-trigo-200 hover:bg-crema'
+              }`}
+            >
+              Todos ({extras.length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setFilterExtrasTab('empaque')}
+              className={`px-2.5 py-1 rounded-lg font-bold transition-colors whitespace-nowrap flex items-center gap-1 ${
+                filterExtrasTab === 'empaque'
+                  ? 'bg-purple-600 text-white shadow-sm'
+                  : 'bg-purple-50 text-purple-700 border border-purple-200 hover:bg-purple-100'
+              }`}
+            >
+              <span>📦</span> Empaques ({extras.filter(e => getExtraCategory(e) === 'empaque').length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setFilterExtrasTab('topper')}
+              className={`px-2.5 py-1 rounded-lg font-bold transition-colors whitespace-nowrap flex items-center gap-1 ${
+                filterExtrasTab === 'topper'
+                  ? 'bg-pink-600 text-white shadow-sm'
+                  : 'bg-pink-50 text-pink-700 border border-pink-200 hover:bg-pink-100'
+              }`}
+            >
+              <span>🎂</span> Toppers ({extras.filter(e => getExtraCategory(e) === 'topper').length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setFilterExtrasTab('sticker')}
+              className={`px-2.5 py-1 rounded-lg font-bold transition-colors whitespace-nowrap flex items-center gap-1 ${
+                filterExtrasTab === 'sticker'
+                  ? 'bg-amber-600 text-white shadow-sm'
+                  : 'bg-amber-50 text-amber-800 border border-amber-200 hover:bg-amber-100'
+              }`}
+            >
+              <span>🏷️</span> Stickers ({extras.filter(e => getExtraCategory(e) === 'sticker').length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setFilterExtrasTab('tarjeta')}
+              className={`px-2.5 py-1 rounded-lg font-bold transition-colors whitespace-nowrap flex items-center gap-1 ${
+                filterExtrasTab === 'tarjeta'
+                  ? 'bg-emerald-600 text-white shadow-sm'
+                  : 'bg-emerald-50 text-emerald-800 border border-emerald-200 hover:bg-emerald-100'
+              }`}
+            >
+              <span>💌</span> Tarjetas ({extras.filter(e => getExtraCategory(e) === 'tarjeta').length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setFilterExtrasTab('otro')}
+              className={`px-2.5 py-1 rounded-lg font-bold transition-colors whitespace-nowrap flex items-center gap-1 ${
+                filterExtrasTab === 'otro'
+                  ? 'bg-chocolate-600 text-white shadow-sm'
+                  : 'bg-crema text-chocolate-700 border border-trigo-200 hover:bg-trigo-100'
+              }`}
+            >
+              <span>✨</span> Otros ({extras.filter(e => getExtraCategory(e) === 'otro').length})
+            </button>
+          </div>
+        )}
+
         {/* Lista de Opciones Actuales */}
         <div className="max-h-80 overflow-y-auto divide-y divide-trigo-100 border border-trigo-200 rounded-2xl bg-white shadow-inner">
-          {currentItems.map((item) => {
-            const isEditing = editingId === item.id;
-            const price = 'precio_adicional_base' in item ? item.precio_adicional_base : item.precio;
-            const desc = 'descripcion' in item ? item.descripcion : '';
+          {currentItems.length === 0 ? (
+            <p className="text-center py-6 text-xs text-gray-400">
+              No hay opciones registradas en esta categoría.
+            </p>
+          ) : (
+            currentItems.map((item) => {
+              const isEditing = editingId === item.id;
+              const price = 'precio_adicional_base' in item ? item.precio_adicional_base : item.precio;
+              const desc = 'descripcion' in item ? item.descripcion : '';
 
-            if (isEditing) {
-              return (
-                <div key={item.id} className="p-3 bg-amber-50/50 space-y-2">
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                    <input
-                      type="text"
-                      value={editName}
-                      onChange={(e) => setEditName(e.target.value)}
-                      className="sm:col-span-2 px-2.5 py-1.5 rounded-lg border border-trigo-300 text-xs font-bold text-chocolate-900 bg-white"
-                    />
-                    <input
-                      type="number"
-                      min="0"
-                      value={editPrice}
-                      onChange={(e) => setEditPrice(e.target.value === '' ? '' : parseFloat(e.target.value) || 0)}
-                      className="px-2.5 py-1.5 rounded-lg border border-trigo-300 text-xs font-bold text-chocolate-900 bg-white"
-                    />
+              if (isEditing) {
+                return (
+                  <div key={item.id} className="p-3 bg-amber-50/50 space-y-2">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                      <input
+                        type="text"
+                        value={editName}
+                        onChange={(e) => setEditName(e.target.value)}
+                        className="sm:col-span-2 px-2.5 py-1.5 rounded-lg border border-trigo-300 text-xs font-bold text-chocolate-900 bg-white"
+                      />
+                      <input
+                        type="number"
+                        min="0"
+                        value={editPrice}
+                        onChange={(e) => setEditPrice(e.target.value === '' ? '' : parseFloat(e.target.value) || 0)}
+                        className="px-2.5 py-1.5 rounded-lg border border-trigo-300 text-xs font-bold text-chocolate-900 bg-white"
+                      />
+                    </div>
+                    {activeTab === 'extras' && (
+                      <div>
+                        <label className="block text-[10px] font-bold text-chocolate-600 mb-0.5">Categoría del Extra</label>
+                        <select
+                          value={editCategoriaExtra}
+                          onChange={(e) => setEditCategoriaExtra(e.target.value as CategoriaExtra)}
+                          className="w-full px-2.5 py-1.5 rounded-lg border border-trigo-300 text-xs text-chocolate-900 bg-white font-medium"
+                        >
+                          <option value="empaque">📦 Empaque</option>
+                          <option value="topper">🎂 Topper</option>
+                          <option value="sticker">🏷️ Sticker</option>
+                          <option value="tarjeta">💌 Tarjeta con Mensaje</option>
+                          <option value="otro">✨ Otro / Detalle</option>
+                        </select>
+                      </div>
+                    )}
+                    {activeTab !== 'extras' && (
+                      <input
+                        type="text"
+                        placeholder="Descripción opcional"
+                        value={editDesc}
+                        onChange={(e) => setEditDesc(e.target.value)}
+                        className="w-full px-2.5 py-1 rounded-lg border border-trigo-200 text-xs text-chocolate-700 bg-white"
+                      />
+                    )}
+                    <div className="flex justify-end gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => setEditingId(null)}
+                        className="px-2.5 py-1 rounded-lg text-xs font-bold text-gray-600 hover:bg-gray-100"
+                      >
+                        Cancelar
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleSaveEdit}
+                        className="px-3 py-1 rounded-lg bg-emerald-600 text-white text-xs font-bold hover:bg-emerald-700 flex items-center gap-1"
+                      >
+                        <Check className="w-3.5 h-3.5" />
+                        Guardar
+                      </button>
+                    </div>
                   </div>
-                  {activeTab !== 'extras' && (
-                    <input
-                      type="text"
-                      placeholder="Descripción opcional"
-                      value={editDesc}
-                      onChange={(e) => setEditDesc(e.target.value)}
-                      className="w-full px-2.5 py-1 rounded-lg border border-trigo-200 text-xs text-chocolate-700 bg-white"
-                    />
-                  )}
-                  <div className="flex justify-end gap-1.5">
+                );
+              }
+
+              const cat: CategoriaExtra | null = activeTab === 'extras' ? getExtraCategory(item as CotizacionExtra) : null;
+              const catBadgeStyle: Record<CategoriaExtra, string> = {
+                empaque: 'bg-purple-100 text-purple-700 border-purple-200',
+                topper: 'bg-pink-100 text-pink-700 border-pink-200',
+                sticker: 'bg-amber-100 text-amber-800 border-amber-200',
+                tarjeta: 'bg-emerald-100 text-emerald-800 border-emerald-200',
+                otro: 'bg-trigo-100 text-chocolate-700 border-trigo-200',
+              };
+
+              const catLabel: Record<CategoriaExtra, string> = {
+                empaque: '📦 Empaque',
+                topper: '🎂 Topper',
+                sticker: '🏷️ Sticker',
+                tarjeta: '💌 Tarjeta con Mensaje',
+                otro: '✨ Detalle',
+              };
+
+              return (
+                <div key={item.id} className="p-3 flex items-center justify-between gap-3 hover:bg-crema/20 transition-colors">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-bold text-xs text-chocolate-900">{item.nombre}</span>
+                      {cat && (
+                        <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border ${catBadgeStyle[cat]}`}>
+                          {catLabel[cat]}
+                        </span>
+                      )}
+                      <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full ${
+                        price > 0 ? 'bg-frambuesa-100 text-frambuesa-700' : 'bg-emerald-100 text-emerald-800'
+                      }`}>
+                        {price > 0 ? `+${formatCurrency(price)}` : 'Incluido (RD$ 0)'}
+                      </span>
+                    </div>
+                    {desc && <p className="text-[11px] text-gray-500 mt-0.5 truncate">{desc}</p>}
+                  </div>
+
+                  <div className="flex items-center gap-1 flex-shrink-0">
                     <button
                       type="button"
-                      onClick={() => setEditingId(null)}
-                      className="px-2.5 py-1 rounded-lg text-xs font-bold text-gray-600 hover:bg-gray-100"
+                      onClick={() => handleStartEdit(item)}
+                      title="Editar opción"
+                      className="p-1.5 rounded-lg text-chocolate-600 hover:bg-crema transition-colors"
                     >
-                      Cancelar
+                      <Edit2 className="w-3.5 h-3.5" />
                     </button>
                     <button
                       type="button"
-                      onClick={handleSaveEdit}
-                      className="px-3 py-1 rounded-lg bg-emerald-600 text-white text-xs font-bold hover:bg-emerald-700 flex items-center gap-1"
+                      onClick={() => handleDelete(item.id)}
+                      title="Eliminar opción"
+                      className="p-1.5 rounded-lg text-red-500 hover:bg-red-50 transition-colors"
                     >
-                      <Check className="w-3.5 h-3.5" />
-                      Guardar
+                      <Trash2 className="w-3.5 h-3.5" />
                     </button>
                   </div>
                 </div>
               );
-            }
-
-            return (
-              <div key={item.id} className="p-3 flex items-center justify-between gap-3 hover:bg-crema/20 transition-colors">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="font-bold text-xs text-chocolate-900">{item.nombre}</span>
-                    <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full ${
-                      price > 0 ? 'bg-frambuesa-100 text-frambuesa-700' : 'bg-emerald-100 text-emerald-800'
-                    }`}>
-                      {price > 0 ? `+${formatCurrency(price)}` : 'Incluido (RD$ 0)'}
-                    </span>
-                  </div>
-                  {desc && <p className="text-[11px] text-gray-500 mt-0.5 truncate">{desc}</p>}
-                </div>
-
-                <div className="flex items-center gap-1 flex-shrink-0">
-                  <button
-                    type="button"
-                    onClick={() => handleStartEdit(item)}
-                    title="Editar opción"
-                    className="p-1.5 rounded-lg text-chocolate-600 hover:bg-crema transition-colors"
-                  >
-                    <Edit2 className="w-3.5 h-3.5" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleDelete(item.id)}
-                    title="Eliminar opción"
-                    className="p-1.5 rounded-lg text-red-500 hover:bg-red-50 transition-colors"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              </div>
-            );
-          })}
+            })
+          )}
         </div>
 
         {/* Footer del Modal */}

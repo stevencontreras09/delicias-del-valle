@@ -3,6 +3,7 @@ import {
   Cotizacion,
   CotizacionItem,
   CotizacionExtra,
+  CategoriaExtra,
   Receta,
   Insumo,
   Cliente,
@@ -63,20 +64,17 @@ export const OPCIONES_MASA_DETALLADAS: OpcionConfigurable[] = [
 
 export const OPCIONES_RELLENO_DETALLADAS: OpcionConfigurable[] = [
   { id: 'relleno_ninguno', nombre: 'Ninguno / Sin Relleno', precio_adicional_base: 0, descripcion: 'Sin capas de relleno' },
-  { id: 'relleno_arequipe', nombre: 'Dulce de Leche / Arequipe Repostero', precio_adicional_base: 250, descripcion: 'Arequipe artesanal denso y cremoso' },
+  { id: 'relleno_arequipe', nombre: 'Dulce de Leche / Arequipe Repostero', precio_adicional_base: 0, descripcion: 'Cocción lenta tradicional, espeso y caramelizado' },
+  { id: 'relleno_crema_pastelera', nombre: 'Crema Pastelera con Vainilla Bourbon', precio_adicional_base: 0, descripcion: 'Suave, sedosa con yemas frescas y vainilla en vaina' },
   { id: 'relleno_queso_crema', nombre: 'Frosting de Queso Crema Philadelphia', precio_adicional_base: 350, descripcion: 'Queso crema auténtico, suave y equilibrado' },
-  { id: 'relleno_ganache', nombre: 'Ganache Sedoso de Chocolate 56%', precio_adicional_base: 380, descripcion: 'Emulsión de chocolate amargo con crema 35%' },
-  { id: 'relleno_frutos_rojos', nombre: 'Compota Rústica de Frutos Rojos Silvestres', precio_adicional_base: 320, descripcion: 'Fresas, moras y frambuesas reducidas al fuego' },
-  { id: 'relleno_crema_pastelera', nombre: 'Crema Pastelera Artesanal de Vainilla', precio_adicional_base: 200, descripcion: 'Leche entera, yemas frescas y vainilla de Madagascar' },
-  { id: 'relleno_nutella', nombre: 'Nutella Pura y Avellanas Tostadas', precio_adicional_base: 450, descripcion: 'Crema original de cacao y avellanas' },
+  { id: 'relleno_ganache', nombre: 'Ganache Sedoso de Chocolate Belga 56%', precio_adicional_base: 380, descripcion: 'Emulsión de chocolate amargo con crema 35%' },
+  { id: 'relleno_frutos_rojos', nombre: 'Confitura Casera de Frutos Rojos Silvestres', precio_adicional_base: 320, descripcion: 'Frambuesas, moras y arándanos reducidas al fuego' },
+  { id: 'relleno_nutella', nombre: 'Nutella Pura con Crujiente de Avellanas', precio_adicional_base: 450, descripcion: 'Capas generosas de avellana y chocolate con praliné' },
   { id: 'relleno_toffee', nombre: 'Caramelo Salado / Toffee Artesanal', precio_adicional_base: 220, descripcion: 'Caramelo cocido con mantequilla y flor de sal' },
-  { id: 'relleno_maracuya', nombre: 'Reducción de Maracuyá Cítrico', precio_adicional_base: 260, descripcion: 'Pulpas de chinola fresca con notas ácidas balanceadas' },
-  { id: 'relleno_buttercream', nombre: 'Buttercream Suizo de Vainilla', precio_adicional_base: 220, descripcion: 'Merengue suizo emulsionado con mantequilla' },
+  { id: 'relleno_maracuya', nombre: 'Curd Cítrico de Maracuyá / Chinola Fresca', precio_adicional_base: 220, descripcion: 'Contraste ácido tropical perfecto y aromático' },
 ];
 
 export const OPCIONES_DECORACION_DETALLADAS: OpcionConfigurable[] = [
-  { id: 'deco_ninguna', nombre: 'Ninguna / Acabado Rústico Natural (Sin Decorar)', precio_adicional_base: 0, descripcion: 'Presentación natural de horneado' },
-  { id: 'deco_caramelo', nombre: 'Baño de Caramelo Dorado al Punto Ámbar', precio_adicional_base: 150, descripcion: 'Caramelo fluido y brillante para quesillos y flanes' },
   { id: 'deco_azucar', nombre: 'Glaseado Real / Azúcar Glass Espolvoreado', precio_adicional_base: 100, descripcion: 'Fina lluvia de azúcar micropulverizada' },
   { id: 'deco_chantilly', nombre: 'Chantilly Suave con Virutas de Chocolate', precio_adicional_base: 250, descripcion: 'Crema batida fresca y ralladura de chocolate' },
   { id: 'deco_buttercream_alisado', nombre: 'Buttercream Alisado Perfecto Bicolor', precio_adicional_base: 350, descripcion: 'Alisado profesional en bordes rectos y degradé' },
@@ -86,13 +84,79 @@ export const OPCIONES_DECORACION_DETALLADAS: OpcionConfigurable[] = [
   { id: 'deco_fondant_3d', nombre: 'Fondant Temático Personalizado con Figuras 3D', precio_adicional_base: 850, descripcion: 'Modelado artesanal manual en pasta de azúcar' },
 ];
 
+export function getExtraCategory(extra: CotizacionExtra): CategoriaExtra {
+  if (extra.categoria) return extra.categoria;
+  const lowerId = (extra.id || '').toLowerCase();
+  const lowerName = (extra.nombre || '').toLowerCase();
+
+  if (lowerId.includes('topper') || lowerName.includes('topper')) {
+    return 'topper';
+  }
+  if (
+    lowerId.includes('sticker') ||
+    lowerName.includes('sticker') ||
+    lowerName.includes('etiqueta') ||
+    lowerName.includes('sello')
+  ) {
+    return 'sticker';
+  }
+  if (
+    lowerId.includes('tarjeta') ||
+    lowerName.includes('tarjeta') ||
+    lowerName.includes('mensaje') ||
+    lowerName.includes('dedicatoria')
+  ) {
+    return 'tarjeta';
+  }
+  if (
+    lowerId.startsWith('insumo_var_') ||
+    lowerId.includes('caja') ||
+    lowerId.includes('empaque') ||
+    lowerId.includes('base') ||
+    lowerId.includes('domo') ||
+    lowerId.includes('bolsa') ||
+    lowerName.includes('caja') ||
+    lowerName.includes('empaque') ||
+    lowerName.includes('base') ||
+    lowerName.includes('domo') ||
+    lowerName.includes('bolsa') ||
+    lowerName.includes('plato') ||
+    lowerName.includes('envase')
+  ) {
+    return 'empaque';
+  }
+  return 'otro';
+}
+
 export function buildDefaultExtrasList(insumosMap?: Map<number, Insumo>): CotizacionExtra[] {
   const baseList: CotizacionExtra[] = [
-    { id: 'topper', nombre: "Topper Acrílico 'Feliz Cumpleaños' / Personalizado", precio: 250 },
-    { id: 'caja_lujo', nombre: 'Caja de Lujo con Ventana y Lazo Satinado Frambuesa', precio: 175 },
-    { id: 'vela_volcan', nombre: 'Vela Volcán Chispas Doradas', precio: 120 },
-    { id: 'tarjeta_dedicatoria', nombre: 'Tarjeta Artesanal con Caligrafía Manual', precio: 90 },
-    { id: 'macarons_extra', nombre: 'Set de 4 Macarons de Frambuesa y Pistacho Extra', precio: 290 },
+    // 📦 Empaques
+    { id: 'empaque_caja_lujo', nombre: 'Caja de Lujo con Ventana y Lazo Satinado Frambuesa', precio: 175, categoria: 'empaque' },
+    { id: 'empaque_caja_repostera', nombre: 'Caja Repostera Alta Reforzada con Asa de Transporte', precio: 140, categoria: 'empaque' },
+    { id: 'empaque_base_rigida', nombre: 'Base Rígida Metalizada Dorada / Plateada Reforzada', precio: 85, categoria: 'empaque' },
+    { id: 'empaque_domo_alto', nombre: 'Domo Plástico Cristalino Alto Antivuelco', precio: 65, categoria: 'empaque' },
+    { id: 'empaque_bolsa_kraft', nombre: 'Bolsa Ecológica Kraft de Regalo con Asas de Cinta', precio: 45, categoria: 'empaque' },
+
+    // 🎂 Toppers
+    { id: 'topper_acrilico_feliz_cumple', nombre: "Topper Acrílico 'Feliz Cumpleaños' Espejado Dorado/Plateado", precio: 250, categoria: 'topper' },
+    { id: 'topper_personalizado_nombre', nombre: 'Topper Personalizado con Nombre & Edad (Corte Láser)', precio: 350, categoria: 'topper' },
+    { id: 'topper_madera_elegante', nombre: 'Topper Rústico Elegante en Madera Calada', precio: 280, categoria: 'topper' },
+    { id: 'topper_mini_cupcakes', nombre: 'Mini Toppers Temáticos para Cupcakes (Pack x 6 ud)', precio: 160, categoria: 'topper' },
+
+    // 🏷️ Stickers
+    { id: 'sticker_personalizado_evento', nombre: 'Sticker / Etiqueta Adhesiva Personalizada (Nombre & Ocasión)', precio: 60, categoria: 'sticker' },
+    { id: 'sticker_hecho_con_amor', nombre: "Sticker Circular Artesanal 'Hecho a Mano con Amor'", precio: 40, categoria: 'sticker' },
+    { id: 'sticker_sello_seguridad', nombre: 'Sello Adhesivo de Garantía para Caja / Cinta con Logo', precio: 35, categoria: 'sticker' },
+
+    // 💌 Tarjeta con Mensaje
+    { id: 'tarjeta_caligrafia_artesanal', nombre: 'Tarjeta Artesanal Caligrafiada a Mano con Dedicatoria', precio: 90, categoria: 'tarjeta' },
+    { id: 'tarjeta_regalo_sobre_satinado', nombre: 'Tarjeta de Regalo Premium en Sobre Satinado Sellado', precio: 120, categoria: 'tarjeta' },
+    { id: 'tarjeta_postal_mini', nombre: 'Mini Tarjeta Postal con Mensaje y Broche Dorado', precio: 75, categoria: 'tarjeta' },
+
+    // ✨ Otros / Detalles
+    { id: 'vela_volcan', nombre: 'Vela Volcán Chispas Doradas', precio: 120, categoria: 'otro' },
+    { id: 'vela_numerica', nombre: 'Vela Numérica Metalizada Dorada / Oro Rosa', precio: 80, categoria: 'otro' },
+    { id: 'macarons_extra', nombre: 'Set de 4 Macarons de Frambuesa y Pistacho Extra', precio: 290, categoria: 'otro' },
   ];
 
   if (insumosMap) {
@@ -104,10 +168,31 @@ export function buildDefaultExtrasList(insumosMap?: Map<number, Insumo>): Cotiza
         } else if (insumo.precio_compra > 0) {
           precio = Math.max(5, Math.ceil(insumo.precio_compra / (insumo.presentacion_empaque || 1)));
         }
+        const lowerName = (insumo.nombre || '').toLowerCase();
+        let cat: CategoriaExtra = 'otro';
+        if (
+          lowerName.includes('caja') ||
+          lowerName.includes('base') ||
+          lowerName.includes('domo') ||
+          lowerName.includes('bolsa') ||
+          lowerName.includes('empaque') ||
+          lowerName.includes('envase') ||
+          lowerName.includes('plato')
+        ) {
+          cat = 'empaque';
+        } else if (lowerName.includes('topper')) {
+          cat = 'topper';
+        } else if (lowerName.includes('sticker') || lowerName.includes('etiqueta')) {
+          cat = 'sticker';
+        } else if (lowerName.includes('tarjeta') || lowerName.includes('mensaje')) {
+          cat = 'tarjeta';
+        }
+
         baseList.push({
           id: `insumo_var_${insumo.id}`,
           nombre: `${insumo.nombre} (${insumo.unidad_compra})`,
           precio,
+          categoria: cat,
         });
       }
     });
@@ -229,10 +314,30 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
               } else if (insumo.precio_compra > 0) {
                 precio = Math.max(5, Math.ceil(insumo.precio_compra / (insumo.presentacion_empaque || 1)));
               }
+              const lowerName = (insumo.nombre || '').toLowerCase();
+              let cat: CategoriaExtra = 'otro';
+              if (
+                lowerName.includes('caja') ||
+                lowerName.includes('base') ||
+                lowerName.includes('domo') ||
+                lowerName.includes('bolsa') ||
+                lowerName.includes('empaque') ||
+                lowerName.includes('envase') ||
+                lowerName.includes('plato')
+              ) {
+                cat = 'empaque';
+              } else if (lowerName.includes('topper')) {
+                cat = 'topper';
+              } else if (lowerName.includes('sticker') || lowerName.includes('etiqueta')) {
+                cat = 'sticker';
+              } else if (lowerName.includes('tarjeta') || lowerName.includes('mensaje')) {
+                cat = 'tarjeta';
+              }
               newFromInsumos.push({
                 id,
                 nombre: `${insumo.nombre} (${insumo.unidad_compra})`,
                 precio,
+                categoria: cat,
               });
             }
           }
@@ -246,30 +351,50 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
     }
   }, [insumosMap]);
 
-  // Filtros y búsqueda para el catálogo completo de extras
+  // Filtros y búsqueda para el catálogo completo de extras categorizado
   const [searchExtraTerm, setSearchExtraTerm] = useState('');
-  const [filterExtraCategory, setFilterExtraCategory] = useState<'all' | 'empaques' | 'detalles'>('all');
+  const [filterExtraCategory, setFilterExtraCategory] = useState<
+    'all' | 'empaques' | 'toppers' | 'stickers' | 'tarjetas' | 'otros'
+  >('all');
 
   const filteredExtrasList = useMemo(() => {
     return extrasOpciones.filter((extra) => {
       const matchesSearch = extra.nombre.toLowerCase().includes(searchExtraTerm.toLowerCase());
-      const isEmpaque = extra.id.startsWith('insumo_var_');
+      const cat = getExtraCategory(extra);
       let matchesCategory = true;
       if (filterExtraCategory === 'empaques') {
-        matchesCategory = isEmpaque;
-      } else if (filterExtraCategory === 'detalles') {
-        matchesCategory = !isEmpaque;
+        matchesCategory = cat === 'empaque';
+      } else if (filterExtraCategory === 'toppers') {
+        matchesCategory = cat === 'topper';
+      } else if (filterExtraCategory === 'stickers') {
+        matchesCategory = cat === 'sticker';
+      } else if (filterExtraCategory === 'tarjetas') {
+        matchesCategory = cat === 'tarjeta';
+      } else if (filterExtraCategory === 'otros') {
+        matchesCategory = cat === 'otro';
       }
       return matchesSearch && matchesCategory;
     });
   }, [extrasOpciones, searchExtraTerm, filterExtraCategory]);
 
   const empaquesCount = useMemo(
-    () => extrasOpciones.filter((e) => e.id.startsWith('insumo_var_')).length,
+    () => extrasOpciones.filter((e) => getExtraCategory(e) === 'empaque').length,
     [extrasOpciones]
   );
-  const detallesCount = useMemo(
-    () => extrasOpciones.filter((e) => !e.id.startsWith('insumo_var_')).length,
+  const toppersCount = useMemo(
+    () => extrasOpciones.filter((e) => getExtraCategory(e) === 'topper').length,
+    [extrasOpciones]
+  );
+  const stickersCount = useMemo(
+    () => extrasOpciones.filter((e) => getExtraCategory(e) === 'sticker').length,
+    [extrasOpciones]
+  );
+  const tarjetasCount = useMemo(
+    () => extrasOpciones.filter((e) => getExtraCategory(e) === 'tarjeta').length,
+    [extrasOpciones]
+  );
+  const otrosCount = useMemo(
+    () => extrasOpciones.filter((e) => getExtraCategory(e) === 'otro').length,
     [extrasOpciones]
   );
 
@@ -308,6 +433,14 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
   const [decoracion, setDecoracion] = useState(OPCIONES_DECORACION_DETALLADAS[0].nombre);
   const [dedicatoria, setDedicatoria] = useState('');
   const [selectedExtras, setSelectedExtras] = useState<string[]>([]);
+  const dedicatoriaInputRef = useRef<HTMLInputElement>(null);
+
+  const isTarjetaSelected = useMemo(() => {
+    return selectedExtras.some((id) => {
+      const extra = extrasOpciones.find((e) => e.id === id);
+      return extra ? getExtraCategory(extra) === 'tarjeta' : false;
+    });
+  }, [selectedExtras, extrasOpciones]);
   const [cantidad, setCantidad] = useState<number>(1);
   const [precioBaseManual, setPrecioBaseManual] = useState<number | ''>('');
 
@@ -1151,27 +1284,53 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
               />
             </div>
 
-            {/* Dedicatoria */}
+            {/* Dedicatoria / Tarjeta con Mensaje */}
             <div className="sm:col-span-2 md:col-span-3">
-              <label className="block font-bold text-chocolate-700 mb-1">
-                Dedicatoria / Mensaje Personalizado (Opcional)
-              </label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block font-bold text-chocolate-700 text-xs">
+                  Dedicatoria / Mensaje Personalizado (Opcional)
+                </label>
+                {isTarjetaSelected && (
+                  <span className="text-[10px] font-extrabold text-emerald-700 bg-emerald-100 px-2.5 py-0.5 rounded-full flex items-center gap-1 animate-fade-in shadow-xs">
+                    <span>💌</span> Tarjeta con Mensaje Seleccionada
+                  </span>
+                )}
+              </div>
+
+              {isTarjetaSelected && (
+                <div className="mb-2 p-2.5 rounded-xl bg-emerald-50 border border-emerald-300 text-emerald-800 text-[11px] flex items-center gap-2 animate-fade-in">
+                  <span className="text-base shrink-0">✍️</span>
+                  <span>
+                    <strong>¡Has incluido una Tarjeta con Mensaje!</strong> Escribe a continuación el texto o dedicatoria personalizada que se caligrafiará en la tarjeta del producto:
+                  </span>
+                </div>
+              )}
+
               <input
+                ref={dedicatoriaInputRef}
                 type="text"
-                placeholder="Ej. ¡Feliz Cumpleaños Mariana! Que cumplas muchos más"
+                placeholder={
+                  isTarjetaSelected
+                    ? "Escribe aquí la dedicatoria para la tarjeta (ej. '¡Feliz Cumpleaños Mariana! Con todo nuestro cariño...')"
+                    : "Ej. ¡Feliz Cumpleaños Mariana! Que cumplas muchos más..."
+                }
                 value={dedicatoria}
                 onChange={(e) => setDedicatoria(e.target.value)}
-                className="w-full px-3.5 py-2.5 rounded-xl border border-trigo-300 focus:ring-2 focus:ring-frambuesa-400 focus:outline-none text-xs bg-white text-chocolate-900"
+                className={`w-full px-3.5 py-2.5 rounded-xl border text-xs bg-white text-chocolate-900 transition-all focus:outline-none ${
+                  isTarjetaSelected && !dedicatoria.trim()
+                    ? 'border-emerald-400 ring-2 ring-emerald-200/80 shadow-sm placeholder:text-emerald-700/60'
+                    : 'border-trigo-300 focus:ring-2 focus:ring-frambuesa-400'
+                }`}
               />
             </div>
 
             {/* Extras y Productos Variables Opcionales */}
             <div className="sm:col-span-2 md:col-span-3 bg-canvas p-4 rounded-2xl border border-trigo-200 space-y-3">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   <span className="font-bold text-chocolate-800 flex items-center gap-1.5 text-xs">
                     <Gift className="w-4 h-4 text-frambuesa-500" />
-                    <span>Adicionales, Extras & Productos Variables Opcionales:</span>
+                    <span>Adicionales, Extras & Productos Variables:</span>
                   </span>
                   {selectedExtras.length > 0 && (
                     <span className="text-[10px] font-extrabold bg-frambuesa-100 text-frambuesa-800 px-2 py-0.5 rounded-full">
@@ -1201,23 +1360,24 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
                 </div>
               </div>
 
-              {/* Barra de Búsqueda y Píldoras de Filtro de Extras */}
-              <div className="flex flex-col sm:flex-row items-center gap-2">
-                <div className="relative flex-1 w-full">
+              {/* Barra de Búsqueda y Píldoras de Filtro de Extras (Empaques, Toppers, Stickers, Tarjetas, Otros) */}
+              <div className="flex flex-col gap-2">
+                <div className="relative w-full">
                   <Search className="w-3.5 h-3.5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
                   <input
                     type="text"
-                    placeholder="Buscar producto variable o extra (ej. Caja, Plato, Topper, Sticker)..."
+                    placeholder="Buscar producto variable o extra (ej. Caja, Topper, Sticker, Tarjeta, Vela)..."
                     value={searchExtraTerm}
                     onChange={(e) => setSearchExtraTerm(e.target.value)}
-                    className="w-full pl-8 pr-3 py-1.5 rounded-xl border border-trigo-200 text-xs bg-white text-chocolate-900 placeholder:text-gray-400"
+                    className="w-full pl-8 pr-3 py-1.5 rounded-xl border border-trigo-200 text-xs bg-white text-chocolate-900 placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-frambuesa-400"
                   />
                 </div>
-                <div className="flex items-center gap-1 w-full sm:w-auto overflow-x-auto text-[11px]">
+                
+                <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-[11px] scrollbar-none">
                   <button
                     type="button"
                     onClick={() => setFilterExtraCategory('all')}
-                    className={`px-2.5 py-1 rounded-lg font-bold transition-colors whitespace-nowrap ${
+                    className={`px-2.5 py-1 rounded-lg font-bold transition-colors whitespace-nowrap shrink-0 ${
                       filterExtraCategory === 'all'
                         ? 'bg-chocolate-700 text-white shadow-sm'
                         : 'bg-white text-chocolate-600 border border-trigo-200 hover:bg-crema'
@@ -1228,38 +1388,91 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
                   <button
                     type="button"
                     onClick={() => setFilterExtraCategory('empaques')}
-                    className={`px-2.5 py-1 rounded-lg font-bold transition-colors whitespace-nowrap ${
+                    className={`px-2.5 py-1 rounded-lg font-bold transition-colors whitespace-nowrap shrink-0 flex items-center gap-1 ${
                       filterExtraCategory === 'empaques'
                         ? 'bg-purple-600 text-white shadow-sm'
                         : 'bg-purple-50 text-purple-700 border border-purple-200 hover:bg-purple-100'
                     }`}
                   >
-                    📦 Empaques ({empaquesCount})
+                    <span>📦</span> Empaques ({empaquesCount})
                   </button>
                   <button
                     type="button"
-                    onClick={() => setFilterExtraCategory('detalles')}
-                    className={`px-2.5 py-1 rounded-lg font-bold transition-colors whitespace-nowrap ${
-                      filterExtraCategory === 'detalles'
-                        ? 'bg-frambuesa-600 text-white shadow-sm'
-                        : 'bg-frambuesa-50 text-frambuesa-700 border border-frambuesa-200 hover:bg-frambuesa-100'
+                    onClick={() => setFilterExtraCategory('toppers')}
+                    className={`px-2.5 py-1 rounded-lg font-bold transition-colors whitespace-nowrap shrink-0 flex items-center gap-1 ${
+                      filterExtraCategory === 'toppers'
+                        ? 'bg-pink-600 text-white shadow-sm'
+                        : 'bg-pink-50 text-pink-700 border border-pink-200 hover:bg-pink-100'
                     }`}
                   >
-                    ✨ Detalles & Toppers ({detallesCount})
+                    <span>🎂</span> Toppers ({toppersCount})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFilterExtraCategory('stickers')}
+                    className={`px-2.5 py-1 rounded-lg font-bold transition-colors whitespace-nowrap shrink-0 flex items-center gap-1 ${
+                      filterExtraCategory === 'stickers'
+                        ? 'bg-amber-600 text-white shadow-sm'
+                        : 'bg-amber-50 text-amber-800 border border-amber-200 hover:bg-amber-100'
+                    }`}
+                  >
+                    <span>🏷️</span> Stickers ({stickersCount})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFilterExtraCategory('tarjetas')}
+                    className={`px-2.5 py-1 rounded-lg font-bold transition-colors whitespace-nowrap shrink-0 flex items-center gap-1 ${
+                      filterExtraCategory === 'tarjetas'
+                        ? 'bg-emerald-600 text-white shadow-sm'
+                        : 'bg-emerald-50 text-emerald-800 border border-emerald-200 hover:bg-emerald-100'
+                    }`}
+                  >
+                    <span>💌</span> Tarjetas con Mensaje ({tarjetasCount})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFilterExtraCategory('otros')}
+                    className={`px-2.5 py-1 rounded-lg font-bold transition-colors whitespace-nowrap shrink-0 flex items-center gap-1 ${
+                      filterExtraCategory === 'otros'
+                        ? 'bg-chocolate-600 text-white shadow-sm'
+                        : 'bg-crema text-chocolate-700 border border-trigo-200 hover:bg-trigo-100'
+                    }`}
+                  >
+                    <span>✨</span> Otros ({otrosCount})
                   </button>
                 </div>
               </div>
 
               {/* Grid Scrollable de Extras */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 max-h-56 overflow-y-auto p-1 border border-trigo-100 rounded-xl bg-white/70">
+              <div 
+                className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 max-h-56 overflow-y-auto p-1 border border-trigo-100 rounded-xl bg-white/70"
+                style={{ WebkitOverflowScrolling: 'touch' }}
+              >
                 {filteredExtrasList.length === 0 ? (
                   <p className="sm:col-span-3 text-center py-4 text-xs text-gray-400">
-                    No se encontraron productos variables o extras con ese término.
+                    No se encontraron productos variables o extras en esta categoría.
                   </p>
                 ) : (
                   filteredExtrasList.map((extra) => {
                     const isChecked = selectedExtras.includes(extra.id);
-                    const isEmpaque = extra.id.startsWith('insumo_var_');
+                    const cat = getExtraCategory(extra);
+                    
+                    const catBadgeStyle: Record<CategoriaExtra, string> = {
+                      empaque: 'bg-purple-100 text-purple-700 border-purple-200',
+                      topper: 'bg-pink-100 text-pink-700 border-pink-200',
+                      sticker: 'bg-amber-100 text-amber-800 border-amber-200',
+                      tarjeta: 'bg-emerald-100 text-emerald-800 border-emerald-200',
+                      otro: 'bg-trigo-100 text-chocolate-700 border-trigo-200',
+                    };
+
+                    const catLabel: Record<CategoriaExtra, string> = {
+                      empaque: '📦 Empaque',
+                      topper: '🎂 Topper',
+                      sticker: '🏷️ Sticker',
+                      tarjeta: '💌 Tarjeta con Mensaje',
+                      otro: '✨ Detalle Especial',
+                    };
+
                     return (
                       <label
                         key={extra.id}
@@ -1277,19 +1490,22 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
                               setSelectedExtras((prev) => prev.filter((id) => id !== extra.id));
                             } else {
                               setSelectedExtras((prev) => [...prev, extra.id]);
+                              if (cat === 'tarjeta' && !dedicatoria.trim()) {
+                                setTimeout(() => {
+                                  dedicatoriaInputRef.current?.focus();
+                                }, 100);
+                              }
                             }
                           }}
-                          className="w-4 h-4 rounded text-frambuesa-600 focus:ring-frambuesa-400 cursor-pointer"
+                          className="w-4 h-4 rounded text-frambuesa-600 focus:ring-frambuesa-400 cursor-pointer shrink-0"
                         />
                         <div className="flex-1 min-w-0">
-                          <span className="block truncate text-[11px]">{extra.nombre}</span>
-                          <span className={`text-[8px] font-semibold px-1 py-0.2 rounded inline-block mt-0.5 ${
-                            isEmpaque ? 'bg-purple-100 text-purple-700' : 'bg-amber-100 text-amber-800'
-                          }`}>
-                            {isEmpaque ? 'Insumo Variable' : 'Detalle Especial'}
+                          <span className="block truncate text-[11px] leading-snug">{extra.nombre}</span>
+                          <span className={`text-[8px] font-bold px-1.5 py-0.2 rounded inline-block mt-0.5 border ${catBadgeStyle[cat]}`}>
+                            {catLabel[cat]}
                           </span>
                         </div>
-                        <span className="text-frambuesa-700 whitespace-nowrap font-extrabold text-xs">
+                        <span className="text-frambuesa-700 whitespace-nowrap font-extrabold text-xs shrink-0">
                           +{formatCurrency(extra.precio)}
                         </span>
                       </label>
@@ -1477,21 +1693,30 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
           </div>
         </div>
 
-        {/* Botones de Acción */}
-        <div className="flex items-center justify-end gap-3 pt-3 border-t border-trigo-200">
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-4 py-2.5 rounded-xl border border-trigo-300 text-xs font-semibold text-chocolate-600 hover:bg-crema transition-colors"
-          >
-            Cancelar
-          </button>
-          <button
-            type="submit"
-            className="px-6 py-2.5 rounded-xl bg-frambuesa-500 hover:bg-frambuesa-600 text-white font-bold text-xs shadow-frambuesa-glow hover:shadow-lg transition-all transform hover:scale-105"
-          >
-            {initialCotizacion ? 'Guardar Cambios' : 'Crear Cotización'}
-          </button>
+        {/* Botones de Acción Sticky para Mobile & Desktop */}
+        <div className="sticky bottom-0 -mx-4 -mb-4 sm:-mx-6 sm:-mb-6 p-4 sm:px-6 bg-white/95 backdrop-blur-md border-t border-trigo-200 flex items-center justify-between gap-3 shadow-lg z-20 pb-[calc(1rem+env(safe-area-inset-bottom,0px))]">
+          <div className="text-left">
+            <span className="text-[11px] text-gray-500 block">Total Cotización:</span>
+            <span className="text-base sm:text-lg font-black text-frambuesa-600 leading-none">
+              {formatCurrency(totalCotizacion)}
+            </span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-3.5 sm:px-4 py-2.5 rounded-xl border border-trigo-300 text-xs font-semibold text-chocolate-600 hover:bg-crema transition-colors"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              className="px-4 sm:px-6 py-2.5 rounded-xl bg-frambuesa-500 hover:bg-frambuesa-600 text-white font-bold text-xs shadow-frambuesa-glow hover:shadow-lg transition-all transform hover:scale-105 active:scale-95 whitespace-nowrap"
+            >
+              {initialCotizacion ? 'Guardar Cambios' : 'Crear Cotización'}
+            </button>
+          </div>
         </div>
       </form>
 

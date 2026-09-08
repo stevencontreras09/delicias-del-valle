@@ -51,7 +51,7 @@ export const Modal: React.FC<ModalProps> = ({
   }[maxWidth];
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-chocolate-950/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 md:p-6 animate-fade-in">
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-chocolate-950/60 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 md:p-6 animate-fade-in overscroll-contain">
       <div
         className="fixed inset-0"
         onClick={onClose}
@@ -59,22 +59,22 @@ export const Modal: React.FC<ModalProps> = ({
       />
 
       <div
-        className={`relative bg-white rounded-3xl shadow-warm-xl border border-trigo-200/80 w-full ${maxWidthClasses} overflow-hidden my-auto z-10 flex flex-col max-h-[92vh] transform transition-all animate-scale-up`}
+        className={`relative bg-white rounded-2xl sm:rounded-3xl shadow-warm-xl border border-trigo-200/80 w-full ${maxWidthClasses} overflow-hidden my-auto z-10 flex flex-col max-h-[92vh] max-h-[90dvh] transform transition-all animate-scale-up`}
       >
         {/* Cabecera del Modal con estilo artesanal */}
-        <div className="bg-crema px-6 py-4 border-b border-trigo-200 flex items-center justify-between flex-shrink-0">
-          <div>
-            <h3 className="text-xl font-bold text-chocolate-700 font-serif leading-tight">
+        <div className="bg-crema px-4 sm:px-6 py-3.5 sm:py-4 border-b border-trigo-200 flex items-center justify-between flex-shrink-0">
+          <div className="min-w-0 pr-2">
+            <h3 className="text-lg sm:text-xl font-bold text-chocolate-700 font-serif leading-tight truncate">
               {title}
             </h3>
             {subtitle && (
-              <p className="text-xs text-chocolate-500 mt-0.5 font-medium">{subtitle}</p>
+              <p className="text-[11px] sm:text-xs text-chocolate-500 mt-0.5 font-medium truncate">{subtitle}</p>
             )}
           </div>
           {showCloseButton && (
             <button
               onClick={onClose}
-              className="text-chocolate-400 hover:text-frambuesa-600 hover:bg-frambuesa-50 p-2 rounded-xl transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-frambuesa-400"
+              className="text-chocolate-400 hover:text-frambuesa-600 hover:bg-frambuesa-50 p-2 rounded-xl transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-frambuesa-400 shrink-0 min-w-[40px] min-h-[40px] flex items-center justify-center active:scale-95"
               aria-label="Cerrar modal"
             >
               <X className="w-5 h-5" />
@@ -82,8 +82,11 @@ export const Modal: React.FC<ModalProps> = ({
           )}
         </div>
 
-        {/* Contenido con scroll suave */}
-        <div className="p-6 overflow-y-auto flex-1 bg-white text-panadero">
+        {/* Contenido con scroll suave optimizado para touch / iOS / Android */}
+        <div 
+          className="p-4 sm:p-6 overflow-y-auto flex-1 bg-white text-panadero overscroll-contain"
+          style={{ WebkitOverflowScrolling: 'touch' }}
+        >
           {children}
         </div>
       </div>

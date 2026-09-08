@@ -110,10 +110,13 @@ export interface RecetaCostosCalculados {
   ganancia_estimada: number;
 }
 
+export type CategoriaExtra = 'empaque' | 'topper' | 'sticker' | 'tarjeta' | 'otro';
+
 export interface CotizacionExtra {
   id: string;
   nombre: string;
   precio: number;
+  categoria?: CategoriaExtra;
 }
 
 export interface CotizacionItem {
