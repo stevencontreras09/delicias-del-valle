@@ -1693,26 +1693,26 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
           </div>
         </div>
 
-        {/* Botones de Acción Sticky para Mobile & Desktop */}
-        <div className="sticky bottom-0 -mx-4 -mb-4 sm:-mx-6 sm:-mb-6 p-4 sm:px-6 bg-white/95 backdrop-blur-md border-t border-trigo-200 flex items-center justify-between gap-3 shadow-lg z-20 pb-[calc(1rem+env(safe-area-inset-bottom,0px))]">
-          <div className="text-left">
+        {/* Botones de Acción */}
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 border-t border-trigo-200">
+          <div className="text-left w-full sm:w-auto">
             <span className="text-[11px] text-gray-500 block">Total Cotización:</span>
             <span className="text-base sm:text-lg font-black text-frambuesa-600 leading-none">
               {formatCurrency(totalCotizacion)}
             </span>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center justify-end gap-2 w-full sm:w-auto">
             <button
               type="button"
               onClick={onClose}
-              className="px-3.5 sm:px-4 py-2.5 rounded-xl border border-trigo-300 text-xs font-semibold text-chocolate-600 hover:bg-crema transition-colors"
+              className="px-4 py-2.5 rounded-xl border border-trigo-300 text-xs font-semibold text-chocolate-600 hover:bg-crema transition-colors"
             >
               Cancelar
             </button>
             <button
               type="submit"
-              className="px-4 sm:px-6 py-2.5 rounded-xl bg-frambuesa-500 hover:bg-frambuesa-600 text-white font-bold text-xs shadow-frambuesa-glow hover:shadow-lg transition-all transform hover:scale-105 active:scale-95 whitespace-nowrap"
+              className="px-6 py-2.5 rounded-xl bg-frambuesa-500 hover:bg-frambuesa-600 text-white font-bold text-xs shadow-frambuesa-glow hover:shadow-lg transition-all transform hover:scale-105 active:scale-95 whitespace-nowrap"
             >
               {initialCotizacion ? 'Guardar Cambios' : 'Crear Cotización'}
             </button>
