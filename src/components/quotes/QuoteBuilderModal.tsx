@@ -10,7 +10,11 @@ import {
 import { useApp } from '../../context/AppContext';
 import { Modal } from '../ui/Modal';
 import { formatCurrency } from '../../utils/formatters';
-import { calcularCostosReceta } from '../../utils/calculations';
+import {
+  calcularCostosReceta,
+  getRecipePortionsCount,
+  getPorcionOpciones,
+} from '../../utils/calculations';
 import {
   Plus,
   Trash2,
@@ -365,6 +369,16 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
   const currentReceta = useMemo(() => {
     return recetas.find((r) => r.id === selectedRecetaId) || recetas[0];
   }, [recetas, selectedRecetaId]);
+
+  // Porciones base de la receta seleccionada en el cotizador
+  const basePorcionesQuote = useMemo(() => {
+    if (!currentReceta) return 12;
+    return getRecipePortionsCount(currentReceta);
+  }, [currentReceta]);
+
+  const porcionQuoteOpciones = useMemo(() => {
+    return getPorcionOpciones(basePorcionesQuote, currentReceta?.rendimiento_unidad);
+  }, [basePorcionesQuote, currentReceta?.rendimiento_unidad]);
 
   // Inicializar nombre del producto en el buscador
   useEffect(() => {
@@ -763,16 +777,15 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
                       setFactorReceta(factor);
                     } else {
                       setIsCustomMiniSelected(false);
-                      if (val.includes('½ LB') || val.includes('Pack x 6')) {
+                      const matchingPorcion = porcionQuoteOpciones.find((p) => val.startsWith(p.label));
+                      if (matchingPorcion) {
+                        setFactorReceta(matchingPorcion.factor);
+                      } else if (val.includes('½ LB') || val.includes('Pack x 6')) {
                         setFactorReceta(0.5);
                       } else if (val.includes('2 LB') || val.includes('2x')) {
                         setFactorReceta(2.0);
                       } else if (val.includes('3 LB')) {
                         setFactorReceta(3.0);
-                      } else if (val.includes('1 Porción Individual') || val.includes('0.08x')) {
-                        setFactorReceta(0.0833);
-                      } else if (val.includes('Pack x 4 Porciones') || val.includes('0.33x')) {
-                        setFactorReceta(0.3333);
                       } else {
                         setFactorReceta(1.0);
                       }
@@ -790,10 +803,11 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
                   <option value="1 Molde Bundt 24cm (12-14 porciones)">1 Molde Bundt 24cm (12-14 porciones) [1x]</option>
                 </optgroup>
                 <optgroup label="🍰 Formato Porción (Rebanadas & Platos)">
-                  <option value="1 Porción Individual (Slice)">1 Porción Individual (Slice) [0.08x]</option>
-                  <option value="Pack x 4 Porciones">Pack x 4 Porciones [0.33x]</option>
-                  <option value="Pack x 6 Porciones">Pack x 6 Porciones [0.5x]</option>
-                  <option value="Bandeja 12 porciones">Bandeja 12 porciones [1x]</option>
+                  {porcionQuoteOpciones.map((opc) => (
+                    <option key={opc.label} value={`${opc.label} [${opc.factor}x]`}>
+                      {opc.label} [{opc.factor}x] - {opc.descripcion}
+                    </option>
+                  ))}
                 </optgroup>
                 <optgroup label="🧁 Formato Mini (Bocaditos & Mesa de Dulces)">
                   <option value="Caja x 12 Mini Bocaditos">Caja x 12 Mini Bocaditos [0.35x]</option>

@@ -1,10 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Receta, Insumo } from '../../types';
 import { Modal } from '../ui/Modal';
 import { formatCurrency, formatUnit } from '../../utils/formatters';
 import {
   calcularCostosReceta,
   enriquecerIngredientes,
+  getRecipePortionsCount,
+  getPorcionOpciones,
+  FormatoOpcion,
 } from '../../utils/calculations';
 import {
   Clock,
@@ -26,24 +29,12 @@ interface RecipeDetailModalProps {
 
 type FormatoPresentacion = 'libra' | 'porcion' | 'mini';
 
-interface FormatoOpcion {
-  label: string;
-  factor: number;
-  descripcion: string;
-}
-
-const FORMATOS_CONFIG: Record<FormatoPresentacion, FormatoOpcion[]> = {
+const FORMATOS_ESTATICOS = {
   libra: [
     { label: '½ LB', factor: 0.5, descripcion: 'Familiar pequeño (8-10 personas)' },
     { label: '1 LB', factor: 1.0, descripcion: 'Estándar artesanal (16-20 personas)' },
     { label: '2 LB', factor: 2.0, descripcion: 'Celebración grande (30-40 personas)' },
     { label: '3 LB', factor: 3.0, descripcion: 'Eventos / Bodas (50+ personas)' },
-  ],
-  porcion: [
-    { label: '1 Porción', factor: 0.0833, descripcion: 'Rebanada / Porción individual servida' },
-    { label: 'Pack x 4', factor: 0.3333, descripcion: 'Caja degustación 4 porciones' },
-    { label: 'Pack x 6', factor: 0.5, descripcion: 'Caja familiar 6 porciones' },
-    { label: 'Bandeja x 12', factor: 1.0, descripcion: 'Bandeja completa 12 porciones' },
   ],
   mini: [
     { label: 'Caja x 12 Mini', factor: 0.4, descripcion: 'Bocaditos / Mini postres mesa dulce' },
@@ -64,13 +55,40 @@ export const RecipeDetailModal: React.FC<RecipeDetailModalProps> = ({
   const [selectedPresetLabel, setSelectedPresetLabel] = useState<string>('1 LB');
   const [customMiniCount, setCustomMiniCount] = useState<number>(12);
   const [isEditingMiniCustom, setIsEditingMiniCustom] = useState<boolean>(false);
+  const [customPorcionCount, setCustomPorcionCount] = useState<number>(1);
+  const [isEditingPorcionCustom, setIsEditingPorcionCustom] = useState<boolean>(false);
 
   // Set de insumos variables activos/seleccionados para aplicar en esta receta
   const [activeVariableIds, setActiveVariableIds] = useState<Set<number>>(new Set());
 
-  // Inicializar sin variables por defecto (muestra el precio base puro)
+  // Cálculo de porciones base de la receta actual
+  const basePorciones = useMemo(() => {
+    if (!receta) return 12;
+    return getRecipePortionsCount(receta);
+  }, [receta]);
+
+  // Opciones dinámicas de porciones adaptadas al rendimiento base
+  const opcionesPorcion = useMemo(() => {
+    return getPorcionOpciones(basePorciones, receta?.rendimiento_unidad);
+  }, [basePorciones, receta?.rendimiento_unidad]);
+
+  const formatosConfig = useMemo<Record<FormatoPresentacion, FormatoOpcion[]>>(() => {
+    return {
+      libra: FORMATOS_ESTATICOS.libra,
+      porcion: opcionesPorcion,
+      mini: FORMATOS_ESTATICOS.mini,
+    };
+  }, [opcionesPorcion]);
+
+  // Inicializar estados al cambiar de receta
   useEffect(() => {
     setActiveVariableIds(new Set());
+    setFormatoActivo('libra');
+    setMultiplier(1);
+    setSelectedPresetLabel('1 LB');
+    setIsEditingMiniCustom(false);
+    setIsEditingPorcionCustom(false);
+    setCustomPorcionCount(1);
   }, [receta?.id]);
 
   const handleToggleVariable = (insumoId: number) => {
@@ -118,6 +136,16 @@ export const RecipeDetailModal: React.FC<RecipeDetailModalProps> = ({
     setMultiplier(opcion.factor);
     setSelectedPresetLabel(opcion.label);
     setIsEditingMiniCustom(false);
+    setIsEditingPorcionCustom(false);
+  };
+
+  const handleCustomPorcionChange = (count: number) => {
+    const validCount = Math.max(1, count);
+    setCustomPorcionCount(validCount);
+    setIsEditingPorcionCustom(true);
+    const factor = Number((validCount / basePorciones).toFixed(4));
+    setMultiplier(factor);
+    setSelectedPresetLabel(`${validCount} ${validCount === 1 ? 'Porción' : 'Porciones'}`);
   };
 
   const handleCustomMiniChange = (count: number) => {
@@ -155,7 +183,7 @@ export const RecipeDetailModal: React.FC<RecipeDetailModalProps> = ({
             <div className="flex items-center gap-1 bg-canvas p-1 rounded-2xl border border-trigo-200">
               <button
                 type="button"
-                onClick={() => handleSelectFormato('libra', FORMATOS_CONFIG.libra[1])}
+                onClick={() => handleSelectFormato('libra', formatosConfig.libra[1])}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
                   formatoActivo === 'libra'
                     ? 'bg-frambuesa-500 text-white shadow-sm'
@@ -168,7 +196,7 @@ export const RecipeDetailModal: React.FC<RecipeDetailModalProps> = ({
 
               <button
                 type="button"
-                onClick={() => handleSelectFormato('porcion', FORMATOS_CONFIG.porcion[0])}
+                onClick={() => handleSelectFormato('porcion', formatosConfig.porcion[0])}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
                   formatoActivo === 'porcion'
                     ? 'bg-frambuesa-500 text-white shadow-sm'
@@ -181,7 +209,7 @@ export const RecipeDetailModal: React.FC<RecipeDetailModalProps> = ({
 
               <button
                 type="button"
-                onClick={() => handleSelectFormato('mini', FORMATOS_CONFIG.mini[0])}
+                onClick={() => handleSelectFormato('mini', formatosConfig.mini[0])}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
                   formatoActivo === 'mini'
                     ? 'bg-frambuesa-500 text-white shadow-sm'
@@ -196,8 +224,8 @@ export const RecipeDetailModal: React.FC<RecipeDetailModalProps> = ({
 
           {/* Opciones Específicas del Formato Seleccionado */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-            {FORMATOS_CONFIG[formatoActivo].map((opc) => {
-              const isSelected = selectedPresetLabel === opc.label;
+            {formatosConfig[formatoActivo].map((opc) => {
+              const isSelected = selectedPresetLabel === opc.label && !isEditingPorcionCustom && !isEditingMiniCustom;
               return (
                 <button
                   key={opc.label}
@@ -226,6 +254,76 @@ export const RecipeDetailModal: React.FC<RecipeDetailModalProps> = ({
               );
             })}
           </div>
+
+          {/* Selector de Cantidad Exacta Personalizada de Porciones */}
+          {formatoActivo === 'porcion' && (
+            <div className="mt-2.5 p-3.5 rounded-2xl bg-canvas border border-trigo-300 flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-fade-in shadow-inner">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-frambuesa-100 flex items-center justify-center text-frambuesa-600 flex-shrink-0">
+                  <PieChart className="w-4 h-4" />
+                </div>
+                <div>
+                  <span className="text-xs font-extrabold text-chocolate-900 block">
+                    ¿Deseas una cantidad específica de porciones?
+                  </span>
+                  <span className="text-[11px] text-gray-500">
+                    Esta receta rinde <b>{basePorciones} porciones</b>. Ajusta la cantidad deseada y los costos se calcularán en tiempo real.
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 self-start sm:self-auto">
+                <div className="flex items-center bg-white rounded-xl border border-trigo-300 shadow-sm p-1">
+                  <button
+                    type="button"
+                    onClick={() => handleCustomPorcionChange(Math.max(1, customPorcionCount - 1))}
+                    className="w-8 h-8 flex items-center justify-center text-chocolate-700 hover:bg-crema active:scale-95 rounded-lg font-bold text-base transition-all"
+                  >
+                    -
+                  </button>
+                  <input
+                    type="number"
+                    min="1"
+                    value={customPorcionCount}
+                    onChange={(e) => handleCustomPorcionChange(parseInt(e.target.value) || 1)}
+                    className="w-16 text-center font-extrabold text-chocolate-900 focus:outline-none text-sm py-1 bg-transparent"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => handleCustomPorcionChange(customPorcionCount + 1)}
+                    className="w-8 h-8 flex items-center justify-center text-chocolate-700 hover:bg-crema active:scale-95 rounded-lg font-bold text-base transition-all"
+                  >
+                    +
+                  </button>
+                </div>
+                <span className="text-xs font-bold text-chocolate-700">porciones</span>
+
+                <div className="hidden sm:flex items-center gap-1 ml-1.5">
+                  {[
+                    1,
+                    Math.max(2, Math.round(basePorciones * 0.25)),
+                    Math.max(3, Math.round(basePorciones * 0.5)),
+                    basePorciones,
+                  ]
+                    .filter((val, idx, arr) => val > 0 && arr.indexOf(val) === idx)
+                    .map((n) => (
+                      <button
+                        key={n}
+                        type="button"
+                        onClick={() => handleCustomPorcionChange(n)}
+                        className={`text-[10px] font-bold px-2 py-1.5 rounded-lg border transition-all ${
+                          customPorcionCount === n && isEditingPorcionCustom
+                            ? 'bg-frambuesa-500 text-white border-frambuesa-600 shadow-sm'
+                            : 'bg-white text-chocolate-700 border-trigo-200 hover:bg-crema'
+                        }`}
+                      >
+                        {n}
+                      </button>
+                    ))}
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Selector de Cantidad Exacta Personalizada de Minis */}
           {formatoActivo === 'mini' && (

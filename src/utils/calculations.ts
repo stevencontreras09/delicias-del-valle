@@ -166,3 +166,105 @@ export function enriquecerIngredientes(
     };
   });
 }
+
+export interface FormatoOpcion {
+  label: string;
+  factor: number;
+  descripcion: string;
+}
+
+/**
+ * Obtiene el número total de porciones para las que rinde la receta base.
+ */
+export function getRecipePortionsCount(receta: Receta): number {
+  if (typeof receta.rendimiento_base === 'number' && receta.rendimiento_base > 1) {
+    return Math.round(receta.rendimiento_base);
+  }
+  if (receta.rendimiento_unidad) {
+    const match = receta.rendimiento_unidad.match(/(\d+)\s*(?:-|a|\/)?\s*(\d+)?\s*porci/i);
+    if (match) {
+      const parsed = parseInt(match[1], 10);
+      if (parsed > 0) return parsed;
+    }
+  }
+  if (receta.rendimiento_base && receta.rendimiento_base > 0) {
+    return Math.round(receta.rendimiento_base);
+  }
+  return 12;
+}
+
+/**
+ * Genera dinámicamente las opciones de porciones predeterminadas
+ * calculadas exactamente con base en el rendimiento configurado de la receta.
+ */
+export function getPorcionOpciones(basePorciones: number, unidadTexto?: string): FormatoOpcion[] {
+  const total = Math.max(1, Math.round(basePorciones));
+
+  if (total === 1) {
+    return [
+      { label: '1 Porción', factor: 1.0, descripcion: 'Porción individual base completa' },
+      { label: 'Pack x 2', factor: 2.0, descripcion: 'Doble porción (2 unidades)' },
+      { label: 'Pack x 4', factor: 4.0, descripcion: 'Pack familiar pequeño (4 unidades)' },
+      { label: 'Pack x 6', factor: 6.0, descripcion: 'Pack reunión (6 unidades)' },
+    ];
+  }
+
+  if (total <= 4) {
+    const list: FormatoOpcion[] = [];
+    for (let i = 1; i <= total; i++) {
+      const factor = Number((i / total).toFixed(4));
+      list.push({
+        label: i === 1 ? '1 Porción' : `Pack x ${i}`,
+        factor,
+        descripcion: i === total ? `Lote completo (${total} porciones)` : `${i} de ${total} porciones de la receta`,
+      });
+    }
+    while (list.length < 4) {
+      const mult = list.length === 2 ? total * 2 : total * 3;
+      list.push({
+        label: `Pack x ${mult}`,
+        factor: Number((mult / total).toFixed(4)),
+        descripcion: `${mult} porciones (${mult / total}x lote)`,
+      });
+    }
+    return list;
+  }
+
+  // Para recetas de 5 o más porciones
+  // 1. Porción individual (1 / total)
+  const f1 = Number((1 / total).toFixed(4));
+  const opc1: FormatoOpcion = {
+    label: '1 Porción',
+    factor: f1,
+    descripcion: `Rebanada / Porción individual (1 de ${total})`,
+  };
+
+  // 2. Cuarto de Lote (~25% de la receta)
+  let count2 = Math.max(2, Math.round(total * 0.25));
+  if (count2 >= total) count2 = Math.max(2, total - 2);
+  const f2 = Number((count2 / total).toFixed(4));
+  const opc2: FormatoOpcion = {
+    label: `Pack x ${count2}`,
+    factor: f2,
+    descripcion: `Cuarto de lote (${count2} de ${total} porciones)`,
+  };
+
+  // 3. Medio Lote (~50% de la receta)
+  let count3 = Math.max(count2 + 1, Math.round(total * 0.5));
+  if (count3 >= total) count3 = total - 1;
+  const f3 = Number((count3 / total).toFixed(4));
+  const opc3: FormatoOpcion = {
+    label: `Pack x ${count3}`,
+    factor: f3,
+    descripcion: `Medio lote (${count3} de ${total} porciones)`,
+  };
+
+  // 4. Lote Completo (100% de la receta)
+  const opc4: FormatoOpcion = {
+    label: `Lote x ${total}`,
+    factor: 1.0,
+    descripcion: `Lote completo (${total} ${unidadTexto || 'porciones'})`,
+  };
+
+  return [opc1, opc2, opc3, opc4];
+}
