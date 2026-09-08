@@ -1,6 +1,7 @@
 import React from 'react';
 import { Navbar } from './Navbar';
 import { ToastContainer } from '../ui/ToastContainer';
+import { UpdateNotificationBanner } from '../ui/UpdateNotificationBanner';
 import { useApp } from '../../context/AppContext';
 
 export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -10,6 +11,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
 
   return (
     <div className="min-h-screen bg-canvas flex flex-col font-sans antialiased text-panadero">
+      <UpdateNotificationBanner />
       <Navbar />
 
       <main className={`flex-1 ${isKitchenMode ? 'p-2 sm:p-4 md:p-6 bg-slate-900 text-slate-100' : 'max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8'}`}>

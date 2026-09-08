@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import {
   Insumo,
   Receta,
@@ -23,7 +23,7 @@ import {
   INITIAL_CLIENTES,
 } from '../utils/initialData';
 import { calcularCostoUnitarioBase } from '../utils/calculations';
-import { playSuccessChime } from '../utils/kitchenAudio';
+import { playSuccessChime, playNotificationChime } from '../utils/kitchenAudio';
 import confetti from 'canvas-confetti';
 import {
   isSupabaseConfigured,
@@ -50,6 +50,7 @@ import {
   fetchClientesFromSupabase,
   syncClienteToSupabase,
   deleteClienteFromSupabase,
+  syncMermaToSupabase,
   cancelarPedidoConInventarioRpc,
 } from '../services/supabaseService';
 import {
@@ -71,7 +72,7 @@ export type ActiveTab =
 
 interface ToastInfo {
   id: string;
-  type: 'success' | 'warning' | 'error' | 'info';
+  type: 'success' | 'warning' | 'error' | 'info' | 'collaborative';
   title: string;
   message: string;
 }
@@ -128,10 +129,11 @@ interface AppContextType {
   toggleTimer: (id: string) => void;
   resetTimer: (id: string) => void;
   toggleKitchenChecklist: (pedidoId: number, checklistKey: string) => void;
-  // Toasts
+  // Toasts & Colaboración
   toasts: ToastInfo[];
-  showToast: (type: 'success' | 'warning' | 'error' | 'info', title: string, message: string) => void;
+  showToast: (type: 'success' | 'warning' | 'error' | 'info' | 'collaborative', title: string, message: string) => void;
   removeToast: (id: string) => void;
+  broadcastChange: (action: string, entityType: string, entityName: string, entityId?: number | string) => void;
   // Utilidades de Datos & Supabase Sync
   resetAllData: () => void;
   exportDatabaseJSON: () => void;
@@ -292,17 +294,62 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [isSyncing, setIsSyncing] = useState<boolean>(false);
   const [savedCredentials, setSavedCredentialsState] = useState<{ url: string; anonKey: string }>(getSavedCredentials);
 
-  const showToast = useCallback((type: 'success' | 'warning' | 'error' | 'info', title: string, message: string) => {
+  // Referencias para WebSocket Realtime y autoría colaborativa
+  const currentUserRef = useRef<Usuario | null>(currentUser);
+  useEffect(() => {
+    currentUserRef.current = currentUser;
+  }, [currentUser]);
+
+  const realtimeChannelRef = useRef<any>(null);
+
+  const showToast = useCallback((type: 'success' | 'warning' | 'error' | 'info' | 'collaborative', title: string, message: string) => {
     const id = `toast-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`;
     setToasts(prev => [...prev, { id, type, title, message }]);
+    const duration = type === 'collaborative' ? 6500 : 4500;
     setTimeout(() => {
       setToasts(prev => prev.filter(t => t.id !== id));
-    }, 4500);
+    }, duration);
   }, []);
 
   const removeToast = useCallback((id: string) => {
     setToasts(prev => prev.filter(t => t.id !== id));
   }, []);
+
+  // Transmisión de cambios en vivo a todos los demás dispositivos y perfiles conectados
+  const broadcastChange = useCallback(
+    (
+      action: string,
+      entityType: string,
+      entityName: string,
+      entityId?: number | string
+    ) => {
+      if (!isSupabaseConfigured() || !realtimeChannelRef.current) return;
+      const sender = currentUserRef.current;
+      const payload = {
+        userId: sender?.id,
+        userName: sender?.nombre_completo || sender?.username || 'Un usuario',
+        userRole: sender?.rol ? sender.rol.toUpperCase() : 'USUARIO',
+        action,
+        entityType,
+        entityName,
+        entityId,
+        timestamp: Date.now(),
+      };
+
+      try {
+        realtimeChannelRef.current
+          .send({
+            type: 'broadcast',
+            event: 'collab_action',
+            payload,
+          })
+          .catch((err: any) => console.warn('Error enviando broadcast colaborativo:', err));
+      } catch (err) {
+        console.warn('Fallo en realtimeChannel.send broadcast:', err);
+      }
+    },
+    []
+  );
 
   // ==========================================
   // AUTENTICACIÓN SEGURA (LOGIN / LOGOUT)
@@ -543,9 +590,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           setCotizaciones((prev) => {
             const map = new Map<string, Cotizacion>();
             dbCotizaciones.forEach((c) => map.set(c.codigo, c));
-            // Preservar cotizaciones locales para que el ciclo de 25s nunca las borre
+            const now = Date.now();
+            // Preservar solo cotizaciones locales recientes (< 25s) en tránsito para no borrarlas al crearlas
             prev.forEach((local) => {
-              if (!map.has(local.codigo)) {
+              const isRecent = local.created_at && (now - new Date(local.created_at).getTime() < 25000);
+              if (!map.has(local.codigo) && isRecent) {
                 map.set(local.codigo, local);
               }
             });
@@ -556,8 +605,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           setPedidos((prev) => {
             const map = new Map<string, Pedido>();
             dbPedidos.forEach((p) => map.set(p.numero_factura, p));
+            const now = Date.now();
+            // Preservar solo pedidos locales recientes (< 25s) en tránsito para no borrarlos al crearlos
             prev.forEach((local) => {
-              if (!map.has(local.numero_factura)) {
+              const isRecent = local.created_at && (now - new Date(local.created_at).getTime() < 25000);
+              if (!map.has(local.numero_factura) && isRecent) {
                 map.set(local.numero_factura, local);
               }
             });
@@ -667,9 +719,36 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const client = getSupabaseClient();
     if (!client) return;
 
-    // Canal WebSocket en vivo para escuchar modificaciones de cualquier usuario o dispositivo
-    const channel = client
-      .channel('delicias-live-sync-all')
+    // Canal WebSocket en vivo para escuchar modificaciones y broadcasts colaborativos de cualquier usuario
+    const channel = client.channel('delicias-live-collab', {
+      config: {
+        broadcast: { ack: false, self: false },
+      },
+    });
+
+    realtimeChannelRef.current = channel;
+
+    channel
+      .on('broadcast', { event: 'collab_action' }, (event: any) => {
+        const payload = event?.payload;
+        if (!payload) return;
+        // Evitar procesar mensajes propios en caso de retransmisión
+        if (payload.userId && currentUserRef.current?.id === payload.userId) return;
+
+        // 1. Alerta auditiva suave
+        playNotificationChime();
+
+        // 2. Notificación flotante colaborativa
+        const actionDesc = `${payload.userName} (${payload.userRole || 'USUARIO'}) ${payload.action} ${payload.entityType}: "${payload.entityName}".`;
+        showToast(
+          'collaborative',
+          `🔔 Actualización de ${payload.userName}`,
+          `${actionDesc} Tu pantalla se actualizó automáticamente.`
+        );
+
+        // 3. Descargar datos frescos de Supabase de inmediato
+        syncFromSupabase(true);
+      })
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'insumos' },
@@ -721,12 +800,28 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       )
       .on(
         'postgres_changes',
+        { event: '*', schema: 'public', table: 'pagos' },
+        () => {
+          syncFromSupabase(true);
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'clientes' },
+        () => {
+          syncFromSupabase(true);
+        }
+      )
+      .on(
+        'postgres_changes',
         { event: '*', schema: 'public', table: 'usuarios' },
         () => {
           syncFromSupabase(true);
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('Canal de sincronización colaborativa Supabase:', status);
+      });
 
     // Re-sincronizar automáticamente en cuanto el usuario vuelve a abrir la app o desbloquea el móvil
     const handleFocus = () => {
@@ -737,20 +832,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     window.addEventListener('visibilitychange', handleFocus);
     window.addEventListener('focus', handleFocus);
 
-    // Latido regular (Heartbeat) cada 25 segundos para asegurar datos frescos
+    // Latido regular (Heartbeat) cada 15 segundos para asegurar datos frescos
     const heartbeat = setInterval(() => {
       if (document.visibilityState === 'visible') {
         syncFromSupabase(true);
       }
-    }, 25000);
+    }, 15000);
 
     return () => {
+      realtimeChannelRef.current = null;
       client.removeChannel(channel);
       window.removeEventListener('visibilitychange', handleFocus);
       window.removeEventListener('focus', handleFocus);
       clearInterval(heartbeat);
     };
-  }, [syncFromSupabase]);
+  }, [syncFromSupabase, showToast]);
 
   // Guardar en localStorage como respaldo local offline
   useEffect(() => {
@@ -801,12 +897,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     if (isSupabaseConfigured()) {
       syncInsumoToSupabase(newInsumo);
+      broadcastChange('agregó', 'el insumo', newInsumo.nombre, newInsumo.id);
     }
 
     return newInsumo;
   };
 
   const updateInsumo = (id: number, data: Partial<Insumo>) => {
+    let insumoNombre = '';
     setInsumos((prev) =>
       prev.map((i) => {
         if (i.id !== id) return i;
@@ -817,6 +915,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           updated.costo_unitario_base = calcularCostoUnitarioBase(precio, pres);
           updated.factor_conversion = pres;
         }
+        insumoNombre = updated.nombre;
         if (isSupabaseConfigured()) {
           syncInsumoToSupabase(updated);
         }
@@ -824,6 +923,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       })
     );
     showToast('info', 'Insumo Actualizado', 'Los cambios y costos han sido guardados.');
+    if (isSupabaseConfigured() && insumoNombre) {
+      broadcastChange('modificó', 'el insumo', insumoNombre, id);
+    }
   };
 
   const deleteInsumo = (id: number) => {
@@ -839,11 +941,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setInsumos((prev) => prev.filter((i) => i.id !== id));
     if (isSupabaseConfigured()) {
       deleteInsumoFromSupabase(id);
+      broadcastChange('eliminó', 'el insumo', insumo.nombre, id);
     }
     showToast('warning', 'Insumo Eliminado', `"${insumo.nombre}" fue retirado del inventario.`);
   };
 
   const reabastecerInsumo = (id: number, cantidadComprada: number, nuevoPrecio?: number) => {
+    let reabastecidoNombre = '';
+    let unidadStr = '';
     setInsumos((prev) =>
       prev.map((i) => {
         if (i.id !== id) return i;
@@ -855,6 +960,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           precio_compra: precioActualizado,
           costo_unitario_base: calcularCostoUnitarioBase(precioActualizado, i.presentacion_empaque),
         };
+        reabastecidoNombre = updated.nombre;
+        unidadStr = updated.unidad_compra;
         if (isSupabaseConfigured()) {
           syncInsumoToSupabase(updated);
         }
@@ -862,12 +969,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       })
     );
     showToast('success', 'Inventario Reabastecido', `Se ingresaron ${cantidadComprada} al stock.`);
+    if (isSupabaseConfigured() && reabastecidoNombre) {
+      broadcastChange('reabasteció el stock de', 'el insumo', `${reabastecidoNombre} (+${cantidadComprada} ${unidadStr})`, id);
+    }
   };
 
   const reabastecerTodoElStock = () => {
     setInsumos(INITIAL_INSUMOS);
     localStorage.setItem(`${STORAGE_KEY}_insumos`, JSON.stringify(INITIAL_INSUMOS));
-    showToast('success', 'Inventario 100% Abastecido', 'Se cargó el stock completo para los 93 insumos.');
+    showToast('success', 'Inventario 100% Abastecido', 'Se cargó el stock completo para los insumos.');
+    if (isSupabaseConfigured()) {
+      INITIAL_INSUMOS.forEach(syncInsumoToSupabase);
+      broadcastChange('reabasteció al 100%', 'el inventario general', 'Todos los insumos con stock completo', 0);
+    }
   };
 
   // ==========================================
@@ -894,6 +1008,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
 
     showToast('warning', 'Merma Registrada', `Se descontaron ${data.cantidad} ${data.unidad_base} de "${data.insumo_nombre}".`);
+
+    if (isSupabaseConfigured()) {
+      syncMermaToSupabase(newMerma);
+      broadcastChange('declaró una merma en', 'el insumo', `${newMerma.insumo_nombre} (${newMerma.cantidad} ${newMerma.unidad_base})`, newMerma.insumo_id);
+    }
   };
 
   // ==========================================
@@ -911,16 +1030,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     if (isSupabaseConfigured()) {
       syncRecetaToSupabase(newReceta);
+      broadcastChange('creó', 'la receta', newReceta.nombre, newReceta.id);
     }
 
     return newReceta;
   };
 
   const updateReceta = (id: number, data: Partial<Receta>) => {
+    let updatedNombre = '';
     setRecetas((prev) =>
       prev.map((r) => {
         if (r.id !== id) return r;
         const updated = { ...r, ...data };
+        updatedNombre = updated.nombre;
         if (isSupabaseConfigured()) {
           syncRecetaToSupabase(updated);
         }
@@ -928,6 +1050,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       })
     );
     showToast('info', 'Receta Actualizada', 'Los cambios en la receta y sus ingredientes se guardaron.');
+    if (isSupabaseConfigured() && updatedNombre) {
+      broadcastChange('modificó', 'la receta', updatedNombre, id);
+    }
   };
 
   const deleteReceta = (id: number) => {
@@ -937,6 +1062,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setRecetas((prev) => prev.filter((r) => r.id !== id));
     if (isSupabaseConfigured()) {
       deleteRecetaFromSupabase(id);
+      broadcastChange('eliminó', 'la receta', receta.nombre, id);
     }
     showToast('warning', 'Receta Eliminada', `"${receta.nombre}" fue eliminada.`);
   };
@@ -958,6 +1084,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     if (isSupabaseConfigured()) {
       syncRecetaToSupabase(clon);
+      broadcastChange('duplicó', 'la receta', clon.nombre, clon.id);
     }
   };
 
@@ -994,6 +1121,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (res.data?.id) {
         newCotizacion.id = res.data.id;
       }
+      broadcastChange('creó', 'la cotización', `${codigo} (${newCotizacion.cliente_nombre})`, newCotizacion.id);
     }
 
     // 2. Solo tras confirmación de persistencia, actualizar el estado
@@ -1016,6 +1144,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         alert(`❌ Error al actualizar cotización en Supabase:\n\n${errorMsg}`);
         return false;
       }
+      broadcastChange('actualizó', 'la cotización', `${updated.codigo} (${updated.cliente_nombre})`, id);
     }
 
     setCotizaciones((prev) =>
@@ -1026,14 +1155,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const deleteCotizacion = (id: number) => {
+    const cot = cotizaciones.find((c) => c.id === id);
     setCotizaciones((prev) => prev.filter((c) => c.id !== id));
     if (isSupabaseConfigured()) {
       deleteCotizacionFromSupabase(id);
+      broadcastChange('eliminó', 'la cotización', cot?.codigo || `ID ${id}`, id);
     }
     showToast('warning', 'Cotización Eliminada', 'La cotización fue eliminada del sistema.');
   };
 
   const cambiarEstadoCotizacion = (id: number, estado: EstadoCotizacion) => {
+    const cot = cotizaciones.find((c) => c.id === id);
     setCotizaciones((prev) =>
       prev.map((c) => {
         if (c.id !== id) return c;
@@ -1044,6 +1176,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         return updated;
       })
     );
+    if (isSupabaseConfigured()) {
+      broadcastChange(`marcó como "${estado.toUpperCase()}"`, 'la cotización', cot?.codigo || `ID ${id}`, id);
+    }
     showToast('info', 'Estado Actualizado', `Cotización marcada como "${estado}".`);
   };
 
@@ -1061,28 +1196,36 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setClientes((prev) => [nuevo, ...prev]);
     if (isSupabaseConfigured()) {
       syncClienteToSupabase(nuevo);
+      broadcastChange('registró', 'el cliente', nuevo.nombre, nuevo.id);
     }
     showToast('success', 'Cliente Registrado', `Se guardó a ${nuevo.nombre} en el Mini CRM.`);
     return nuevo;
   };
 
   const updateCliente = (id: number, data: Partial<Cliente>) => {
+    let cliNombre = '';
     setClientes((prev) =>
       prev.map((c) => {
         if (c.id !== id) return c;
         const updated = { ...c, ...data };
+        cliNombre = updated.nombre;
         if (isSupabaseConfigured()) {
           syncClienteToSupabase(updated);
         }
         return updated;
       })
     );
+    if (isSupabaseConfigured() && cliNombre) {
+      broadcastChange('modificó los datos de', 'el cliente', cliNombre, id);
+    }
   };
 
   const deleteCliente = (id: number) => {
+    const cliente = clientes.find((c) => c.id === id);
     setClientes((prev) => prev.filter((c) => c.id !== id));
     if (isSupabaseConfigured()) {
       deleteClienteFromSupabase(id);
+      broadcastChange('eliminó', 'el cliente', cliente?.nombre || `ID ${id}`, id);
     }
     showToast('info', 'Cliente Eliminado', 'Se eliminó el perfil del cliente.');
   };
@@ -1206,6 +1349,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     if (isSupabaseConfigured()) {
       syncPedidoToSupabase(newPedido);
+      broadcastChange('registró', 'el pedido', `${numero_factura} (${newPedido.cliente_nombre})`, nextId);
     }
 
     return newPedido;
@@ -1295,16 +1439,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     if (isSupabaseConfigured()) {
       syncPedidoToSupabase(nuevoPedido);
+      broadcastChange('convirtió a pedido', 'la cotización', `${cot.codigo} -> Factura ${numero_factura}`, nextId);
     }
 
     return nuevoPedido;
   };
 
   const updatePedido = (id: number, data: Partial<Pedido>) => {
+    let pedFactura = '';
     setPedidos((prev) =>
       prev.map((p) => {
         if (p.id !== id) return p;
         const updated = { ...p, ...data };
+        pedFactura = updated.numero_factura;
         if (isSupabaseConfigured()) {
           syncPedidoToSupabase(updated);
         }
@@ -1312,6 +1459,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       })
     );
     showToast('info', 'Pedido Actualizado', 'Los cambios en la orden fueron registrados.');
+    if (isSupabaseConfigured() && pedFactura) {
+      broadcastChange('modificó', 'el pedido', pedFactura, id);
+    }
   };
 
   const cambiarEstadoPedido = (id: number, nuevoEstado: EstadoPedido) => {
@@ -1336,6 +1486,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         return updated;
       })
     );
+
+    if (isSupabaseConfigured()) {
+      broadcastChange(`cambió el estado a "${nuevoEstado.toUpperCase()}" de`, 'el pedido', `${pedido.numero_factura} (${pedido.cliente_nombre})`, id);
+    }
 
     if (nuevoEstado === 'listo' || nuevoEstado === 'entregado') {
       playSuccessChime();
@@ -1390,6 +1544,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (isSupabaseConfigured()) {
         cancelarPedidoConInventarioRpc(pedidoId, 'reintegrar', notas).catch(() => {});
         syncPedidoToSupabase(updatedPedido);
+        broadcastChange('canceló (Stock Reintegrado)', 'el pedido', `${pedido.numero_factura} (${pedido.cliente_nombre})`, pedidoId);
       }
 
       showToast(
@@ -1429,6 +1584,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (isSupabaseConfigured()) {
         cancelarPedidoConInventarioRpc(pedidoId, 'merma', notas).catch(() => {});
         syncPedidoToSupabase(updatedPedido);
+        broadcastChange('canceló (Merma Registrada)', 'el pedido', `${pedido.numero_factura} (${pedido.cliente_nombre})`, pedidoId);
       }
 
       showToast(
@@ -1476,6 +1632,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     // 2. Eliminar pedido en Supabase
     if (isSupabaseConfigured()) {
       await deletePedidoFromSupabase(pedidoId);
+      broadcastChange('eliminó', 'el pedido', `${pedido.numero_factura} (${pedido.cliente_nombre})`, pedidoId);
     }
 
     // 3. Eliminar pedido del estado local
@@ -1532,6 +1689,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     if (isSupabaseConfigured()) {
       syncPedidoToSupabase(updatedPedido);
+      broadcastChange(`registró un pago (${tipoPago}) en`, 'el pedido', `${pedido.numero_factura} por RD$ ${monto.toFixed(2)}`, pedidoId);
     }
   };
 
@@ -1687,6 +1845,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         toasts,
         showToast,
         removeToast,
+        broadcastChange,
         resetAllData,
         exportDatabaseJSON,
         isSupabaseOnline,

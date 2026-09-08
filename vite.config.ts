@@ -2,10 +2,36 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 
+const buildTime = Date.now();
+
+function versionGeneratorPlugin() {
+  return {
+    name: 'version-generator-plugin',
+    generateBundle(this: any) {
+      this.emitFile({
+        type: 'asset',
+        fileName: 'version.json',
+        source: JSON.stringify(
+          {
+            buildTime,
+            builtAt: new Date(buildTime).toISOString(),
+          },
+          null,
+          2
+        ),
+      });
+    },
+  };
+}
+
 // https://vitejs.dev/config/
 export default defineConfig({
+  define: {
+    __APP_BUILD_TIME__: buildTime,
+  },
   plugins: [
     react(),
+    versionGeneratorPlugin(),
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'logo.png', 'logo.svg'],

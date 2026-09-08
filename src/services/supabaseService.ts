@@ -585,6 +585,28 @@ export async function deleteInsumoFromSupabase(id: number): Promise<boolean> {
 }
 
 /**
+ * Registra una merma en Supabase
+ */
+export async function syncMermaToSupabase(merma: Merma): Promise<boolean> {
+  const client = getSupabaseClient();
+  if (!client) return false;
+  try {
+    const { error } = await client.from('mermas').upsert({
+      id: merma.id,
+      insumo_id: merma.insumo_id,
+      cantidad: merma.cantidad,
+      motivo: merma.motivo,
+      costo_perdido: merma.costo_perdido,
+      fecha: merma.fecha,
+      notas: merma.notas,
+    });
+    return !error;
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Autentica un usuario mediante función segura PL/pgSQL en PostgreSQL
  * Valida el hash bcrypt en el servidor y retorna el perfil sin exponer contraseñas
  */

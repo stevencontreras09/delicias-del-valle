@@ -60,3 +60,35 @@ export function playSuccessChime(): void {
     // Silencioso si falla
   }
 }
+
+/**
+ * Alerta acústica sutil para notificaciones en vivo y sincronización colaborativa
+ */
+export function playNotificationChime(): void {
+  try {
+    const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+    if (!AudioContextClass) return;
+
+    const ctx = new AudioContextClass();
+    const now = ctx.currentTime;
+
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+
+    osc.type = 'sine';
+    // Repique armónico dual E5 -> A5 sutil
+    osc.frequency.setValueAtTime(659.25, now);
+    osc.frequency.setValueAtTime(880.00, now + 0.1);
+
+    gain.gain.setValueAtTime(0.18, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
+
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+
+    osc.start(now);
+    osc.stop(now + 0.45);
+  } catch {
+    // Silencioso si el audio no está habilitado
+  }
+}

@@ -121,17 +121,19 @@ export const Navbar: React.FC = () => {
 
           {/* Acciones Rápidas Derecha */}
           <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-            {/* Supabase Sync: Solo Admin */}
-            {isAdmin && isSupabaseOnline && (
+            {/* Indicador Colaborativo en Vivo: Visible para todos los usuarios */}
+            {isSupabaseOnline && (
               <button
                 onClick={() => syncFromSupabase(false)}
-                title="Conectado a Supabase. Clic para sincronizar."
+                title="Conexión en vivo activa. Los cambios entre usuarios se sincronizan automáticamente en tiempo real."
                 disabled={isSyncing}
-                className="hidden 2xl:flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 text-emerald-800 text-[11px] font-bold transition-all"
+                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 text-emerald-800 text-[11px] font-bold transition-all shadow-sm"
               >
-                <Cloud className="w-3 h-3 text-emerald-600" />
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                <span>{isSyncing ? 'Sync...' : 'Supabase Sync'}</span>
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                </span>
+                <span className="hidden sm:inline">{isSyncing ? 'Sincronizando...' : 'En Vivo'}</span>
                 <RefreshCw className={`w-3 h-3 text-emerald-600 ${isSyncing ? 'animate-spin' : ''}`} />
               </button>
             )}
