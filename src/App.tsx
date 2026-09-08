@@ -16,8 +16,8 @@ import { ShieldAlert } from 'lucide-react';
 export const App: React.FC = () => {
   const { activeTab, setActiveTab, currentUser } = useApp();
 
-  // Si no hay sesión iniciada, mostrar pantalla de Login
-  if (!currentUser) {
+  // Si no hay sesión iniciada o la cuenta fue desactivada, mostrar pantalla de Login
+  if (!currentUser || !currentUser.activo) {
     return <LoginScreen />;
   }
 

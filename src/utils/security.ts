@@ -103,10 +103,15 @@ export function sanitizeInput(input: string | undefined | null): string {
  */
 export function sanitizeUserForStorage(user: Partial<Usuario> | null | undefined): Omit<Usuario, 'password'> | null {
   if (!user) return null;
+  const username = sanitizeInput(user.username);
+  const nombre_completo = sanitizeInput(user.nombre_completo);
+  if (!username || !nombre_completo) {
+    return null;
+  }
   return {
     id: Number(user.id),
-    username: sanitizeInput(user.username),
-    nombre_completo: sanitizeInput(user.nombre_completo),
+    username,
+    nombre_completo,
     email: sanitizeInput(user.email),
     telefono: sanitizeInput(user.telefono || ''),
     rol: (user.rol || 'pastelero') as UserRole,

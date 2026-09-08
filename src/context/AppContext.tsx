@@ -191,12 +191,30 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       try {
         const parsed: any[] = JSON.parse(saved);
         if (Array.isArray(parsed)) {
-          return parsed.map((u) => sanitizeUserForStorage(u)).filter(Boolean) as Usuario[];
+          const cleanUsers = parsed
+            .map((u) => sanitizeUserForStorage(u))
+            .filter((u): u is Usuario => Boolean(u && u.username && u.username.trim().length > 0 && u.nombre_completo && u.nombre_completo.trim().length > 0));
+          if (cleanUsers.length > 0) {
+            return cleanUsers;
+          }
         }
       } catch {}
     }
     return INITIAL_USUARIOS;
   });
+
+  // Limpieza proactiva de usuarios inválidos o en blanco en localStorage al iniciar
+  useEffect(() => {
+    setUsuarios((prev) => {
+      const valid = prev.filter((u) => u && u.username && u.username.trim().length > 0 && u.nombre_completo && u.nombre_completo.trim().length > 0);
+      if (valid.length !== prev.length) {
+        const sanitized = valid.map((u) => sanitizeUserForStorage(u)).filter(Boolean);
+        localStorage.setItem(`${STORAGE_KEY}_usuarios`, JSON.stringify(sanitized));
+        return valid;
+      }
+      return prev;
+    });
+  }, []);
 
   const [currentUser, setCurrentUser] = useState<Usuario | null>(() => {
     // Siempre iniciar en la pantalla de Login primero
@@ -351,6 +369,44 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     []
   );
 
+  // Expulsión inmediata de la sesión activa si la cuenta del usuario actual es desactivada
+  useEffect(() => {
+    if (currentUser) {
+      const dbUser = usuarios.find(
+        (u) => u.id === currentUser.id || (u.username && currentUser.username && u.username.trim().toLowerCase() === currentUser.username.trim().toLowerCase())
+      );
+      if (dbUser && dbUser.activo === false) {
+        setCurrentUser(null);
+        localStorage.removeItem(`${STORAGE_KEY}_session_user`);
+        setActiveTab('dashboard');
+        alert('⚠️ Tu cuenta ha sido desactivada por un administrador del sistema.\n\nHas sido desconectado de Delicias del Valle.');
+      }
+    }
+  }, [usuarios, currentUser]);
+
+  // Transmisión en tiempo real a todos los clientes para expulsar de inmediato a un usuario desactivado
+  const broadcastUserDeactivation = useCallback(
+    (targetUserId: number, targetUsername: string) => {
+      if (!isSupabaseConfigured() || !realtimeChannelRef.current) return;
+      try {
+        realtimeChannelRef.current
+          .send({
+            type: 'broadcast',
+            event: 'user_deactivated',
+            payload: {
+              targetUserId,
+              targetUsername,
+              timestamp: Date.now(),
+            },
+          })
+          .catch((err: any) => console.warn('Error enviando broadcast de desactivación:', err));
+      } catch (err) {
+        console.warn('Fallo en realtimeChannel.send user_deactivated:', err);
+      }
+    },
+    []
+  );
+
   // ==========================================
   // AUTENTICACIÓN SEGURA (LOGIN / LOGOUT)
   // ==========================================
@@ -460,22 +516,36 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // GESTIÓN DE USUARIOS (CRUD CON HASH BCRYPT)
   // ==========================================
   const addUsuario = useCallback((data: Omit<Usuario, 'id' | 'created_at'>): Usuario => {
+    const cleanUsername = sanitizeInput(data.username || '').trim();
+    const cleanFullName = sanitizeInput(data.nombre_completo || '').trim();
+    const cleanEmail = sanitizeInput(data.email || '').trim();
+
+    if (!cleanUsername || !cleanFullName || !cleanEmail) {
+      showToast('error', 'Campos Incompletos', 'El nombre de usuario, nombre completo y correo son obligatorios.');
+      return null as any;
+    }
+
     const nextId = usuarios.length > 0 ? Math.max(...usuarios.map((u) => u.id)) + 1 : 1;
     const sanitizedNewUser: Usuario = {
       id: nextId,
-      username: sanitizeInput(data.username),
+      username: cleanUsername,
       password: data.password ? data.password.trim() : undefined,
-      nombre_completo: sanitizeInput(data.nombre_completo),
-      email: sanitizeInput(data.email),
-      telefono: sanitizeInput(data.telefono || ''),
-      rol: data.rol,
+      nombre_completo: cleanFullName,
+      email: cleanEmail,
+      telefono: sanitizeInput(data.telefono || '').trim(),
+      rol: data.rol || 'pastelero',
       activo: Boolean(data.activo),
       created_at: new Date().toISOString(),
     };
 
     // Agregar a la lista local omitiendo la contraseña para evitar exposición en memoria/storage
     const safeLocalUser = sanitizeUserForStorage(sanitizedNewUser) as Usuario;
-    setUsuarios((prev) => [safeLocalUser, ...prev]);
+    if (!safeLocalUser) {
+      showToast('error', 'Error al Crear Usuario', 'Los datos del usuario son inválidos.');
+      return null as any;
+    }
+
+    setUsuarios((prev) => [safeLocalUser, ...prev.filter((u) => u && u.username && u.username.trim().length > 0)]);
 
     if (isSupabaseConfigured()) {
       // Enviar a Supabase con contraseña para cifrado bcrypt en el servidor PostgreSQL
@@ -489,10 +559,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const updateUsuario = useCallback((id: number, data: Partial<Usuario>) => {
     const sanitizedData: Partial<Usuario> = {
       ...data,
-      username: data.username ? sanitizeInput(data.username) : undefined,
-      nombre_completo: data.nombre_completo ? sanitizeInput(data.nombre_completo) : undefined,
-      email: data.email ? sanitizeInput(data.email) : undefined,
-      telefono: data.telefono ? sanitizeInput(data.telefono) : undefined,
+      username: data.username ? sanitizeInput(data.username).trim() : undefined,
+      nombre_completo: data.nombre_completo ? sanitizeInput(data.nombre_completo).trim() : undefined,
+      email: data.email ? sanitizeInput(data.email).trim() : undefined,
+      telefono: data.telefono ? sanitizeInput(data.telefono).trim() : undefined,
     };
 
     setUsuarios((prev) =>
@@ -500,10 +570,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         if (u.id !== id) return u;
         const updated = { ...u, ...sanitizedData };
         const safeUpdated = sanitizeUserForStorage(updated) as Usuario;
+        if (!safeUpdated) return u;
 
         if (currentUser?.id === id) {
-          setCurrentUser(safeUpdated);
-          localStorage.setItem(`${STORAGE_KEY}_session_user`, JSON.stringify(safeUpdated));
+          if (data.activo === false) {
+            setTimeout(() => {
+              setCurrentUser(null);
+              localStorage.removeItem(`${STORAGE_KEY}_session_user`);
+              setActiveTab('dashboard');
+              alert('⚠️ Tu cuenta ha sido desactivada por un administrador del sistema.\n\nHas sido desconectado de Delicias del Valle.');
+            }, 50);
+          } else {
+            setCurrentUser(safeUpdated);
+            localStorage.setItem(`${STORAGE_KEY}_session_user`, JSON.stringify(safeUpdated));
+          }
         }
 
         if (isSupabaseConfigured()) {
@@ -512,8 +592,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         return safeUpdated;
       })
     );
+
+    if (data.activo === false) {
+      const targetUser = usuarios.find((u) => u.id === id);
+      if (targetUser) {
+        broadcastUserDeactivation(targetUser.id, targetUser.username);
+      }
+    }
+
     showToast('info', 'Usuario Actualizado', 'Los datos del usuario fueron guardados.');
-  }, [currentUser, showToast]);
+  }, [currentUser, showToast, usuarios, broadcastUserDeactivation]);
 
   const deleteUsuario = useCallback((id: number): { success: boolean; message?: string } => {
     const user = usuarios.find((u) => u.id === id);
@@ -548,8 +636,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     const nuevoEstado = !user.activo;
     updateUsuario(id, { activo: nuevoEstado });
+
+    if (!nuevoEstado) {
+      broadcastUserDeactivation(user.id, user.username);
+      if (currentUser?.id === id || (currentUser?.username && user.username && currentUser.username.trim().toLowerCase() === user.username.trim().toLowerCase())) {
+        setTimeout(() => {
+          setCurrentUser(null);
+          localStorage.removeItem(`${STORAGE_KEY}_session_user`);
+          setActiveTab('dashboard');
+          alert('⚠️ Tu cuenta ha sido desactivada.\n\nHas sido desconectado de Delicias del Valle.');
+        }, 50);
+      }
+    }
+
     showToast('info', 'Estado Modificado', `Usuario "${user.username}" ahora está ${nuevoEstado ? 'ACTIVO' : 'INACTIVO'}.`);
-  }, [usuarios, updateUsuario, showToast]);
+  }, [usuarios, updateUsuario, showToast, broadcastUserDeactivation, currentUser]);
 
   const resetPasswordUsuario = useCallback(async (id: number, newPassword: string) => {
     const cleanPass = newPassword.trim();
@@ -644,13 +745,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           setUsuarios(prev => {
             const map = new Map<string, Usuario>();
             // 1. Usuarios maestros fijos siempre preservados
-            INITIAL_USUARIOS.forEach(u => map.set(u.username.toLowerCase(), u));
-            // 2. Usuarios descargados de Supabase
-            usersDb.forEach(u => map.set(u.username.toLowerCase(), u));
-            // 3. Usuarios locales que aún no hayan sincronizado
+            INITIAL_USUARIOS.forEach(u => {
+              if (u.username && u.username.trim()) {
+                map.set(u.username.trim().toLowerCase(), u);
+              }
+            });
+            // 2. Usuarios descargados de Supabase (filtrando vacíos o corruptos)
+            usersDb.forEach(u => {
+              if (u.username && u.username.trim() && u.nombre_completo && u.nombre_completo.trim()) {
+                map.set(u.username.trim().toLowerCase(), u);
+              }
+            });
+            // 3. Usuarios locales válidos que aún no hayan sincronizado
             prev.forEach(u => {
-              if (!map.has(u.username.toLowerCase())) {
-                map.set(u.username.toLowerCase(), u);
+              if (u.username && u.username.trim() && u.nombre_completo && u.nombre_completo.trim()) {
+                const lower = u.username.trim().toLowerCase();
+                if (!map.has(lower)) {
+                  map.set(lower, u);
+                }
               }
             });
             return Array.from(map.values());
@@ -764,6 +876,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
         // 3. Descargar datos frescos de Supabase de inmediato
         syncFromSupabase(true);
+      })
+      .on('broadcast', { event: 'user_deactivated' }, (event: any) => {
+        const payload = event?.payload;
+        if (!payload) return;
+        const myUser = currentUserRef.current;
+        if (!myUser) return;
+        if (
+          payload.targetUserId === myUser.id ||
+          (payload.targetUsername && myUser.username && payload.targetUsername.trim().toLowerCase() === myUser.username.trim().toLowerCase())
+        ) {
+          // Expulsión inmediata de la sesión activa
+          setCurrentUser(null);
+          localStorage.removeItem(`${STORAGE_KEY}_session_user`);
+          setActiveTab('dashboard');
+          alert('⚠️ Tu cuenta ha sido desactivada por un administrador del sistema.\n\nHas sido desconectado de Delicias del Valle.');
+        } else {
+          syncFromSupabase(true);
+        }
       })
       .on(
         'postgres_changes',

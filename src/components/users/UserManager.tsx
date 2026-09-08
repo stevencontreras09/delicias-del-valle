@@ -43,6 +43,7 @@ export const UserManager: React.FC = () => {
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
   const [targetUserForPassword, setTargetUserForPassword] = useState<Usuario | null>(null);
   const [newPasswordInput, setNewPasswordInput] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Form State para Crear/Editar
   const [formData, setFormData] = useState<{
@@ -63,9 +64,16 @@ export const UserManager: React.FC = () => {
     activo: true,
   });
 
+  // Lista de usuarios válidos (ignora cualquier registro corrupto o en blanco)
+  const validUsers = useMemo(() => {
+    return usuarios.filter(
+      (user) => user && user.username && user.username.trim().length > 0 && user.nombre_completo && user.nombre_completo.trim().length > 0
+    );
+  }, [usuarios]);
+
   // Filtrado
   const filteredUsers = useMemo(() => {
-    return usuarios.filter((user) => {
+    return validUsers.filter((user) => {
       const matchSearch =
         user.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
         user.nombre_completo.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -73,7 +81,7 @@ export const UserManager: React.FC = () => {
       const matchRole = roleFilter === 'todos' || user.rol === roleFilter;
       return matchSearch && matchRole;
     });
-  }, [usuarios, searchTerm, roleFilter]);
+  }, [validUsers, searchTerm, roleFilter]);
 
   const openCreateModal = () => {
     setEditingUser(null);
@@ -109,39 +117,51 @@ export const UserManager: React.FC = () => {
     setIsPasswordModalOpen(true);
   };
 
-  const handleSaveUser = (e: React.FormEvent) => {
+  const handleSaveUser = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmitting) return;
 
-    if (!formData.username.trim() || !formData.nombre_completo.trim() || !formData.email.trim()) {
-      showToast('warning', 'Campos Incompletos', 'Completa los campos obligatorios.');
+    const username = formData.username.trim();
+    const nombre_completo = formData.nombre_completo.trim();
+    const email = formData.email.trim();
+    const password = formData.password.trim();
+
+    if (!username || !nombre_completo || !email) {
+      showToast('warning', 'Campos Incompletos', 'Completa el nombre de usuario, nombre completo y correo.');
       return;
     }
 
-    if (editingUser) {
-      updateUsuario(editingUser.id, {
-        username: formData.username.trim(),
-        nombre_completo: formData.nombre_completo.trim(),
-        email: formData.email.trim(),
-        telefono: formData.telefono.trim(),
-        rol: formData.rol,
-        activo: formData.activo,
-      });
-      setIsModalOpen(false);
-    } else {
-      if (!formData.password.trim()) {
-        showToast('warning', 'Contraseña Requerida', 'Ingresa una contraseña para el nuevo usuario.');
-        return;
+    setIsSubmitting(true);
+    try {
+      if (editingUser) {
+        updateUsuario(editingUser.id, {
+          username,
+          nombre_completo,
+          email,
+          telefono: formData.telefono.trim(),
+          rol: formData.rol,
+          activo: formData.activo,
+        });
+        setIsModalOpen(false);
+      } else {
+        if (!password || password.length < 6) {
+          showToast('warning', 'Contraseña Requerida', 'Ingresa una contraseña de al menos 6 caracteres para el nuevo usuario.');
+          setIsSubmitting(false);
+          return;
+        }
+        addUsuario({
+          username,
+          password,
+          nombre_completo,
+          email,
+          telefono: formData.telefono.trim(),
+          rol: formData.rol,
+          activo: formData.activo,
+        });
+        setIsModalOpen(false);
       }
-      addUsuario({
-        username: formData.username.trim(),
-        password: formData.password.trim(),
-        nombre_completo: formData.nombre_completo.trim(),
-        email: formData.email.trim(),
-        telefono: formData.telefono.trim(),
-        rol: formData.rol,
-        activo: formData.activo,
-      });
-      setIsModalOpen(false);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -224,27 +244,27 @@ export const UserManager: React.FC = () => {
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <div className="bg-white p-4 rounded-2xl border border-trigo-200 shadow-sm">
           <span className="text-xs text-gray-400 font-bold uppercase block">Total Usuarios</span>
-          <span className="text-2xl font-black text-chocolate-800">{usuarios.length}</span>
+          <span className="text-2xl font-black text-chocolate-800">{validUsers.length}</span>
           <span className="text-[10px] text-gray-500 block">registrados en el sistema</span>
         </div>
         <div className="bg-white p-4 rounded-2xl border border-trigo-200 shadow-sm">
           <span className="text-xs text-gray-400 font-bold uppercase block">Administradores</span>
           <span className="text-2xl font-black text-frambuesa-600">
-            {usuarios.filter((u) => u.rol === 'admin').length}
+            {validUsers.filter((u) => u.rol === 'admin' || u.rol === 'coadmin').length}
           </span>
-          <span className="text-[10px] text-gray-500 block">acceso total + SQL + Sync</span>
+          <span className="text-[10px] text-gray-500 block">gestión y administración</span>
         </div>
         <div className="bg-white p-4 rounded-2xl border border-trigo-200 shadow-sm">
           <span className="text-xs text-gray-400 font-bold uppercase block">Pasteleros & Taller</span>
           <span className="text-2xl font-black text-amber-600">
-            {usuarios.filter((u) => u.rol === 'pastelero').length}
+            {validUsers.filter((u) => u.rol === 'pastelero').length}
           </span>
           <span className="text-[10px] text-gray-500 block">cocina & pesaje BOM</span>
         </div>
         <div className="bg-white p-4 rounded-2xl border border-trigo-200 shadow-sm">
           <span className="text-xs text-gray-400 font-bold uppercase block">Ventas & Caja</span>
           <span className="text-2xl font-black text-emerald-600">
-            {usuarios.filter((u) => u.rol === 'cajero').length}
+            {validUsers.filter((u) => u.rol === 'cajero').length}
           </span>
           <span className="text-[10px] text-gray-500 block">cotizaciones y cobros</span>
         </div>
@@ -531,9 +551,10 @@ export const UserManager: React.FC = () => {
             </button>
             <button
               type="submit"
-              className="px-5 py-2 rounded-xl text-xs font-bold bg-frambuesa-500 hover:bg-frambuesa-600 text-white shadow-sm"
+              disabled={isSubmitting}
+              className="px-5 py-2 rounded-xl text-xs font-bold bg-frambuesa-500 hover:bg-frambuesa-600 text-white shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {editingUser ? 'Guardar Cambios' : 'Crear Usuario'}
+              {isSubmitting ? 'Guardando...' : editingUser ? 'Guardar Cambios' : 'Crear Usuario'}
             </button>
           </div>
         </form>
