@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Receta, Insumo } from '../../types';
+import { Receta, Insumo, FormatoPresentacion } from '../../types';
 import { Modal } from '../ui/Modal';
 import { formatCurrency, formatUnit } from '../../utils/formatters';
 import {
@@ -27,8 +27,6 @@ interface RecipeDetailModalProps {
   onEdit?: (receta: Receta) => void;
 }
 
-type FormatoPresentacion = 'libra' | 'porcion' | 'mini';
-
 const FORMATOS_ESTATICOS = {
   libra: [
     { label: '½ LB', factor: 0.5, descripcion: 'Familiar pequeño (8-10 personas)' },
@@ -50,7 +48,17 @@ export const RecipeDetailModal: React.FC<RecipeDetailModalProps> = ({
   receta,
   insumosMap,
 }) => {
-  const [formatoActivo, setFormatoActivo] = useState<FormatoPresentacion>('libra');
+  // Formatos permitidos para esta receta
+  const allowedFormatos = useMemo<FormatoPresentacion[]>(() => {
+    if (receta?.formatos_permitidos && receta.formatos_permitidos.length > 0) {
+      return receta.formatos_permitidos;
+    }
+    return ['libra', 'porcion', 'mini'];
+  }, [receta?.formatos_permitidos]);
+
+  const [formatoActivo, setFormatoActivo] = useState<FormatoPresentacion>(() => {
+    return (receta?.formatos_permitidos && receta.formatos_permitidos[0]) || 'libra';
+  });
   const [multiplier, setMultiplier] = useState<number>(1);
   const [selectedPresetLabel, setSelectedPresetLabel] = useState<string>('1 LB');
   const [customMiniCount, setCustomMiniCount] = useState<number>(12);
@@ -80,16 +88,47 @@ export const RecipeDetailModal: React.FC<RecipeDetailModalProps> = ({
     };
   }, [opcionesPorcion]);
 
-  // Inicializar estados al cambiar de receta
+  // Inicializar estados al cambiar de receta respetando los formatos permitidos
   useEffect(() => {
+    const firstAllowed = (receta?.formatos_permitidos && receta.formatos_permitidos[0]) || 'libra';
     setActiveVariableIds(new Set());
-    setFormatoActivo('libra');
-    setMultiplier(1);
-    setSelectedPresetLabel('1 LB');
+    setFormatoActivo(firstAllowed);
+
+    if (firstAllowed === 'libra') {
+      setMultiplier(1);
+      setSelectedPresetLabel('1 LB');
+    } else if (firstAllowed === 'porcion') {
+      const defaultPorcion = opcionesPorcion[0];
+      setMultiplier(defaultPorcion?.factor || 1);
+      setSelectedPresetLabel(defaultPorcion?.label || '1 Porción');
+    } else if (firstAllowed === 'mini') {
+      setMultiplier(FORMATOS_ESTATICOS.mini[0]?.factor || 0.4);
+      setSelectedPresetLabel(FORMATOS_ESTATICOS.mini[0]?.label || 'Caja x 12 Mini');
+    }
+
     setIsEditingMiniCustom(false);
     setIsEditingPorcionCustom(false);
     setCustomPorcionCount(1);
-  }, [receta?.id]);
+  }, [receta?.id, opcionesPorcion]);
+
+  // Asegurar que si el formato activo no está permitido, cambie al primero permitido
+  useEffect(() => {
+    if (!allowedFormatos.includes(formatoActivo)) {
+      const fallback = allowedFormatos[0] || 'libra';
+      setFormatoActivo(fallback);
+      if (fallback === 'libra') {
+        setMultiplier(1);
+        setSelectedPresetLabel('1 LB');
+      } else if (fallback === 'porcion') {
+        const defaultPorcion = opcionesPorcion[0];
+        setMultiplier(defaultPorcion?.factor || 1);
+        setSelectedPresetLabel(defaultPorcion?.label || '1 Porción');
+      } else if (fallback === 'mini') {
+        setMultiplier(FORMATOS_ESTATICOS.mini[0]?.factor || 0.4);
+        setSelectedPresetLabel(FORMATOS_ESTATICOS.mini[0]?.label || 'Caja x 12 Mini');
+      }
+    }
+  }, [allowedFormatos, formatoActivo, opcionesPorcion]);
 
   const handleToggleVariable = (insumoId: number) => {
     setActiveVariableIds((prev) => {
@@ -181,50 +220,56 @@ export const RecipeDetailModal: React.FC<RecipeDetailModalProps> = ({
 
             {/* Pestañas de Formato (Libra, Porción, Mini) */}
             <div className="flex items-center gap-1 bg-canvas p-1 rounded-2xl border border-trigo-200">
-              <button
-                type="button"
-                onClick={() => handleSelectFormato('libra', formatosConfig.libra[1])}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
-                  formatoActivo === 'libra'
-                    ? 'bg-frambuesa-500 text-white shadow-sm'
-                    : 'text-chocolate-700 hover:bg-crema'
-                }`}
-              >
-                <Scale className="w-3.5 h-3.5" />
-                <span>Libra</span>
-              </button>
+              {allowedFormatos.includes('libra') && (
+                <button
+                  type="button"
+                  onClick={() => handleSelectFormato('libra', formatosConfig.libra[1] || formatosConfig.libra[0])}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                    formatoActivo === 'libra'
+                      ? 'bg-frambuesa-500 text-white shadow-sm'
+                      : 'text-chocolate-700 hover:bg-crema'
+                  }`}
+                >
+                  <Scale className="w-3.5 h-3.5" />
+                  <span>Libra</span>
+                </button>
+              )}
 
-              <button
-                type="button"
-                onClick={() => handleSelectFormato('porcion', formatosConfig.porcion[0])}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
-                  formatoActivo === 'porcion'
-                    ? 'bg-frambuesa-500 text-white shadow-sm'
-                    : 'text-chocolate-700 hover:bg-crema'
-                }`}
-              >
-                <PieChart className="w-3.5 h-3.5" />
-                <span>Porción</span>
-              </button>
+              {allowedFormatos.includes('porcion') && (
+                <button
+                  type="button"
+                  onClick={() => handleSelectFormato('porcion', formatosConfig.porcion[0])}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                    formatoActivo === 'porcion'
+                      ? 'bg-frambuesa-500 text-white shadow-sm'
+                      : 'text-chocolate-700 hover:bg-crema'
+                  }`}
+                >
+                  <PieChart className="w-3.5 h-3.5" />
+                  <span>Porción</span>
+                </button>
+              )}
 
-              <button
-                type="button"
-                onClick={() => handleSelectFormato('mini', formatosConfig.mini[0])}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
-                  formatoActivo === 'mini'
-                    ? 'bg-frambuesa-500 text-white shadow-sm'
-                    : 'text-chocolate-700 hover:bg-crema'
-                }`}
-              >
-                <Package className="w-3.5 h-3.5" />
-                <span>Mini (Bocaditos)</span>
-              </button>
+              {allowedFormatos.includes('mini') && (
+                <button
+                  type="button"
+                  onClick={() => handleSelectFormato('mini', formatosConfig.mini[0])}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                    formatoActivo === 'mini'
+                      ? 'bg-frambuesa-500 text-white shadow-sm'
+                      : 'text-chocolate-700 hover:bg-crema'
+                  }`}
+                >
+                  <Package className="w-3.5 h-3.5" />
+                  <span>Mini (Bocaditos)</span>
+                </button>
+              )}
             </div>
           </div>
 
           {/* Opciones Específicas del Formato Seleccionado */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-            {formatosConfig[formatoActivo].map((opc) => {
+            {(formatosConfig[formatoActivo] || []).map((opc) => {
               const isSelected = selectedPresetLabel === opc.label && !isEditingPorcionCustom && !isEditingMiniCustom;
               return (
                 <button
@@ -256,7 +301,7 @@ export const RecipeDetailModal: React.FC<RecipeDetailModalProps> = ({
           </div>
 
           {/* Selector de Cantidad Exacta Personalizada de Porciones */}
-          {formatoActivo === 'porcion' && (
+          {formatoActivo === 'porcion' && allowedFormatos.includes('porcion') && (
             <div className="mt-2.5 p-3.5 rounded-2xl bg-canvas border border-trigo-300 flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-fade-in shadow-inner">
               <div className="flex items-center gap-2.5">
                 <div className="w-8 h-8 rounded-xl bg-frambuesa-100 flex items-center justify-center text-frambuesa-600 flex-shrink-0">
@@ -326,7 +371,7 @@ export const RecipeDetailModal: React.FC<RecipeDetailModalProps> = ({
           )}
 
           {/* Selector de Cantidad Exacta Personalizada de Minis */}
-          {formatoActivo === 'mini' && (
+          {formatoActivo === 'mini' && allowedFormatos.includes('mini') && (
             <div className="mt-2.5 p-3.5 rounded-2xl bg-canvas border border-trigo-300 flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-fade-in shadow-inner">
               <div className="flex items-center gap-2.5">
                 <div className="w-8 h-8 rounded-xl bg-frambuesa-100 flex items-center justify-center text-frambuesa-600 flex-shrink-0">

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { Receta, CategoriaReceta, RecetaIngrediente, Insumo } from '../../types';
+import { Receta, CategoriaReceta, RecetaIngrediente, Insumo, FormatoPresentacion } from '../../types';
 import { Modal } from '../ui/Modal';
 import { formatCurrency } from '../../utils/formatters';
 import {
@@ -7,6 +7,10 @@ import {
   Trash2,
   DollarSign,
   Info,
+  Scale,
+  PieChart,
+  Package,
+  Check,
 } from 'lucide-react';
 
 interface RecipeFormModalProps {
@@ -85,6 +89,17 @@ export const RecipeFormModal: React.FC<RecipeFormModalProps> = ({
     initialReceta?.margen_beneficio_pct ?? initialDraft?.margen_beneficio_pct ?? 50
   );
 
+  // Formatos de presentación habilitados (libra, porcion, mini)
+  const [formatosPermitidos, setFormatosPermitidos] = useState<FormatoPresentacion[]>(() => {
+    if (initialReceta?.formatos_permitidos && initialReceta.formatos_permitidos.length > 0) {
+      return initialReceta.formatos_permitidos;
+    }
+    if (initialDraft?.formatos_permitidos && initialDraft.formatos_permitidos.length > 0) {
+      return initialDraft.formatos_permitidos;
+    }
+    return ['libra', 'porcion', 'mini'];
+  });
+
   // Ingredientes
   const [ingredientes, setIngredientes] = useState<RecetaIngrediente[]>(
     initialReceta?.ingredientes && initialReceta.ingredientes.length > 0
@@ -124,6 +139,7 @@ export const RecipeFormModal: React.FC<RecipeFormModalProps> = ({
             reposicion_equipos_pct: reposicionPct,
             mano_obra_pct: manoObraPct,
             margen_beneficio_pct: margenBeneficioPct,
+            formatos_permitidos: formatosPermitidos,
             ingredientes,
             instrucciones,
           })
@@ -145,6 +161,7 @@ export const RecipeFormModal: React.FC<RecipeFormModalProps> = ({
     reposicionPct,
     manoObraPct,
     margenBeneficioPct,
+    formatosPermitidos,
     ingredientes,
     instrucciones,
   ]);
@@ -166,6 +183,11 @@ export const RecipeFormModal: React.FC<RecipeFormModalProps> = ({
       setReposicionPct(initialReceta.reposicion_equipos_pct ?? 10);
       setManoObraPct(initialReceta.mano_obra_pct ?? 30);
       setMargenBeneficioPct(initialReceta.margen_beneficio_pct ?? 50);
+      setFormatosPermitidos(
+        initialReceta.formatos_permitidos && initialReceta.formatos_permitidos.length > 0
+          ? initialReceta.formatos_permitidos
+          : ['libra', 'porcion', 'mini']
+      );
       setIngredientes(
         initialReceta.ingredientes && initialReceta.ingredientes.length > 0
           ? initialReceta.ingredientes
@@ -178,6 +200,20 @@ export const RecipeFormModal: React.FC<RecipeFormModalProps> = ({
       );
     }
   }, [initialReceta]);
+
+  const handleToggleFormato = (formato: FormatoPresentacion) => {
+    setFormatosPermitidos((prev) => {
+      if (prev.includes(formato)) {
+        if (prev.length === 1) {
+          alert('Debes mantener al menos una división o formato de presentación habilitado.');
+          return prev;
+        }
+        return prev.filter((f) => f !== formato);
+      } else {
+        return [...prev, formato];
+      }
+    });
+  };
 
   // Insumos Map para cálculo rápido
   const insumosMap = new Map<number, Insumo>();
@@ -271,6 +307,7 @@ export const RecipeFormModal: React.FC<RecipeFormModalProps> = ({
         reposicion_equipos_pct: Number(reposicionPct) || 10,
         mano_obra_pct: Number(manoObraPct) || 30,
         margen_beneficio_pct: Number(margenBeneficioPct) || 50,
+        formatos_permitidos: formatosPermitidos.length > 0 ? formatosPermitidos : ['libra', 'porcion', 'mini'],
         ingredientes: ingredientes.filter((i) => i.cantidad > 0),
         instrucciones: instrucciones.filter((inst) => inst.trim().length > 0),
         activa: true,
@@ -403,6 +440,110 @@ export const RecipeFormModal: React.FC<RecipeFormModalProps> = ({
                 }
                 className="px-2 py-2.5 rounded-xl border border-trigo-300 text-xs"
               />
+            </div>
+          </div>
+        </div>
+
+        {/* Formatos de Presentación Habilitados */}
+        <div className="bg-canvas p-4 rounded-2xl border-2 border-trigo-300 shadow-sm space-y-3">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 border-b border-trigo-200/80 pb-2.5">
+            <div className="flex items-center gap-2">
+              <Scale className="w-4 h-4 text-frambuesa-600" />
+              <span className="text-xs font-extrabold text-chocolate-900 uppercase tracking-wider">
+                Divisiones de Presentación Habilitadas *
+              </span>
+            </div>
+            <span className="text-[11px] text-gray-500 font-medium">
+              Elige cómo se podrá visualizar y cotizar esta receta (al menos una opción)
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {/* Opción Por Libra */}
+            <div
+              onClick={() => handleToggleFormato('libra')}
+              role="button"
+              tabIndex={0}
+              className={`cursor-pointer p-3.5 rounded-xl border-2 transition-all flex items-start gap-3 select-none ${
+                formatosPermitidos.includes('libra')
+                  ? 'bg-white border-frambuesa-500 shadow-sm ring-2 ring-frambuesa-500/10'
+                  : 'bg-crema/30 border-trigo-200 opacity-60 hover:opacity-90'
+              }`}
+            >
+              <div className={`w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0 mt-0.5 border transition-colors ${
+                formatosPermitidos.includes('libra')
+                  ? 'bg-frambuesa-500 border-frambuesa-600 text-white'
+                  : 'bg-white border-trigo-300'
+              }`}>
+                {formatosPermitidos.includes('libra') && <Check className="w-3.5 h-3.5 stroke-[3]" />}
+              </div>
+              <div className="flex-1">
+                <div className="flex items-center gap-1.5">
+                  <Scale className="w-3.5 h-3.5 text-chocolate-700" />
+                  <span className="font-extrabold text-xs text-chocolate-900">Por Libra</span>
+                </div>
+                <p className="text-[11px] text-gray-500 mt-1 leading-snug">
+                  Pasteles por peso estándar (½ LB, 1 LB, 2 LB, 3 LB y moldes).
+                </p>
+              </div>
+            </div>
+
+            {/* Opción Por Porción */}
+            <div
+              onClick={() => handleToggleFormato('porcion')}
+              role="button"
+              tabIndex={0}
+              className={`cursor-pointer p-3.5 rounded-xl border-2 transition-all flex items-start gap-3 select-none ${
+                formatosPermitidos.includes('porcion')
+                  ? 'bg-white border-frambuesa-500 shadow-sm ring-2 ring-frambuesa-500/10'
+                  : 'bg-crema/30 border-trigo-200 opacity-60 hover:opacity-90'
+              }`}
+            >
+              <div className={`w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0 mt-0.5 border transition-colors ${
+                formatosPermitidos.includes('porcion')
+                  ? 'bg-frambuesa-500 border-frambuesa-600 text-white'
+                  : 'bg-white border-trigo-300'
+              }`}>
+                {formatosPermitidos.includes('porcion') && <Check className="w-3.5 h-3.5 stroke-[3]" />}
+              </div>
+              <div className="flex-1">
+                <div className="flex items-center gap-1.5">
+                  <PieChart className="w-3.5 h-3.5 text-chocolate-700" />
+                  <span className="font-extrabold text-xs text-chocolate-900">Por Porción</span>
+                </div>
+                <p className="text-[11px] text-gray-500 mt-1 leading-snug">
+                  Cálculo individual y porciones personalizadas según rendimiento.
+                </p>
+              </div>
+            </div>
+
+            {/* Opción Mini Bocaditos */}
+            <div
+              onClick={() => handleToggleFormato('mini')}
+              role="button"
+              tabIndex={0}
+              className={`cursor-pointer p-3.5 rounded-xl border-2 transition-all flex items-start gap-3 select-none ${
+                formatosPermitidos.includes('mini')
+                  ? 'bg-white border-frambuesa-500 shadow-sm ring-2 ring-frambuesa-500/10'
+                  : 'bg-crema/30 border-trigo-200 opacity-60 hover:opacity-90'
+              }`}
+            >
+              <div className={`w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0 mt-0.5 border transition-colors ${
+                formatosPermitidos.includes('mini')
+                  ? 'bg-frambuesa-500 border-frambuesa-600 text-white'
+                  : 'bg-white border-trigo-300'
+              }`}>
+                {formatosPermitidos.includes('mini') && <Check className="w-3.5 h-3.5 stroke-[3]" />}
+              </div>
+              <div className="flex-1">
+                <div className="flex items-center gap-1.5">
+                  <Package className="w-3.5 h-3.5 text-chocolate-700" />
+                  <span className="font-extrabold text-xs text-chocolate-900">Mini Bocaditos</span>
+                </div>
+                <p className="text-[11px] text-gray-500 mt-1 leading-snug">
+                  Bocaditos para eventos (cajas de 12, 24, 50, 100 y cantidad exacta).
+                </p>
+              </div>
             </div>
           </div>
         </div>

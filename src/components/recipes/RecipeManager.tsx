@@ -191,21 +191,36 @@ export const RecipeManager: React.FC = () => {
                   )}
                 </div>
 
-                {/* Precios Rápidos Base: Libra, Porción, Mini */}
-                <div className="grid grid-cols-3 gap-1 pt-2 mt-2 border-t border-trigo-100 text-[10px]">
-                  <div className="bg-canvas p-1 rounded-lg border border-trigo-200 text-center">
-                    <span className="text-gray-500 block font-medium">Libra Base</span>
-                    <span className="font-extrabold text-chocolate-900">{formatCurrency(costData.precio_sugerido_margen_venta)}</span>
-                  </div>
-                  <div className="bg-canvas p-1 rounded-lg border border-trigo-200 text-center">
-                    <span className="text-gray-500 block font-medium">Porción Base</span>
-                    <span className="font-extrabold text-chocolate-900">{formatCurrency(Math.max(10, Math.ceil((costData.precio_sugerido_margen_venta / 12) / 10) * 10))}</span>
-                  </div>
-                  <div className="bg-canvas p-1 rounded-lg border border-trigo-200 text-center">
-                    <span className="text-gray-500 block font-medium">12 Mini Base</span>
-                    <span className="font-extrabold text-chocolate-900">{formatCurrency(Math.max(10, Math.ceil((costData.precio_sugerido_margen_venta * 0.4) / 10) * 10))}</span>
-                  </div>
-                </div>
+                {/* Precios Rápidos Base según Formatos Permitidos */}
+                {(() => {
+                  const allowed = receta.formatos_permitidos && receta.formatos_permitidos.length > 0
+                    ? receta.formatos_permitidos
+                    : ['libra', 'porcion', 'mini'];
+                  const colsClass = allowed.length === 1 ? 'grid-cols-1' : allowed.length === 2 ? 'grid-cols-2' : 'grid-cols-3';
+
+                  return (
+                    <div className={`grid ${colsClass} gap-1 pt-2 mt-2 border-t border-trigo-100 text-[10px]`}>
+                      {allowed.includes('libra') && (
+                        <div className="bg-canvas p-1 rounded-lg border border-trigo-200 text-center">
+                          <span className="text-gray-500 block font-medium">Libra Base</span>
+                          <span className="font-extrabold text-chocolate-900">{formatCurrency(costData.precio_sugerido_margen_venta)}</span>
+                        </div>
+                      )}
+                      {allowed.includes('porcion') && (
+                        <div className="bg-canvas p-1 rounded-lg border border-trigo-200 text-center">
+                          <span className="text-gray-500 block font-medium">Porción Base</span>
+                          <span className="font-extrabold text-chocolate-900">{formatCurrency(Math.max(10, Math.ceil((costData.precio_sugerido_margen_venta / (receta.rendimiento_base || 12)) / 10) * 10))}</span>
+                        </div>
+                      )}
+                      {allowed.includes('mini') && (
+                        <div className="bg-canvas p-1 rounded-lg border border-trigo-200 text-center">
+                          <span className="text-gray-500 block font-medium">12 Mini Base</span>
+                          <span className="font-extrabold text-chocolate-900">{formatCurrency(Math.max(10, Math.ceil((costData.precio_sugerido_margen_venta * 0.4) / 10) * 10))}</span>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
               </div>
 
               {/* Pie de Tarjeta Financiero Base */}

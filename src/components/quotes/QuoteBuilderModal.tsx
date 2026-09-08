@@ -7,6 +7,7 @@ import {
   Receta,
   Insumo,
   Cliente,
+  FormatoPresentacion,
 } from '../../types';
 import { useApp } from '../../context/AppContext';
 import { Modal } from '../ui/Modal';
@@ -504,6 +505,14 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
     return recetas.find((r) => r.id === selectedRecetaId) || recetas[0];
   }, [recetas, selectedRecetaId]);
 
+  // Formatos de presentación permitidos para la receta seleccionada
+  const allowedFormatosQuote = useMemo<FormatoPresentacion[]>(() => {
+    if (currentReceta?.formatos_permitidos && currentReceta.formatos_permitidos.length > 0) {
+      return currentReceta.formatos_permitidos;
+    }
+    return ['libra', 'porcion', 'mini'];
+  }, [currentReceta?.formatos_permitidos]);
+
   // Porciones base de la receta seleccionada en el cotizador
   const basePorcionesQuote = useMemo(() => {
     if (!currentReceta) return 12;
@@ -576,8 +585,26 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
     setSelectedRecetaId(receta.id);
     setSearchProductTerm(receta.nombre);
     setIsProductDropdownOpen(false);
-    if (receta.rendimiento_unidad) {
-      setTamanoPorciones(receta.rendimiento_unidad);
+
+    const allowed = receta.formatos_permitidos && receta.formatos_permitidos.length > 0
+      ? receta.formatos_permitidos
+      : ['libra', 'porcion', 'mini'];
+
+    if (allowed.includes('libra')) {
+      setTamanoPorciones(receta.rendimiento_unidad || '1 LB (16-20 porciones)');
+      setFactorReceta(1.0);
+      setIsCustomMiniSelected(false);
+    } else if (allowed.includes('porcion')) {
+      const portions = getRecipePortionsCount(receta);
+      const opts = getPorcionOpciones(portions, receta.rendimiento_unidad);
+      const defaultOpt = opts[0];
+      setTamanoPorciones(`${defaultOpt?.label || '1 Porción'} [${defaultOpt?.factor || 1}x]`);
+      setFactorReceta(defaultOpt?.factor || 1);
+      setIsCustomMiniSelected(false);
+    } else if (allowed.includes('mini')) {
+      setTamanoPorciones('Caja x 12 Mini Bocaditos');
+      setFactorReceta(0.35);
+      setIsCustomMiniSelected(false);
     }
   };
 
@@ -985,32 +1012,38 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
                 }}
                 className="w-full px-3 py-2.5 rounded-xl border border-trigo-300 focus:ring-2 focus:ring-frambuesa-400 focus:outline-none bg-white font-medium text-chocolate-900"
               >
-                <optgroup label="⚖️ Formato Libra (Pasteles & Moldes)">
-                  <option value="½ LB (8-10 porciones)">½ LB (8-10 porciones) [0.5x]</option>
-                  <option value="1 LB (16-20 porciones)">1 LB (16-20 porciones) [Estándar 1x]</option>
-                  <option value="2 LB (30-40 porciones)">2 LB (30-40 porciones) [2x]</option>
-                  <option value="3 LB (50+ porciones)">3 LB (50+ porciones) [3x]</option>
-                  <option value="1 Molde 22cm (10-12 porciones)">1 Molde 22cm (10-12 porciones) [1x]</option>
-                  <option value="1 Molde Bundt 24cm (12-14 porciones)">1 Molde Bundt 24cm (12-14 porciones) [1x]</option>
-                </optgroup>
-                <optgroup label="🍰 Formato Porción (Rebanadas & Platos)">
-                  {porcionQuoteOpciones.map((opc) => (
-                    <option key={opc.label} value={`${opc.label} [${opc.factor}x]`}>
-                      {opc.label} [{opc.factor}x] - {opc.descripcion}
-                    </option>
-                  ))}
-                </optgroup>
-                <optgroup label="🧁 Formato Mini (Bocaditos & Mesa de Dulces)">
-                  <option value="Caja x 12 Mini Bocaditos">Caja x 12 Mini Bocaditos [0.35x]</option>
-                  <option value="Caja x 24 Mini Bocaditos">Caja x 24 Mini Bocaditos [0.70x]</option>
-                  <option value="Caja x 50 Mini Bocaditos (Eventos)">Caja x 50 Mini Bocaditos (Eventos) [1.45x]</option>
-                  <option value="Caja x 100 Mini Bocaditos (Banquete)">Caja x 100 Mini Bocaditos (Banquete) [2.90x]</option>
-                  <option value="Personalizado Mini">🧁 Personalizado: Cantidad Exacta de Minis...</option>
-                </optgroup>
+                {allowedFormatosQuote.includes('libra') && (
+                  <optgroup label="⚖️ Formato Libra (Pasteles & Moldes)">
+                    <option value="½ LB (8-10 porciones)">½ LB (8-10 porciones) [0.5x]</option>
+                    <option value="1 LB (16-20 porciones)">1 LB (16-20 porciones) [Estándar 1x]</option>
+                    <option value="2 LB (30-40 porciones)">2 LB (30-40 porciones) [2x]</option>
+                    <option value="3 LB (50+ porciones)">3 LB (50+ porciones) [3x]</option>
+                    <option value="1 Molde 22cm (10-12 porciones)">1 Molde 22cm (10-12 porciones) [1x]</option>
+                    <option value="1 Molde Bundt 24cm (12-14 porciones)">1 Molde Bundt 24cm (12-14 porciones) [1x]</option>
+                  </optgroup>
+                )}
+                {allowedFormatosQuote.includes('porcion') && (
+                  <optgroup label="🍰 Formato Porción (Rebanadas & Platos)">
+                    {porcionQuoteOpciones.map((opc) => (
+                      <option key={opc.label} value={`${opc.label} [${opc.factor}x]`}>
+                        {opc.label} [{opc.factor}x] - {opc.descripcion}
+                      </option>
+                    ))}
+                  </optgroup>
+                )}
+                {allowedFormatosQuote.includes('mini') && (
+                  <optgroup label="🧁 Formato Mini (Bocaditos & Mesa de Dulces)">
+                    <option value="Caja x 12 Mini Bocaditos">Caja x 12 Mini Bocaditos [0.35x]</option>
+                    <option value="Caja x 24 Mini Bocaditos">Caja x 24 Mini Bocaditos [0.70x]</option>
+                    <option value="Caja x 50 Mini Bocaditos (Eventos)">Caja x 50 Mini Bocaditos (Eventos) [1.45x]</option>
+                    <option value="Caja x 100 Mini Bocaditos (Banquete)">Caja x 100 Mini Bocaditos (Banquete) [2.90x]</option>
+                    <option value="Personalizado Mini">🧁 Personalizado: Cantidad Exacta de Minis...</option>
+                  </optgroup>
+                )}
               </select>
 
               {/* Editor de Cantidad Exacta de Minis si aplica */}
-              {isCustomMiniSelected && (
+              {isCustomMiniSelected && allowedFormatosQuote.includes('mini') && (
                 <div className="mt-2.5 p-3 rounded-2xl bg-canvas border border-trigo-300 animate-fade-in shadow-inner space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-extrabold text-chocolate-900 flex items-center gap-1.5">

@@ -67,6 +67,8 @@ export type CategoriaReceta =
   | 'Rellenos y Coberturas'
   | string;
 
+export type FormatoPresentacion = 'libra' | 'porcion' | 'mini';
+
 export interface Receta {
   id: number;
   nombre: string;
@@ -83,6 +85,7 @@ export interface Receta {
   reposicion_equipos_pct: number; // default 10%
   mano_obra_pct: number; // default 30%
   margen_beneficio_pct: number; // default 50% (margen comercial sobre venta)
+  formatos_permitidos?: FormatoPresentacion[]; // Divisiones de presentación habilitadas: libra, porcion, mini
   ingredientes: RecetaIngrediente[];
   instrucciones?: string[];
   activa: boolean;

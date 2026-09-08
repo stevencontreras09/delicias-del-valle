@@ -1,5 +1,5 @@
 import { getSupabaseClient } from '../utils/supabaseClient';
-import { Insumo, Merma, Receta, Cotizacion, Pedido, Usuario, Cliente } from '../types';
+import { Insumo, Merma, Receta, Cotizacion, Pedido, Usuario, Cliente, FormatoPresentacion } from '../types';
 
 export interface SyncResult {
   success: boolean;
@@ -119,34 +119,56 @@ export async function fetchAllFromSupabase(): Promise<{
       activo: Boolean(i.activo),
     }));
 
-    const recetas: Receta[] = (recetasDb || []).map((r: any) => ({
-      id: Number(r.id),
-      nombre: r.nombre,
-      categoria: r.categoria,
-      descripcion: r.descripcion || '',
-      rendimiento_base: Number(r.rendimiento_base),
-      rendimiento_unidad: r.rendimiento_unidad,
-      tiempo_preparacion_min: Number(r.tiempo_preparacion_min),
-      tiempo_horneado_min: Number(r.tiempo_horneado_min),
-      temperatura_horno_c: Number(r.temperatura_horno_c) || 180,
-      materiales_indirectos_pct: Number(r.materiales_indirectos_pct ?? 10),
-      costos_operativos_pct: Number(r.costos_operativos_pct ?? 15),
-      reposicion_equipos_pct: Number(r.reposicion_equipos_pct ?? 10),
-      mano_obra_pct: Number(r.mano_obra_pct ?? 30),
-      margen_beneficio_pct: Number(r.margen_beneficio_pct ?? 50),
-      activa: Boolean(r.activa),
-      nombre_base: r.nombre_base || undefined,
-      es_variante_de: r.es_variante_de ? Number(r.es_variante_de) : undefined,
-      orden_variante: r.orden_variante !== undefined ? Number(r.orden_variante) : undefined,
-      created_at: r.created_at || r.updated_at || undefined,
-      updated_at: r.updated_at || undefined,
-      instrucciones: Array.isArray(r.instrucciones) ? r.instrucciones : [],
-      ingredientes: (r.receta_ingredientes || []).map((ing: any) => ({
-        insumo_id: Number(ing.insumo_id),
-        cantidad: Number(ing.cantidad),
-        tipo: ing.tipo,
-      })),
-    }));
+    const recetas: Receta[] = (recetasDb || []).map((r: any) => {
+      let formatosPermitidos: FormatoPresentacion[] = ['libra', 'porcion', 'mini'];
+      if (Array.isArray(r.formatos_permitidos) && r.formatos_permitidos.length > 0) {
+        formatosPermitidos = r.formatos_permitidos;
+      } else if (typeof r.descripcion === 'string' && r.descripcion.includes('<!--formatos:')) {
+        try {
+          const match = r.descripcion.match(/<!--formatos:(.*?)-->/);
+          if (match && match[1]) {
+            const parsed = JSON.parse(match[1]);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              formatosPermitidos = parsed;
+            }
+          }
+        } catch {}
+      }
+
+      const cleanDesc = typeof r.descripcion === 'string'
+        ? r.descripcion.replace(/<!--formatos:.*?-->/g, '').trim()
+        : '';
+
+      return {
+        id: Number(r.id),
+        nombre: r.nombre,
+        categoria: r.categoria,
+        descripcion: cleanDesc,
+        rendimiento_base: Number(r.rendimiento_base),
+        rendimiento_unidad: r.rendimiento_unidad,
+        tiempo_preparacion_min: Number(r.tiempo_preparacion_min),
+        tiempo_horneado_min: Number(r.tiempo_horneado_min),
+        temperatura_horno_c: Number(r.temperatura_horno_c) || 180,
+        materiales_indirectos_pct: Number(r.materiales_indirectos_pct ?? 10),
+        costos_operativos_pct: Number(r.costos_operativos_pct ?? 15),
+        reposicion_equipos_pct: Number(r.reposicion_equipos_pct ?? 10),
+        mano_obra_pct: Number(r.mano_obra_pct ?? 30),
+        margen_beneficio_pct: Number(r.margen_beneficio_pct ?? 50),
+        formatos_permitidos: formatosPermitidos,
+        activa: Boolean(r.activa),
+        nombre_base: r.nombre_base || undefined,
+        es_variante_de: r.es_variante_de ? Number(r.es_variante_de) : undefined,
+        orden_variante: r.orden_variante !== undefined ? Number(r.orden_variante) : undefined,
+        created_at: r.created_at || r.updated_at || undefined,
+        updated_at: r.updated_at || undefined,
+        instrucciones: Array.isArray(r.instrucciones) ? r.instrucciones : [],
+        ingredientes: (r.receta_ingredientes || []).map((ing: any) => ({
+          insumo_id: Number(ing.insumo_id),
+          cantidad: Number(ing.cantidad),
+          tipo: ing.tipo,
+        })),
+      };
+    });
 
     const cotizaciones: Cotizacion[] = (cotizacionesDb || []).map((c: any) => ({
       id: Number(c.id),
@@ -336,11 +358,17 @@ export async function syncRecetaToSupabase(receta: Receta): Promise<{ success: b
   if (!client) return { success: false, error: 'Cliente de Supabase no configurado' };
 
   try {
-    const { data: recDb, error: recErr } = await client.from('recetas').upsert({
+    const formatos = receta.formatos_permitidos && receta.formatos_permitidos.length > 0
+      ? receta.formatos_permitidos
+      : ['libra', 'porcion', 'mini'];
+
+    const cleanDesc = (receta.descripcion || '').replace(/<!--formatos:.*?-->/g, '').trim();
+
+    const baseRow: any = {
       id: receta.id,
       nombre: receta.nombre,
       categoria: receta.categoria,
-      descripcion: receta.descripcion,
+      descripcion: cleanDesc,
       rendimiento_base: receta.rendimiento_base,
       rendimiento_unidad: receta.rendimiento_unidad,
       tiempo_preparacion_min: receta.tiempo_preparacion_min,
@@ -354,7 +382,25 @@ export async function syncRecetaToSupabase(receta: Receta): Promise<{ success: b
       activa: receta.activa,
       instrucciones: receta.instrucciones,
       updated_at: new Date().toISOString(),
+    };
+
+    // 1. Intentar upsert con la columna formatos_permitidos
+    let { data: recDb, error: recErr } = await client.from('recetas').upsert({
+      ...baseRow,
+      formatos_permitidos: formatos,
     }).select().single();
+
+    // 2. Si la columna aún no existe en Supabase (error PGRST204), fallback guardando metadata en descripcion
+    if (recErr && (recErr.code === 'PGRST204' || recErr.message?.includes('formatos_permitidos'))) {
+      console.warn('Columna formatos_permitidos no detectada en Supabase. Aplicando metadato de compatibilidad.');
+      const descConMeta = `${cleanDesc}\n<!--formatos:${JSON.stringify(formatos)}-->`.trim();
+      const retry = await client.from('recetas').upsert({
+        ...baseRow,
+        descripcion: descConMeta,
+      }).select().single();
+      recDb = retry.data;
+      recErr = retry.error;
+    }
 
     if (recErr) {
       console.error('Error al guardar receta en Supabase:', recErr);
