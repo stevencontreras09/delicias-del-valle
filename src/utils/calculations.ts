@@ -37,7 +37,7 @@ export function calcularCostosReceta(
   receta: Receta,
   insumosMap: Map<number, Insumo>,
   factorEscalado: number = 1,
-  variablesActivas: boolean | Set<number> | number[] = true
+  variablesActivas: boolean | Set<number> | number[] = false
 ): RecetaCostosCalculados {
   let costoFijos = 0;
   let costoVariablesTotal = 0;

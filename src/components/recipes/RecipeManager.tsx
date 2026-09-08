@@ -135,7 +135,7 @@ export const RecipeManager: React.FC = () => {
       {/* Grid de Recetas */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredRecetas.map((receta) => {
-          const costData = calcularCostosReceta(receta, insumosMap, 1);
+          const costData = calcularCostosReceta(receta, insumosMap, 1, false);
           const fijosCount = receta.ingredientes.filter((i) => i.tipo === 'fijo').length;
           const varCount = receta.ingredientes.filter((i) => i.tipo === 'variable').length;
 
@@ -178,35 +178,41 @@ export const RecipeManager: React.FC = () => {
                 {/* Resumen de Ingredientes */}
                 <div className="mt-2.5 flex items-center justify-between text-xs text-gray-500">
                   <span>
-                    BOM: <b>{fijosCount}</b> fijos + <b>{varCount}</b> variables
+                    BOM: <b>{fijosCount}</b> fijos {varCount > 0 && <span className="text-amber-700 font-medium">(+{varCount} variables)</span>}
                   </span>
-                  <span className="text-[11px] font-semibold text-chocolate-700">
-                    {receta.ingredientes.length} items
-                  </span>
+                  {varCount > 0 ? (
+                    <span className="text-[10px] font-bold text-amber-800 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
+                      Variables seleccionables
+                    </span>
+                  ) : (
+                    <span className="text-[11px] font-semibold text-chocolate-700">
+                      {receta.ingredientes.length} items
+                    </span>
+                  )}
                 </div>
 
-                {/* Precios Rápidos: Libra, Porción, Mini */}
+                {/* Precios Rápidos Base: Libra, Porción, Mini */}
                 <div className="grid grid-cols-3 gap-1 pt-2 mt-2 border-t border-trigo-100 text-[10px]">
                   <div className="bg-canvas p-1 rounded-lg border border-trigo-200 text-center">
-                    <span className="text-gray-500 block font-medium">Libra</span>
+                    <span className="text-gray-500 block font-medium">Libra Base</span>
                     <span className="font-extrabold text-chocolate-900">{formatCurrency(costData.precio_sugerido_margen_venta)}</span>
                   </div>
                   <div className="bg-canvas p-1 rounded-lg border border-trigo-200 text-center">
-                    <span className="text-gray-500 block font-medium">Porción</span>
+                    <span className="text-gray-500 block font-medium">Porción Base</span>
                     <span className="font-extrabold text-chocolate-900">{formatCurrency(Math.max(10, Math.ceil((costData.precio_sugerido_margen_venta / 12) / 10) * 10))}</span>
                   </div>
                   <div className="bg-canvas p-1 rounded-lg border border-trigo-200 text-center">
-                    <span className="text-gray-500 block font-medium">12 Mini</span>
+                    <span className="text-gray-500 block font-medium">12 Mini Base</span>
                     <span className="font-extrabold text-chocolate-900">{formatCurrency(Math.max(10, Math.ceil((costData.precio_sugerido_margen_venta * 0.4) / 10) * 10))}</span>
                   </div>
                 </div>
               </div>
 
-              {/* Pie de Tarjeta Financiero */}
+              {/* Pie de Tarjeta Financiero Base */}
               <div className="bg-crema/40 p-4 border-t border-trigo-200 space-y-3">
                 <div className="flex items-center justify-between text-xs">
                   <div>
-                    <span className="text-gray-500 block text-[11px]">Costo Producción (CTP):</span>
+                    <span className="text-gray-500 block text-[11px]">Costo Base (CTP):</span>
                     <span className="text-sm font-black text-chocolate-900">
                       {formatCurrency(costData.costo_total_produccion)}
                     </span>
@@ -214,7 +220,7 @@ export const RecipeManager: React.FC = () => {
 
                   <div className="text-right">
                     <span className="text-emerald-800 font-bold block text-[11px]">
-                      Precio Sugerido:
+                      Precio Base Sugerido:
                     </span>
                     <span className="text-base font-extrabold text-emerald-700">
                       {formatCurrency(costData.precio_sugerido_margen_venta)}

@@ -68,15 +68,9 @@ export const RecipeDetailModal: React.FC<RecipeDetailModalProps> = ({
   // Set de insumos variables activos/seleccionados para aplicar en esta receta
   const [activeVariableIds, setActiveVariableIds] = useState<Set<number>>(new Set());
 
-  // Inicializar todos los variables como activos cuando cambia la receta
+  // Inicializar sin variables por defecto (muestra el precio base puro)
   useEffect(() => {
-    if (receta) {
-      const allVars = new Set<number>();
-      receta.ingredientes
-        .filter((i) => i.tipo === 'variable')
-        .forEach((i) => allVars.add(i.insumo_id));
-      setActiveVariableIds(allVars);
-    }
+    setActiveVariableIds(new Set());
   }, [receta?.id]);
 
   const handleToggleVariable = (insumoId: number) => {
@@ -107,6 +101,9 @@ export const RecipeDetailModal: React.FC<RecipeDetailModalProps> = ({
   if (!receta) return null;
 
   const costBreakdown = calcularCostosReceta(receta, insumosMap, multiplier, activeVariableIds);
+  const costBasePuro = calcularCostosReceta(receta, insumosMap, multiplier, false);
+  const diferenciaPrecioVariables = Math.max(0, costBreakdown.precio_sugerido_margen_venta - costBasePuro.precio_sugerido_margen_venta);
+
   const ingredientesEnriquecidos = enriquecerIngredientes(
     receta.ingredientes,
     insumosMap,
@@ -568,21 +565,29 @@ export const RecipeDetailModal: React.FC<RecipeDetailModalProps> = ({
               <div>
                 <div className="flex items-center justify-between mb-1">
                   <span className="text-xs font-bold text-chocolate-800 uppercase block">
-                    Precio Sugerido ({selectedPresetLabel}):
+                    {activeVariableIds.size === 0
+                      ? `Precio Base Sugerido (${selectedPresetLabel}):`
+                      : `Precio Sugerido con Variables (${selectedPresetLabel}):`}
                   </span>
-                  <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
-                    Redondeado a 0
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                    activeVariableIds.size === 0
+                      ? 'text-chocolate-700 bg-canvas border-trigo-300'
+                      : 'text-emerald-700 bg-emerald-50 border-emerald-200'
+                  }`}>
+                    {activeVariableIds.size === 0 ? 'Base sin variables' : `+${activeVariableIds.size} variable(s) agregada(s)`}
                   </span>
                 </div>
                 <p className="text-[11px] text-gray-500 mb-3">
-                  Precio con margen de beneficio del {receta.margen_beneficio_pct}% calculado y redondeado hacia arriba para venta comercial.
+                  {activeVariableIds.size === 0
+                    ? `Precio base calculado solo con insumos fijos y margen del ${receta.margen_beneficio_pct}%. Marca las variables arriba para agregarlas.`
+                    : `Precio comercial actualizado con insumos fijos + ${activeVariableIds.size} variable(s) opcional(es) seleccionada(s).`}
                 </p>
 
                 <div className="space-y-2">
                   <div className="bg-emerald-50 p-3.5 rounded-2xl border border-emerald-200 flex items-center justify-between">
                     <div>
                       <span className="text-xs font-bold text-emerald-900 block">
-                        Precio Sugerido de Venta:
+                        {activeVariableIds.size === 0 ? 'Precio Base de Venta:' : 'Precio Final de Venta:'}
                       </span>
                       <span className="text-[10px] text-emerald-700">
                         Ganancia neta: {formatCurrency(costBreakdown.ganancia_estimada)}
@@ -593,14 +598,41 @@ export const RecipeDetailModal: React.FC<RecipeDetailModalProps> = ({
                     </span>
                   </div>
 
-                  <div className="bg-canvas p-3 rounded-xl border border-trigo-200 flex items-center justify-between">
-                    <span className="text-xs text-chocolate-700 font-semibold">
-                      Costo Total de Elaboración:
-                    </span>
-                    <span className="text-sm font-bold text-chocolate-900">
-                      {formatCurrency(costBreakdown.costo_total_produccion)}
-                    </span>
-                  </div>
+                  {/* Comparativa Dinámica: Base vs Variables */}
+                  {variables.length > 0 && (
+                    <div className="bg-canvas p-3 rounded-xl border border-trigo-200 space-y-1.5 text-xs">
+                      <div className="flex items-center justify-between text-chocolate-700">
+                        <span>Precio Base (Insumos Fijos):</span>
+                        <span className="font-bold text-chocolate-900">{formatCurrency(costBasePuro.precio_sugerido_margen_venta)}</span>
+                      </div>
+                      {activeVariableIds.size > 0 ? (
+                        <div className="flex items-center justify-between text-emerald-800 font-semibold text-[11px] pt-1 border-t border-trigo-200">
+                          <span>+ Variables aplicadas ({activeVariableIds.size}):</span>
+                          <span className="font-extrabold text-emerald-700">+{formatCurrency(diferenciaPrecioVariables)}</span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-between text-gray-400 italic text-[11px] pt-1 border-t border-trigo-100">
+                          <span>Variables aplicadas: 0</span>
+                          <span>+$0.00</span>
+                        </div>
+                      )}
+                      <div className="flex items-center justify-between text-chocolate-600 pt-1 border-t border-trigo-200 text-[11px]">
+                        <span>Costo Total Elaboración (CTP):</span>
+                        <span className="font-bold text-chocolate-900">{formatCurrency(costBreakdown.costo_total_produccion)}</span>
+                      </div>
+                    </div>
+                  )}
+
+                  {variables.length === 0 && (
+                    <div className="bg-canvas p-3 rounded-xl border border-trigo-200 flex items-center justify-between">
+                      <span className="text-xs text-chocolate-700 font-semibold">
+                        Costo Total de Elaboración:
+                      </span>
+                      <span className="text-sm font-bold text-chocolate-900">
+                        {formatCurrency(costBreakdown.costo_total_produccion)}
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
 
