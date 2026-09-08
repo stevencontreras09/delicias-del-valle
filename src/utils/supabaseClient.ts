@@ -1,15 +1,19 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
-// Obtener credenciales desde variables de entorno .env (Vite) o configuración manual en localStorage
+// Credenciales por defecto del proyecto Supabase (Anon Key pública para clientes)
+const DEFAULT_SUPABASE_URL = 'https://ahzseugjftsmkdterpgq.supabase.co';
+const DEFAULT_SUPABASE_ANON_KEY = 'sb_publishable_KCDYQsATqBIVTAsYcHFZZQ_NNAoO20N';
+
+// Obtener credenciales desde variables de entorno .env (Vite), configuración manual en localStorage o fallback
 const getSupabaseCredentials = () => {
   const envUrl = (import.meta.env.VITE_SUPABASE_URL || '').trim();
   const envKey = (import.meta.env.VITE_SUPABASE_ANON_KEY || '').trim();
   const localUrl = (localStorage.getItem('delicias_supabase_url') || '').trim();
   const localKey = (localStorage.getItem('delicias_supabase_anon_key') || '').trim();
 
-  // Priorizar variables de entorno de Vite; si no existen, usar configuración local explícita
-  const url = envUrl || localUrl;
-  const anonKey = envKey || localKey;
+  // Priorizar variables de entorno de Vite; luego configuración local explícita; finalmente fallback del proyecto
+  const url = envUrl || localUrl || DEFAULT_SUPABASE_URL;
+  const anonKey = envKey || localKey || DEFAULT_SUPABASE_ANON_KEY;
 
   return { url, anonKey };
 };
