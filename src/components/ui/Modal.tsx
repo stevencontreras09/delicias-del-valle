@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 
 interface ModalProps {
@@ -36,7 +37,7 @@ export const Modal: React.FC<ModalProps> = ({
     };
   }, [isOpen, onClose]);
 
-  if (!isOpen) return null;
+  if (!isOpen || typeof document === 'undefined') return null;
 
   const maxWidthClasses = {
     sm: 'max-w-sm',
@@ -50,8 +51,8 @@ export const Modal: React.FC<ModalProps> = ({
     full: 'max-w-[95vw]',
   }[maxWidth];
 
-  return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-chocolate-950/60 backdrop-blur-sm flex justify-center p-3 sm:p-5 md:p-6 animate-fade-in overscroll-contain">
+  return createPortal(
+    <div className="fixed inset-0 z-[100] overflow-y-auto bg-chocolate-950/70 backdrop-blur-sm flex justify-center p-3 sm:p-5 md:p-6 animate-fade-in overscroll-contain">
       <div
         className="fixed inset-0"
         onClick={onClose}
@@ -90,6 +91,7 @@ export const Modal: React.FC<ModalProps> = ({
           {children}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };

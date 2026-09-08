@@ -19,6 +19,7 @@ import {
   Receipt,
   Sparkles,
 } from 'lucide-react';
+import { Modal } from '../ui/Modal';
 import { formatDate } from '../../utils/formatters';
 
 export const UserManager: React.FC = () => {
@@ -403,170 +404,150 @@ export const UserManager: React.FC = () => {
       </div>
 
       {/* Modal: Crear / Editar Usuario */}
-      {isModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-lg w-full border border-trigo-200 shadow-2xl space-y-4 animate-scale-up">
-            <div className="flex items-center justify-between border-b border-trigo-200 pb-3">
-              <h3 className="text-lg font-bold text-chocolate-800 flex items-center gap-2">
-                <Users className="w-5 h-5 text-frambuesa-600" />
-                <span>{editingUser ? 'Editar Usuario' : 'Registrar Nuevo Usuario'}</span>
-              </h3>
-              <button
-                onClick={() => setIsModalOpen(false)}
-                className="text-gray-400 hover:text-chocolate-800 text-lg font-bold"
-              >
-                ✕
-              </button>
+      <Modal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        title={editingUser ? 'Editar Usuario' : 'Registrar Nuevo Usuario'}
+        maxWidth="lg"
+      >
+        <form onSubmit={handleSaveUser} className="space-y-3.5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-bold text-chocolate-700 mb-1">
+                Nombre de Usuario (Login) *
+              </label>
+              <input
+                type="text"
+                required
+                value={formData.username}
+                onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+                placeholder="Ej: reposterocarlos"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-trigo-300 text-xs focus:ring-2 focus:ring-frambuesa-500 outline-none bg-canvas/30 font-mono"
+              />
             </div>
 
-            <form onSubmit={handleSaveUser} className="space-y-3.5">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-bold text-chocolate-700 mb-1">
-                    Nombre de Usuario (Login) *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={formData.username}
-                    onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-                    placeholder="Ej: reposterocarlos"
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-trigo-300 text-xs focus:ring-2 focus:ring-frambuesa-500 outline-none bg-canvas/30 font-mono"
-                  />
-                </div>
-
-                {!editingUser && (
-                  <div>
-                    <label className="block text-xs font-bold text-chocolate-700 mb-1">
-                      Contraseña Inicial *
-                    </label>
-                    <input
-                      type="password"
-                      required
-                      value={formData.password}
-                      onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                      placeholder="Mínimo 6 caracteres"
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-trigo-300 text-xs focus:ring-2 focus:ring-frambuesa-500 outline-none bg-canvas/30"
-                    />
-                  </div>
-                )}
-              </div>
-
+            {!editingUser && (
               <div>
                 <label className="block text-xs font-bold text-chocolate-700 mb-1">
-                  Nombre Completo *
+                  Contraseña Inicial *
                 </label>
                 <input
-                  type="text"
+                  type="password"
                   required
-                  value={formData.nombre_completo}
-                  onChange={(e) => setFormData({ ...formData, nombre_completo: e.target.value })}
-                  placeholder="Ej: Carlos Méndez"
+                  value={formData.password}
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  placeholder="Mínimo 6 caracteres"
                   className="w-full px-3.5 py-2.5 rounded-xl border border-trigo-300 text-xs focus:ring-2 focus:ring-frambuesa-500 outline-none bg-canvas/30"
                 />
               </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-bold text-chocolate-700 mb-1">
-                    Correo Electrónico *
-                  </label>
-                  <input
-                    type="email"
-                    required
-                    value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    placeholder="carlos@deliciasdelvalle.com"
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-trigo-300 text-xs focus:ring-2 focus:ring-frambuesa-500 outline-none bg-canvas/30"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-chocolate-700 mb-1">
-                    Teléfono / WhatsApp
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.telefono}
-                    onChange={(e) => setFormData({ ...formData, telefono: e.target.value })}
-                    placeholder="+1 (809) 555-0142"
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-trigo-300 text-xs focus:ring-2 focus:ring-frambuesa-500 outline-none bg-canvas/30"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-                <div>
-                  <label className="block text-xs font-bold text-chocolate-700 mb-1">
-                    Rol en el Taller
-                  </label>
-                  <select
-                    value={formData.rol}
-                    onChange={(e) => setFormData({ ...formData, rol: e.target.value as UserRole })}
-                    disabled={editingUser?.username === 'Steven9909'}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-trigo-300 text-xs focus:ring-2 focus:ring-frambuesa-500 outline-none bg-white font-semibold text-chocolate-900"
-                  >
-                    <option value="coadmin">Co-Administrador (Operativo Total sin BD/Usuarios)</option>
-                    <option value="pastelero">Pastelero / Chef (Taller & Cocina)</option>
-                    <option value="cajero">Cajero / Ventas (Cotizaciones & Cobros)</option>
-                    <option value="admin">Administrador Maestro (Acceso Total + SQL)</option>
-                    <option value="operador">Operador General</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-chocolate-700 mb-1">
-                    Estado de la Cuenta
-                  </label>
-                  <select
-                    value={formData.activo ? 'true' : 'false'}
-                    onChange={(e) => setFormData({ ...formData, activo: e.target.value === 'true' })}
-                    disabled={editingUser?.username === 'Steven9909'}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-trigo-300 text-xs focus:ring-2 focus:ring-frambuesa-500 outline-none bg-white font-semibold text-chocolate-900"
-                  >
-                    <option value="true">Activo (Puede Iniciar Sesión)</option>
-                    <option value="false">Inactivo (Acceso Bloqueado)</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-end gap-2 pt-4 border-t border-trigo-200">
-                <button
-                  type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 rounded-xl text-xs font-bold text-chocolate-600 hover:bg-crema"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  className="px-5 py-2 rounded-xl text-xs font-bold bg-frambuesa-500 hover:bg-frambuesa-600 text-white shadow-sm"
-                >
-                  {editingUser ? 'Guardar Cambios' : 'Crear Usuario'}
-                </button>
-              </div>
-            </form>
+            )}
           </div>
-        </div>
-      )}
 
-      {/* Modal: Reset de Contraseña */}
-      {isPasswordModalOpen && targetUserForPassword && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl p-6 sm:p-7 max-w-sm w-full border border-trigo-200 shadow-2xl space-y-4 animate-scale-up">
-            <div className="flex items-center justify-between border-b border-trigo-200 pb-3">
-              <h3 className="text-base font-bold text-chocolate-800 flex items-center gap-2">
-                <KeyRound className="w-5 h-5 text-amber-600" />
-                <span>Restablecer Contraseña</span>
-              </h3>
-              <button
-                onClick={() => setIsPasswordModalOpen(false)}
-                className="text-gray-400 hover:text-chocolate-800 font-bold"
-              >
-                ✕
-              </button>
+          <div>
+            <label className="block text-xs font-bold text-chocolate-700 mb-1">
+              Nombre Completo *
+            </label>
+            <input
+              type="text"
+              required
+              value={formData.nombre_completo}
+              onChange={(e) => setFormData({ ...formData, nombre_completo: e.target.value })}
+              placeholder="Ej: Carlos Méndez"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-trigo-300 text-xs focus:ring-2 focus:ring-frambuesa-500 outline-none bg-canvas/30"
+            />
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-bold text-chocolate-700 mb-1">
+                Correo Electrónico *
+              </label>
+              <input
+                type="email"
+                required
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                placeholder="carlos@deliciasdelvalle.com"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-trigo-300 text-xs focus:ring-2 focus:ring-frambuesa-500 outline-none bg-canvas/30"
+              />
             </div>
 
+            <div>
+              <label className="block text-xs font-bold text-chocolate-700 mb-1">
+                Teléfono / WhatsApp
+              </label>
+              <input
+                type="text"
+                value={formData.telefono}
+                onChange={(e) => setFormData({ ...formData, telefono: e.target.value })}
+                placeholder="+1 (809) 555-0142"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-trigo-300 text-xs focus:ring-2 focus:ring-frambuesa-500 outline-none bg-canvas/30"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+            <div>
+              <label className="block text-xs font-bold text-chocolate-700 mb-1">
+                Rol en el Taller
+              </label>
+              <select
+                value={formData.rol}
+                onChange={(e) => setFormData({ ...formData, rol: e.target.value as UserRole })}
+                disabled={editingUser?.username === 'Steven9909'}
+                className="w-full px-3.5 py-2.5 rounded-xl border border-trigo-300 text-xs focus:ring-2 focus:ring-frambuesa-500 outline-none bg-white font-semibold text-chocolate-900"
+              >
+                <option value="coadmin">Co-Administrador (Operativo Total sin BD/Usuarios)</option>
+                <option value="pastelero">Pastelero / Chef (Taller & Cocina)</option>
+                <option value="cajero">Cajero / Ventas (Cotizaciones & Cobros)</option>
+                <option value="admin">Administrador Maestro (Acceso Total + SQL)</option>
+                <option value="operador">Operador General</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-chocolate-700 mb-1">
+                Estado de la Cuenta
+              </label>
+              <select
+                value={formData.activo ? 'true' : 'false'}
+                onChange={(e) => setFormData({ ...formData, activo: e.target.value === 'true' })}
+                disabled={editingUser?.username === 'Steven9909'}
+                className="w-full px-3.5 py-2.5 rounded-xl border border-trigo-300 text-xs focus:ring-2 focus:ring-frambuesa-500 outline-none bg-white font-semibold text-chocolate-900"
+              >
+                <option value="true">Activo (Puede Iniciar Sesión)</option>
+                <option value="false">Inactivo (Acceso Bloqueado)</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-end gap-2 pt-4 border-t border-trigo-200">
+            <button
+              type="button"
+              onClick={() => setIsModalOpen(false)}
+              className="px-4 py-2 rounded-xl text-xs font-bold text-chocolate-600 hover:bg-crema"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              className="px-5 py-2 rounded-xl text-xs font-bold bg-frambuesa-500 hover:bg-frambuesa-600 text-white shadow-sm"
+            >
+              {editingUser ? 'Guardar Cambios' : 'Crear Usuario'}
+            </button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Modal: Reset de Contraseña */}
+      <Modal
+        isOpen={isPasswordModalOpen && !!targetUserForPassword}
+        onClose={() => setIsPasswordModalOpen(false)}
+        title="Restablecer Contraseña"
+        maxWidth="sm"
+      >
+        {targetUserForPassword && (
+          <div className="space-y-4">
             <p className="text-xs text-chocolate-600">
               Establece una nueva clave para <b>{targetUserForPassword.nombre_completo}</b> (<code>{targetUserForPassword.username}</code>).
             </p>
@@ -603,8 +584,8 @@ export const UserManager: React.FC = () => {
               </div>
             </form>
           </div>
-        </div>
-      )}
+        )}
+      </Modal>
     </div>
   );
 };
