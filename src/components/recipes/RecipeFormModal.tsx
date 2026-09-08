@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Receta, CategoriaReceta, RecetaIngrediente, Insumo } from '../../types';
 import { Modal } from '../ui/Modal';
 import { formatCurrency } from '../../utils/formatters';
@@ -14,7 +14,7 @@ interface RecipeFormModalProps {
   onClose: () => void;
   insumos: Insumo[];
   initialReceta?: Receta | null;
-  onSave: (receta: Omit<Receta, 'id'>) => void;
+  onSave: (receta: Omit<Receta, 'id'>) => Promise<any> | void;
 }
 
 const CATEGORIAS_RECETA: CategoriaReceta[] = [
@@ -35,103 +35,149 @@ export const RecipeFormModal: React.FC<RecipeFormModalProps> = ({
   initialReceta,
   onSave,
 }) => {
-  const [nombre, setNombre] = useState(initialReceta?.nombre || '');
+  // Recuperar borrador previo si existe y es nueva receta (para prevenir pérdidas accidentales)
+  const initialDraft = useMemo(() => {
+    if (initialReceta) return null;
+    try {
+      const saved = sessionStorage.getItem('delicias_draft_new_recipe');
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return null;
+  }, [initialReceta]);
+
+  const [nombre, setNombre] = useState(
+    initialReceta?.nombre ?? initialDraft?.nombre ?? ''
+  );
   const [categoria, setCategoria] = useState<CategoriaReceta>(
-    initialReceta?.categoria || 'Tortas y Pasteles'
+    initialReceta?.categoria ?? initialDraft?.categoria ?? 'Tortas y Pasteles'
   );
   // Rendimiento sin valores sugeridos por defecto cuando se crea una nueva receta
   const [rendimientoBase, setRendimientoBase] = useState<number | ''>(
-    initialReceta?.rendimiento_base ?? ''
+    initialReceta?.rendimiento_base ?? initialDraft?.rendimiento_base ?? ''
   );
   const [rendimientoUnidad, setRendimientoUnidad] = useState(
-    initialReceta?.rendimiento_unidad || ''
+    initialReceta?.rendimiento_unidad ?? initialDraft?.rendimiento_unidad ?? ''
   );
   const [tiempoPrep, setTiempoPrep] = useState<number | ''>(
-    initialReceta?.tiempo_preparacion_min || 30
+    initialReceta?.tiempo_preparacion_min ?? initialDraft?.tiempo_preparacion_min ?? 30
   );
   const [tiempoHorneado, setTiempoHorneado] = useState<number | ''>(
-    initialReceta?.tiempo_horneado_min || 45
+    initialReceta?.tiempo_horneado_min ?? initialDraft?.tiempo_horneado_min ?? 45
   );
   const [tempHorno, setTempHorno] = useState<number | ''>(
-    initialReceta?.temperatura_horno_c || 180
+    initialReceta?.temperatura_horno_c ?? initialDraft?.temperatura_horno_c ?? 180
   );
 
   // Porcentajes en cascada configurables
   const [indirectosPct, setIndirectosPct] = useState<number | ''>(
-    initialReceta?.materiales_indirectos_pct ?? 10
+    initialReceta?.materiales_indirectos_pct ?? initialDraft?.materiales_indirectos_pct ?? 10
   );
   const [operativosPct, setOperativosPct] = useState<number | ''>(
-    initialReceta?.costos_operativos_pct ?? 15
+    initialReceta?.costos_operativos_pct ?? initialDraft?.costos_operativos_pct ?? 15
   );
   const [reposicionPct, setReposicionPct] = useState<number | ''>(
-    initialReceta?.reposicion_equipos_pct ?? 10
+    initialReceta?.reposicion_equipos_pct ?? initialDraft?.reposicion_equipos_pct ?? 10
   );
   const [manoObraPct, setManoObraPct] = useState<number | ''>(
-    initialReceta?.mano_obra_pct ?? 30
+    initialReceta?.mano_obra_pct ?? initialDraft?.mano_obra_pct ?? 30
   );
   const [margenBeneficioPct, setMargenBeneficioPct] = useState<number | ''>(
-    initialReceta?.margen_beneficio_pct ?? 50
+    initialReceta?.margen_beneficio_pct ?? initialDraft?.margen_beneficio_pct ?? 50
   );
 
   // Ingredientes
   const [ingredientes, setIngredientes] = useState<RecetaIngrediente[]>(
-    initialReceta?.ingredientes || [
-      { insumo_id: insumos[0]?.id || 1, cantidad: 500, tipo: 'fijo' },
-    ]
+    initialReceta?.ingredientes && initialReceta.ingredientes.length > 0
+      ? initialReceta.ingredientes
+      : initialDraft?.ingredientes && initialDraft.ingredientes.length > 0
+      ? initialDraft.ingredientes
+      : [{ insumo_id: insumos[0]?.id || 1, cantidad: 500, tipo: 'fijo' }]
   );
 
   // Instrucciones
   const [instrucciones, setInstrucciones] = useState<string[]>(
-    initialReceta?.instrucciones || ['Precalentar el horno a 180°C y engrasar moldes.']
+    initialReceta?.instrucciones && initialReceta.instrucciones.length > 0
+      ? initialReceta.instrucciones
+      : initialDraft?.instrucciones && initialDraft.instrucciones.length > 0
+      ? initialDraft.instrucciones
+      : ['Precalentar el horno a 180°C y engrasar moldes.']
   );
 
-  // Sincronizar y limpiar formulario al abrir/cerrar o cambiar de receta
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Auto-guardar borrador solo cuando se crea una nueva receta (así nunca se pierde lo que escribe el usuario)
   useEffect(() => {
-    if (isOpen) {
-      if (initialReceta) {
-        setNombre(initialReceta.nombre || '');
-        setCategoria(initialReceta.categoria || 'Tortas y Pasteles');
-        setRendimientoBase(initialReceta.rendimiento_base ?? '');
-        setRendimientoUnidad(initialReceta.rendimiento_unidad || '');
-        setTiempoPrep(initialReceta.tiempo_preparacion_min ?? 30);
-        setTiempoHorneado(initialReceta.tiempo_horneado_min ?? 45);
-        setTempHorno(initialReceta.temperatura_horno_c ?? 180);
-        setIndirectosPct(initialReceta.materiales_indirectos_pct ?? 10);
-        setOperativosPct(initialReceta.costos_operativos_pct ?? 15);
-        setReposicionPct(initialReceta.reposicion_equipos_pct ?? 10);
-        setManoObraPct(initialReceta.mano_obra_pct ?? 30);
-        setMargenBeneficioPct(initialReceta.margen_beneficio_pct ?? 50);
-        setIngredientes(
-          initialReceta.ingredientes && initialReceta.ingredientes.length > 0
-            ? initialReceta.ingredientes
-            : [{ insumo_id: insumos[0]?.id || 1, cantidad: 500, tipo: 'fijo' }]
+    if (!initialReceta && isOpen) {
+      try {
+        sessionStorage.setItem(
+          'delicias_draft_new_recipe',
+          JSON.stringify({
+            nombre,
+            categoria,
+            rendimiento_base: rendimientoBase,
+            rendimiento_unidad: rendimientoUnidad,
+            tiempo_preparacion_min: tiempoPrep,
+            tiempo_horneado_min: tiempoHorneado,
+            temperatura_horno_c: tempHorno,
+            materiales_indirectos_pct: indirectosPct,
+            costos_operativos_pct: operativosPct,
+            reposicion_equipos_pct: reposicionPct,
+            mano_obra_pct: manoObraPct,
+            margen_beneficio_pct: margenBeneficioPct,
+            ingredientes,
+            instrucciones,
+          })
         );
-        setInstrucciones(
-          initialReceta.instrucciones && initialReceta.instrucciones.length > 0
-            ? initialReceta.instrucciones
-            : ['Precalentar el horno a 180°C y engrasar moldes.']
-        );
-      } else {
-        // Al crear nueva receta: Limpiar completamente sin sugerir porciones por defecto
-        setNombre('');
-        setCategoria('Tortas y Pasteles');
-        setRendimientoBase('');
-        setRendimientoUnidad('');
-        setTiempoPrep(30);
-        setTiempoHorneado(45);
-        setTempHorno(180);
-        setIndirectosPct(10);
-        setOperativosPct(15);
-        setReposicionPct(10);
-        setManoObraPct(30);
-        setMargenBeneficioPct(50);
-        setIngredientes([
-          { insumo_id: insumos[0]?.id || 1, cantidad: 500, tipo: 'fijo' },
-        ]);
-        setInstrucciones(['Precalentar el horno a 180°C y engrasar moldes.']);
-      }
+      } catch {}
     }
-  }, [isOpen, initialReceta, insumos]);
+  }, [
+    initialReceta,
+    isOpen,
+    nombre,
+    categoria,
+    rendimientoBase,
+    rendimientoUnidad,
+    tiempoPrep,
+    tiempoHorneado,
+    tempHorno,
+    indirectosPct,
+    operativosPct,
+    reposicionPct,
+    manoObraPct,
+    margenBeneficioPct,
+    ingredientes,
+    instrucciones,
+  ]);
+
+  // Si cambia la receta seleccionada a otra diferente mientras el modal esté abierto
+  const currentRecetaIdRef = useRef<number | undefined>(initialReceta?.id);
+  useEffect(() => {
+    if (initialReceta && initialReceta.id !== currentRecetaIdRef.current) {
+      currentRecetaIdRef.current = initialReceta.id;
+      setNombre(initialReceta.nombre || '');
+      setCategoria(initialReceta.categoria || 'Tortas y Pasteles');
+      setRendimientoBase(initialReceta.rendimiento_base ?? '');
+      setRendimientoUnidad(initialReceta.rendimiento_unidad || '');
+      setTiempoPrep(initialReceta.tiempo_preparacion_min ?? 30);
+      setTiempoHorneado(initialReceta.tiempo_horneado_min ?? 45);
+      setTempHorno(initialReceta.temperatura_horno_c ?? 180);
+      setIndirectosPct(initialReceta.materiales_indirectos_pct ?? 10);
+      setOperativosPct(initialReceta.costos_operativos_pct ?? 15);
+      setReposicionPct(initialReceta.reposicion_equipos_pct ?? 10);
+      setManoObraPct(initialReceta.mano_obra_pct ?? 30);
+      setMargenBeneficioPct(initialReceta.margen_beneficio_pct ?? 50);
+      setIngredientes(
+        initialReceta.ingredientes && initialReceta.ingredientes.length > 0
+          ? initialReceta.ingredientes
+          : [{ insumo_id: insumos[0]?.id || 1, cantidad: 500, tipo: 'fijo' }]
+      );
+      setInstrucciones(
+        initialReceta.instrucciones && initialReceta.instrucciones.length > 0
+          ? initialReceta.instrucciones
+          : ['Precalentar el horno a 180°C y engrasar moldes.']
+      );
+    }
+  }, [initialReceta]);
 
   // Insumos Map para cálculo rápido
   const insumosMap = new Map<number, Insumo>();
@@ -189,7 +235,16 @@ export const RecipeFormModal: React.FC<RecipeFormModalProps> = ({
     setInstrucciones(updated);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleClose = () => {
+    if (!initialReceta) {
+      try {
+        sessionStorage.removeItem('delicias_draft_new_recipe');
+      } catch {}
+    }
+    onClose();
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!nombre.trim()) return;
@@ -201,31 +256,41 @@ export const RecipeFormModal: React.FC<RecipeFormModalProps> = ({
     const finalRendimientoBase = typeof rendimientoBase === 'number' && rendimientoBase > 0 ? rendimientoBase : 1;
     const finalRendimientoUnidad = rendimientoUnidad.trim() || `${finalRendimientoBase} porciones`;
 
-    onSave({
-      nombre: nombre.trim(),
-      categoria,
-      rendimiento_base: finalRendimientoBase,
-      rendimiento_unidad: finalRendimientoUnidad,
-      tiempo_preparacion_min: Number(tiempoPrep) || 30,
-      tiempo_horneado_min: Number(tiempoHorneado) || 45,
-      temperatura_horno_c: Number(tempHorno) || 180,
-      materiales_indirectos_pct: Number(indirectosPct) || 10,
-      costos_operativos_pct: Number(operativosPct) || 15,
-      reposicion_equipos_pct: Number(reposicionPct) || 10,
-      mano_obra_pct: Number(manoObraPct) || 30,
-      margen_beneficio_pct: Number(margenBeneficioPct) || 50,
-      ingredientes: ingredientes.filter((i) => i.cantidad > 0),
-      instrucciones: instrucciones.filter((inst) => inst.trim().length > 0),
-      activa: true,
-    });
+    setIsSubmitting(true);
+    try {
+      await onSave({
+        nombre: nombre.trim(),
+        categoria,
+        rendimiento_base: finalRendimientoBase,
+        rendimiento_unidad: finalRendimientoUnidad,
+        tiempo_preparacion_min: Number(tiempoPrep) || 30,
+        tiempo_horneado_min: Number(tiempoHorneado) || 45,
+        temperatura_horno_c: Number(tempHorno) || 180,
+        materiales_indirectos_pct: Number(indirectosPct) || 10,
+        costos_operativos_pct: Number(operativosPct) || 15,
+        reposicion_equipos_pct: Number(reposicionPct) || 10,
+        mano_obra_pct: Number(manoObraPct) || 30,
+        margen_beneficio_pct: Number(margenBeneficioPct) || 50,
+        ingredientes: ingredientes.filter((i) => i.cantidad > 0),
+        instrucciones: instrucciones.filter((inst) => inst.trim().length > 0),
+        activa: true,
+      });
 
-    onClose();
+      if (!initialReceta) {
+        try {
+          sessionStorage.removeItem('delicias_draft_new_recipe');
+        } catch {}
+      }
+      onClose();
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
     <Modal
       isOpen={isOpen}
-      onClose={onClose}
+      onClose={handleClose}
       title={initialReceta ? 'Editar Receta' : 'Nueva Receta'}
       subtitle="Definición de ingredientes fijos, variables y porcentajes en cascada"
       maxWidth="4xl"
@@ -615,17 +680,25 @@ export const RecipeFormModal: React.FC<RecipeFormModalProps> = ({
         <div className="pt-4 border-t border-trigo-200 flex items-center justify-end gap-3">
           <button
             type="button"
-            onClick={onClose}
-            className="px-4 py-2.5 rounded-xl border border-trigo-300 text-chocolate-600 hover:bg-gray-50 text-xs font-semibold transition-colors"
+            onClick={handleClose}
+            disabled={isSubmitting}
+            className="px-4 py-2.5 rounded-xl border border-trigo-300 text-chocolate-600 hover:bg-gray-50 text-xs font-semibold transition-colors disabled:opacity-50"
           >
             Cancelar
           </button>
           <button
             type="submit"
-            className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-frambuesa-500 hover:bg-frambuesa-600 text-white font-bold text-xs shadow-frambuesa-glow transition-all"
+            disabled={isSubmitting}
+            className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-frambuesa-500 hover:bg-frambuesa-600 text-white font-bold text-xs shadow-frambuesa-glow transition-all disabled:opacity-50"
           >
             <DollarSign className="w-4 h-4" />
-            <span>{initialReceta ? 'Guardar Cambios' : 'Crear Receta BOM'}</span>
+            <span>
+              {isSubmitting
+                ? 'Guardando Receta...'
+                : initialReceta
+                ? 'Guardar Cambios'
+                : 'Crear Receta BOM'}
+            </span>
           </button>
         </div>
       </form>

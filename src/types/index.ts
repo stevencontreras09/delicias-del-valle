@@ -89,6 +89,8 @@ export interface Receta {
   nombre_base?: string;
   es_variante_de?: number;
   orden_variante?: number;
+  created_at?: string;
+  updated_at?: string;
 }
 
 // Estructura calculada en tiempo real

@@ -291,11 +291,11 @@ export const RecipeManager: React.FC = () => {
           }}
           insumos={insumos}
           initialReceta={editingReceta}
-          onSave={(data) => {
+          onSave={async (data) => {
             if (editingReceta) {
-              updateReceta(editingReceta.id, data);
+              return await updateReceta(editingReceta.id, data);
             } else {
-              addReceta(data);
+              return await addReceta(data);
             }
           }}
         />

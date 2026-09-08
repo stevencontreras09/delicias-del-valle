@@ -104,8 +104,8 @@ interface AppContextType {
   addMerma: (merma: Omit<Merma, 'id' | 'costo_perdido'>) => void;
   // Recetas
   recetas: Receta[];
-  addReceta: (receta: Omit<Receta, 'id'>) => Receta;
-  updateReceta: (id: number, receta: Partial<Receta>) => void;
+  addReceta: (receta: Omit<Receta, 'id'>) => Promise<Receta | null>;
+  updateReceta: (id: number, receta: Partial<Receta>) => Promise<boolean>;
   deleteReceta: (id: number) => void;
   duplicarReceta: (id: number) => void;
   // Clientes Frecuentes (Mini CRM)
@@ -584,8 +584,35 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const res = await fetchAllFromSupabase();
       if (res.success && res.data) {
         const { insumos: dbInsumos, recetas: dbRecetas, cotizaciones: dbCotizaciones, pedidos: dbPedidos, mermas: dbMermas } = res.data;
-        if (dbInsumos && dbInsumos.length > 0) setInsumos(dbInsumos);
-        if (dbRecetas && dbRecetas.length > 0) setRecetas(dbRecetas);
+        if (dbInsumos && dbInsumos.length > 0) {
+          setInsumos((prev) => {
+            const map = new Map<number, Insumo>();
+            dbInsumos.forEach((i) => map.set(i.id, i));
+            prev.forEach((local) => {
+              if (!map.has(local.id)) {
+                map.set(local.id, local);
+              }
+            });
+            return Array.from(map.values());
+          });
+        }
+        if (dbRecetas && dbRecetas.length > 0) {
+          setRecetas((prev) => {
+            const map = new Map<number, Receta>();
+            dbRecetas.forEach((r) => map.set(r.id, r));
+            const now = Date.now();
+            // Preservar recetas locales recientes (< 30s) o aún no sincronizadas para no borrarlas al crearlas
+            prev.forEach((local) => {
+              const isRecent = local.created_at && (now - new Date(local.created_at).getTime() < 30000);
+              if (!map.has(local.id) || isRecent) {
+                if (!map.has(local.id)) {
+                  map.set(local.id, local);
+                }
+              }
+            });
+            return Array.from(map.values()).sort((a, b) => a.id - b.id);
+          });
+        }
         if (dbCotizaciones) {
           setCotizaciones((prev) => {
             const map = new Map<string, Cotizacion>();
@@ -1018,41 +1045,62 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // ==========================================
   // RECETAS CRUD
   // ==========================================
-  const addReceta = (data: Omit<Receta, 'id'>): Receta => {
+  const addReceta = async (data: Omit<Receta, 'id'>): Promise<Receta | null> => {
     const nextId = recetas.length > 0 ? Math.max(...recetas.map((r) => r.id)) + 1 : 1;
     const newReceta: Receta = {
       ...data,
       id: nextId,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
     };
 
-    setRecetas((prev) => [newReceta, ...prev]);
-    showToast('success', 'Receta Creada', `"${newReceta.nombre}" guardada en el catálogo maestro.`);
-
+    // 1. Si Supabase está configurado, sincronizar PRIMERO y capturar errores de inserción
     if (isSupabaseConfigured()) {
-      syncRecetaToSupabase(newReceta);
+      const res = await syncRecetaToSupabase(newReceta);
+      if (!res.success) {
+        const errorMsg = res.error || 'Error desconocido al guardar en Supabase';
+        showToast('error', 'Error al Guardar Receta', errorMsg);
+        alert(`❌ Error al guardar receta en Supabase:\n\n${errorMsg}\n\nLa receta no fue agregada para evitar desincronización.`);
+        return null;
+      }
+      if (res.data?.id) {
+        newReceta.id = Number(res.data.id);
+      }
       broadcastChange('creó', 'la receta', newReceta.nombre, newReceta.id);
     }
 
+    // 2. Solo tras confirmación de persistencia, actualizar el estado
+    setRecetas((prev) => [newReceta, ...prev.filter((r) => r.id !== newReceta.id)]);
+    showToast('success', 'Receta Creada', `"${newReceta.nombre}" guardada en el catálogo maestro.`);
+    playSuccessChime();
     return newReceta;
   };
 
-  const updateReceta = (id: number, data: Partial<Receta>) => {
-    let updatedNombre = '';
+  const updateReceta = async (id: number, data: Partial<Receta>): Promise<boolean> => {
+    const existing = recetas.find((r) => r.id === id);
+    if (!existing) return false;
+    const updated: Receta = {
+      ...existing,
+      ...data,
+      updated_at: new Date().toISOString(),
+    };
+
+    if (isSupabaseConfigured()) {
+      const res = await syncRecetaToSupabase(updated);
+      if (!res.success) {
+        const errorMsg = res.error || 'Error desconocido al actualizar en Supabase';
+        showToast('error', 'Error al Actualizar Receta', errorMsg);
+        alert(`❌ Error al actualizar receta en Supabase:\n\n${errorMsg}`);
+        return false;
+      }
+      broadcastChange('modificó', 'la receta', updated.nombre, id);
+    }
+
     setRecetas((prev) =>
-      prev.map((r) => {
-        if (r.id !== id) return r;
-        const updated = { ...r, ...data };
-        updatedNombre = updated.nombre;
-        if (isSupabaseConfigured()) {
-          syncRecetaToSupabase(updated);
-        }
-        return updated;
-      })
+      prev.map((r) => (r.id === id ? updated : r))
     );
     showToast('info', 'Receta Actualizada', 'Los cambios en la receta y sus ingredientes se guardaron.');
-    if (isSupabaseConfigured() && updatedNombre) {
-      broadcastChange('modificó', 'la receta', updatedNombre, id);
-    }
+    return true;
   };
 
   const deleteReceta = (id: number) => {
@@ -1067,7 +1115,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     showToast('warning', 'Receta Eliminada', `"${receta.nombre}" fue eliminada.`);
   };
 
-  const duplicarReceta = (id: number) => {
+  const duplicarReceta = async (id: number) => {
     const original = recetas.find((r) => r.id === id);
     if (!original) return;
 
@@ -1077,15 +1125,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       id: nextId,
       nombre: `${original.nombre} (Copia)`,
       ingredientes: original.ingredientes.map((i) => ({ ...i })),
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
     };
+
+    if (isSupabaseConfigured()) {
+      const res = await syncRecetaToSupabase(clon);
+      if (res.data?.id) {
+        clon.id = Number(res.data.id);
+      }
+      broadcastChange('duplicó', 'la receta', clon.nombre, clon.id);
+    }
 
     setRecetas((prev) => [clon, ...prev]);
     showToast('success', 'Receta Duplicada', `Se creó una copia de "${original.nombre}".`);
-
-    if (isSupabaseConfigured()) {
-      syncRecetaToSupabase(clon);
-      broadcastChange('duplicó', 'la receta', clon.nombre, clon.id);
-    }
   };
 
   // ==========================================

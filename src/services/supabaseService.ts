@@ -138,6 +138,8 @@ export async function fetchAllFromSupabase(): Promise<{
       nombre_base: r.nombre_base || undefined,
       es_variante_de: r.es_variante_de ? Number(r.es_variante_de) : undefined,
       orden_variante: r.orden_variante !== undefined ? Number(r.orden_variante) : undefined,
+      created_at: r.created_at || r.updated_at || undefined,
+      updated_at: r.updated_at || undefined,
       instrucciones: Array.isArray(r.instrucciones) ? r.instrucciones : [],
       ingredientes: (r.receta_ingredientes || []).map((ing: any) => ({
         insumo_id: Number(ing.insumo_id),
@@ -329,9 +331,9 @@ export async function syncInsumoToSupabase(insumo: Insumo): Promise<boolean> {
 /**
  * Sube o actualiza una receta en Supabase con sus ingredientes
  */
-export async function syncRecetaToSupabase(receta: Receta): Promise<boolean> {
+export async function syncRecetaToSupabase(receta: Receta): Promise<{ success: boolean; data?: any; error?: string }> {
   const client = getSupabaseClient();
-  if (!client) return false;
+  if (!client) return { success: false, error: 'Cliente de Supabase no configurado' };
 
   try {
     const { data: recDb, error: recErr } = await client.from('recetas').upsert({
@@ -354,7 +356,10 @@ export async function syncRecetaToSupabase(receta: Receta): Promise<boolean> {
       updated_at: new Date().toISOString(),
     }).select().single();
 
-    if (recErr) return false;
+    if (recErr) {
+      console.error('Error al guardar receta en Supabase:', recErr);
+      return { success: false, error: recErr.message };
+    }
 
     // Eliminar ingredientes antiguos e insertar los actuales
     await client.from('receta_ingredientes').delete().eq('receta_id', recDb.id);
@@ -366,12 +371,13 @@ export async function syncRecetaToSupabase(receta: Receta): Promise<boolean> {
         cantidad: ing.cantidad,
         tipo: ing.tipo,
       }));
-      await client.from('receta_ingredientes').insert(ingRows);
+      const { error: ingErr } = await client.from('receta_ingredientes').insert(ingRows);
+      if (ingErr) console.warn('Advertencia guardando receta_ingredientes:', ingErr.message);
     }
 
-    return true;
-  } catch {
-    return false;
+    return { success: true, data: recDb };
+  } catch (err: any) {
+    return { success: false, error: err?.message || 'Error inesperado al sincronizar receta' };
   }
 }
 
