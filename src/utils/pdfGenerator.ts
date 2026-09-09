@@ -3,6 +3,7 @@ import 'jspdf-autotable';
 import { Cotizacion, Pedido } from '../types';
 import { formatCurrency, formatDate, formatDisplayTamano } from './formatters';
 import { LOGO_DELICIAS_BASE64 } from './logoBase64';
+import { ICON_DELIVERY_PNG, ICON_STORE_PNG } from './pdfIcons';
 
 // Extensión para que TypeScript reconozca autoTable en jsPDF
 declare module 'jspdf' {
@@ -110,7 +111,18 @@ export function generarPdfCotizacion(cotizacion: Cotizacion): void {
   let tableStartY = 74;
 
   if (esDelivery) {
-    doc.text(`Modalidad: 🛵 Envío a Domicilio`, 110, 62);
+    doc.text('Modalidad:', 110, 62);
+    try {
+      doc.addImage(ICON_DELIVERY_PNG, 'PNG', 127, 58.2, 4.5, 4.5);
+    } catch (e) {
+      console.error('Error insertando icono delivery:', e);
+    }
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(...frambuesaColor);
+    doc.text('Envío a Domicilio', 133, 62);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(60, 60, 60);
+
     const dir = cotizacion.direccion_entrega || 'Dirección acordada';
     const dirCorta = dir.length > 44 ? dir.substring(0, 42) + '...' : dir;
     doc.text(`Dirección: ${dirCorta}`, 110, 67);
@@ -132,7 +144,17 @@ export function generarPdfCotizacion(cotizacion: Cotizacion): void {
     doc.text('* Favor confirmar si la dirección y referencia son exactas.', 110, tableStartY);
     tableStartY += 5;
   } else {
-    doc.text(`Modalidad: 🏬 Retiro en Taller`, 110, 62);
+    doc.text('Modalidad:', 110, 62);
+    try {
+      doc.addImage(ICON_STORE_PNG, 'PNG', 127, 58.2, 4.5, 4.5);
+    } catch (e) {
+      console.error('Error insertando icono taller:', e);
+    }
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(...chocolateColor);
+    doc.text('Retiro en Taller', 133, 62);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(60, 60, 60);
     doc.text(`Ubicación: Taller Delicias del Valle`, 110, 67);
     tableStartY = 74;
   }
@@ -387,7 +409,18 @@ export function generarPdfPedido(pedido: Pedido): void {
   doc.text(`Cliente: ${pedido.cliente_nombre}`, 14, 59);
   doc.text(`Teléfono: ${pedido.cliente_telefono}`, 14, 64);
   doc.text(`Fecha Entrega: ${formatDate(pedido.fecha_entrega)} - Hora: ${pedido.hora_entrega}`, 120, 59);
-  doc.text(`Tipo Entrega: ${pedido.tipo_entrega === 'domicilio' ? 'Domicilio' : 'Recogida en Taller'}`, 120, 64);
+  doc.text('Tipo Entrega:', 120, 64);
+  const esPedDelivery = pedido.tipo_entrega === 'domicilio' || pedido.tipo_despacho === 'delivery';
+  try {
+    doc.addImage(esPedDelivery ? ICON_DELIVERY_PNG : ICON_STORE_PNG, 'PNG', 140, 60.2, 4.5, 4.5);
+  } catch (e) {
+    console.error('Error insertando icono pedido:', e);
+  }
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(...(esPedDelivery ? frambuesaColor : chocolateColor));
+  doc.text(esPedDelivery ? 'Envío a Domicilio' : 'Recogida en Taller', 146, 64);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(60, 60, 60);
 
   // Tabla
   const tableData = pedido.items.map((item, index) => [

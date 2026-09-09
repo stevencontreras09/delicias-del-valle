@@ -1,0 +1,8 @@
+/**
+ * Iconos PNG de alta calidad en formato Base64 para insercion nativa en jsPDF
+ * Evita el problema de decodificacion de emojis UTF-8 (ej. Ø=Þõ) en fuentes estandar de jsPDF.
+ */
+
+export const ICON_DELIVERY_PNG = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAwCAYAAABXAvmHAAAA6UlEQVR4nO2Wuw3CQBBEL6cH2iCmBGqgL/qjAGIjApAlzufbz8xhMyNtZnveW3/kUhRFURRFUZSv3I/XaWket8NnWsf19JzOl2ltflagB94tgRawwLskdAf+4R1oibyv74JnC9S2HoJ/ZQ7pnYhACH60QBieKQDZfhn8Fdq0QAo8SwC2fQk4BdLgGQLQ7e9CwBorzBD41tYsG826Tgi8VhIRgP1We8tQs2l4s0Tt5HlQgGsdKfAoid4Os0ArSPilDqhA1y1Gd+xOIPX5ZHXAvhCsDs+LmCGQ2oGEp3Ug4ZkdlH94RoeizPIEbkJG1mPfuggAAAAASUVORK5CYII=';
+
+export const ICON_STORE_PNG = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAwCAYAAABXAvmHAAAAsklEQVR4nO2TQQqAIBBFvZXbOkIH6Bqdp3O07x6tOkFbMVoEZYGMMurof/BB5AvzUJUCAAAAPJhjs27GTn/C0YMA12CUHgTECnAPRum1J5BqMEoPAmIEUg9G6dUvkGswSi9IopQEPaGS0obAk3WebO6Qh65aQPcDKSFn2QWW3bzyt3fvu2d9bxwCEJAgEPOJixAQfwPNC1xr0QLZb0D0J44JBJoUoL55jkAgd6IEAABlcwKKl+w/bgECeQAAAABJRU5ErkJggg==';
