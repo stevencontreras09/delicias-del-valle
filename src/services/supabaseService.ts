@@ -1,5 +1,5 @@
 import { getSupabaseClient } from '../utils/supabaseClient';
-import { Insumo, Merma, Receta, Cotizacion, Pedido, Usuario, Cliente, FormatoPresentacion } from '../types';
+import { Insumo, Merma, Receta, Cotizacion, Pedido, Usuario, Cliente, FormatoPresentacion, ZonaDelivery } from '../types';
 
 export interface SyncResult {
   success: boolean;
@@ -55,6 +55,7 @@ export async function fetchAllFromSupabase(): Promise<{
     pedidos: Pedido[];
     mermas: Merma[];
     usuarios?: Usuario[];
+    zonasDelivery?: ZonaDelivery[];
   };
 }> {
   const client = getSupabaseClient();
@@ -102,6 +103,28 @@ export async function fetchAllFromSupabase(): Promise<{
       .order('id', { ascending: true });
 
     if (mermasErr) throw new Error(`Error cargando mermas: ${mermasErr.message}`);
+
+    // 6. Fetch Zonas de Delivery
+    let zonasDelivery: ZonaDelivery[] = [];
+    try {
+      const { data: zonasDb } = await client
+        .from('zonas_delivery')
+        .select('*')
+        .order('id', { ascending: true });
+
+      if (zonasDb && Array.isArray(zonasDb)) {
+        zonasDelivery = zonasDb.map((z: any) => ({
+          id: Number(z.id),
+          nombre: z.nombre,
+          tarifa: Number(z.tarifa || 0),
+          tiempo_estimado_min: z.tiempo_estimado_min ? Number(z.tiempo_estimado_min) : undefined,
+          activo: z.activo ?? true,
+          created_at: z.created_at,
+        }));
+      }
+    } catch (e) {
+      console.warn('Tabla zonas_delivery no disponible en Supabase:', e);
+    }
 
     // Transformar a tipos de la aplicación
     const insumos: Insumo[] = (insumosDb || []).map((i: any) => ({
@@ -184,6 +207,13 @@ export async function fetchAllFromSupabase(): Promise<{
       total: Number(c.total),
       notas: c.notas || '',
       estado: c.estado,
+      tipo_despacho: (c.tipo_despacho as any) || (Number(c.costo_delivery || c.costo_envio || 0) > 0 ? 'delivery' : 'retiro'),
+      zona_delivery_id: c.zona_delivery_id ? Number(c.zona_delivery_id) : undefined,
+      costo_delivery: Number(c.costo_delivery ?? c.costo_envio ?? 0),
+      direccion_entrega: c.direccion_entrega || '',
+      punto_referencia: c.punto_referencia || '',
+      repartidor_nombre: c.repartidor_nombre || '',
+      repartidor_telefono: c.repartidor_telefono || '',
       created_at: c.created_at || new Date().toISOString(),
       items: (c.cotizacion_items || []).map((item: any) => ({
         id: `item-cot-${item.id}`,
@@ -228,6 +258,13 @@ export async function fetchAllFromSupabase(): Promise<{
       estado: p.estado,
       checklist_completado: p.checklist_completado || {},
       inventario_descontado: Boolean(p.inventario_descontado),
+      tipo_despacho: (p.tipo_despacho as any) || (p.tipo_entrega === 'domicilio' ? 'delivery' : 'retiro'),
+      zona_delivery_id: p.zona_delivery_id ? Number(p.zona_delivery_id) : undefined,
+      costo_delivery: Number(p.costo_delivery ?? p.costo_envio ?? 0),
+      punto_referencia: p.punto_referencia || '',
+      repartidor_nombre: p.repartidor_nombre || '',
+      repartidor_telefono: p.repartidor_telefono || '',
+      cobro_delivery_al_recibir: Boolean(p.cobro_delivery_al_recibir),
       created_at: p.created_at || new Date().toISOString(),
       items: (p.pedido_items || []).map((item: any) => ({
         id: `item-ped-${item.id}`,
@@ -313,6 +350,7 @@ export async function fetchAllFromSupabase(): Promise<{
         pedidos,
         mermas,
         usuarios,
+        zonasDelivery,
       },
     };
   } catch (err: any) {
@@ -455,6 +493,13 @@ export async function syncPedidoToSupabase(pedido: Pedido): Promise<boolean> {
       estado: pedido.estado,
       checklist_completado: pedido.checklist_completado,
       inventario_descontado: pedido.inventario_descontado,
+      tipo_despacho: pedido.tipo_despacho || (pedido.tipo_entrega === 'domicilio' ? 'delivery' : 'retiro'),
+      zona_delivery_id: pedido.zona_delivery_id || null,
+      costo_delivery: pedido.costo_delivery ?? pedido.costo_envio ?? 0,
+      punto_referencia: pedido.punto_referencia || '',
+      repartidor_nombre: pedido.repartidor_nombre || '',
+      repartidor_telefono: pedido.repartidor_telefono || '',
+      cobro_delivery_al_recibir: Boolean(pedido.cobro_delivery_al_recibir),
       updated_at: new Date().toISOString(),
     }).select().single();
 
@@ -534,6 +579,13 @@ export async function syncCotizacionToSupabase(
     if (cotizacion.cliente_id) payload.cliente_id = cotizacion.cliente_id;
     if (cotizacion.fecha_evento) payload.fecha_evento = cotizacion.fecha_evento;
     if (cotizacion.cliente_email) payload.cliente_email = cotizacion.cliente_email;
+    if (cotizacion.tipo_despacho) payload.tipo_despacho = cotizacion.tipo_despacho;
+    if (cotizacion.zona_delivery_id !== undefined) payload.zona_delivery_id = cotizacion.zona_delivery_id;
+    if (cotizacion.costo_delivery !== undefined) payload.costo_delivery = cotizacion.costo_delivery;
+    if (cotizacion.direccion_entrega) payload.direccion_entrega = cotizacion.direccion_entrega;
+    if (cotizacion.punto_referencia) payload.punto_referencia = cotizacion.punto_referencia;
+    if (cotizacion.repartidor_nombre) payload.repartidor_nombre = cotizacion.repartidor_nombre;
+    if (cotizacion.repartidor_telefono) payload.repartidor_telefono = cotizacion.repartidor_telefono;
 
     let { data: cotDb, error: cotErr } = await client.from('cotizaciones').upsert(payload).select().single();
 
@@ -723,12 +775,12 @@ export async function autenticarUsuarioEnSupabase(
  * Sube o actualiza un usuario en Supabase de forma segura
  * Cifra la contraseña con bcrypt en el servidor mediante la función RPC 'guardar_usuario_seguro'
  */
-export async function syncUsuarioToSupabase(usuario: Usuario): Promise<boolean> {
+export async function syncUsuarioToSupabase(usuario: Usuario): Promise<{ success: boolean; message?: string }> {
   const client = getSupabaseClient();
-  if (!client) return false;
+  if (!client) return { success: false, message: 'Supabase no está configurado o conectado.' };
 
   try {
-    // Intentar primero con la función RPC segura
+    // Intentar primero con la función RPC segura (con cifrado bcrypt en Postgres)
     const { data, error } = await client.rpc('guardar_usuario_seguro', {
       p_id: usuario.id,
       p_username: usuario.username.trim(),
@@ -741,27 +793,27 @@ export async function syncUsuarioToSupabase(usuario: Usuario): Promise<boolean> 
       p_avatar_url: usuario.avatar_url || null,
     });
 
-    if (!error && data?.success) {
-      return true;
+    if (error) {
+      console.error('Error en RPC guardar_usuario_seguro:', error);
+      return { success: false, message: error.message };
     }
 
-    // Si la función RPC no está disponible aún, fallback a upsert
-    const { error: upsertError } = await client.from('usuarios').upsert({
-      id: usuario.id,
-      username: usuario.username.trim(),
-      nombre_completo: usuario.nombre_completo.trim(),
-      email: (usuario.email || '').trim(),
-      telefono: (usuario.telefono || '').trim(),
-      rol: usuario.rol,
-      activo: usuario.activo,
-      avatar_url: usuario.avatar_url || null,
-      ultimo_acceso: usuario.ultimo_acceso || null,
-      created_at: usuario.created_at || new Date().toISOString(),
-    });
+    if (data && typeof data === 'object') {
+      if (data.success) {
+        return { success: true, message: data.message };
+      } else {
+        console.warn('guardar_usuario_seguro devolvió error:', data.message);
+        return {
+          success: false,
+          message: data.message || 'El servidor rechazó el guardado del usuario.',
+        };
+      }
+    }
 
-    return !upsertError;
-  } catch {
-    return false;
+    return { success: true };
+  } catch (err: any) {
+    console.error('Error conectando con Supabase para guardar usuario:', err);
+    return { success: false, message: err?.message || 'Error de conexión con Supabase.' };
   }
 }
 
@@ -906,6 +958,48 @@ export async function cancelarPedidoConInventarioRpc(
     return { success: !!data?.success, data };
   } catch (e: any) {
     return { success: false, error: e?.message };
+  }
+}
+
+/**
+ * Sube o actualiza una zona de delivery en Supabase
+ */
+export async function syncZonaDeliveryToSupabase(zona: ZonaDelivery): Promise<boolean> {
+  const client = getSupabaseClient();
+  if (!client) return false;
+
+  try {
+    const { error } = await client.from('zonas_delivery').upsert({
+      id: zona.id,
+      nombre: zona.nombre,
+      tarifa: zona.tarifa,
+      tiempo_estimado_min: zona.tiempo_estimado_min,
+      activo: zona.activo,
+    });
+
+    if (error) {
+      console.warn('No se pudo guardar la zona de delivery en Supabase:', error.message);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.warn('Error sincronizando zona de delivery:', err);
+    return false;
+  }
+}
+
+/**
+ * Elimina una zona de delivery en Supabase
+ */
+export async function deleteZonaDeliveryFromSupabase(id: number): Promise<boolean> {
+  const client = getSupabaseClient();
+  if (!client) return false;
+
+  try {
+    const { error } = await client.from('zonas_delivery').delete().eq('id', id);
+    return !error;
+  } catch {
+    return false;
   }
 }
 

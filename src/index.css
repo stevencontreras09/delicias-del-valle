@@ -87,14 +87,16 @@
 }
 
 /* ===================================================
-   OPTIMIZACIÓN DE IMPRESIÓN PARA TICKETS TÉRMICOS POS
+   OPTIMIZACIÓN DE IMPRESIÓN PARA TICKETS TÉRMICOS POS Y GUÍA DE CUIDADOS
    =================================================== */
 @media print {
   body * {
     visibility: hidden;
   }
   #thermal-ticket-container,
-  #thermal-ticket-container * {
+  #thermal-ticket-container *,
+  #cake-care-card-container,
+  #cake-care-card-container * {
     visibility: visible;
   }
   #thermal-ticket-container {
@@ -107,8 +109,21 @@
     color: black !important;
     box-shadow: none !important;
   }
+  #cake-care-card-container {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 10px !important;
+    background: white !important;
+    color: black !important;
+    box-shadow: none !important;
+    border: none !important;
+  }
   @page {
-    margin: 0;
+    margin: 4mm;
     size: auto;
   }
 }

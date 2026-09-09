@@ -55,6 +55,16 @@ export const ROLE_PERMISSIONS: Record<UserRole, Record<ActiveTab, boolean>> = {
     users: false,
     database: false,
   },
+  delivery: {
+    dashboard: true,
+    inventory: false, // Restricción: repartidor no administra almacén
+    recipes: false,   // Restricción: sin acceso a recetas
+    quotes: false,    // Restricción: sin presupuestos comerciales
+    orders: true,     // Acceso esencial: visualización de pedidos a entregar, GPS y chofer
+    kitchen: false,   // Restricción: no opera en línea de horneado
+    users: false,     // Restricción: sin gestión de usuarios
+    database: false,  // Restricción: sin acceso a base de datos
+  },
 };
 
 /**
@@ -74,6 +84,7 @@ export function canAccessTab(role: UserRole | string | undefined, tab: ActiveTab
 export function getDefaultTabForRole(role: UserRole | string | undefined): ActiveTab {
   if (!role) return 'dashboard';
   const normalizedRole = role.toLowerCase() as UserRole;
+  if (normalizedRole === 'delivery') return 'orders';
   const permissions = ROLE_PERMISSIONS[normalizedRole];
   if (!permissions) return 'dashboard';
   if (permissions.dashboard) return 'dashboard';

@@ -11,6 +11,10 @@ import {
   Printer,
   XCircle,
   Trash2,
+  MapPin,
+  Truck,
+  Send,
+  ShieldCheck,
 } from 'lucide-react';
 import { formatCurrency, formatDate } from '../../utils/formatters';
 import { Badge } from '../ui/Badge';
@@ -21,6 +25,8 @@ import { OrderCancellationDialog } from './OrderCancellationDialog';
 import { OrderDeleteDialog } from './OrderDeleteDialog';
 import { generarPdfPedido } from '../../utils/pdfGenerator';
 import { generateOrderWhatsAppUrl } from '../../utils/whatsappHelper';
+import { getGoogleMapsUrl, generateDriverWhatsAppMessage } from '../../utils/deliveryHelper';
+import { CakeCareCard } from '../delivery/CakeCareCard';
 
 const COLUMNAS_KANBAN: { id: EstadoPedido; label: string; badgeVariant: 'warning' | 'info' | 'success' | 'frambuesa' }[] = [
   { id: 'confirmado', label: '1. Confirmados', badgeVariant: 'warning' },
@@ -41,6 +47,7 @@ export const OrderManager: React.FC = () => {
   const [printTicketPedido, setPrintTicketPedido] = useState<Pedido | null>(null);
   const [cancelPedido, setCancelPedido] = useState<Pedido | null>(null);
   const [deletePedido, setDeletePedido] = useState<Pedido | null>(null);
+  const [careCardPedido, setCareCardPedido] = useState<Pedido | null>(null);
 
   const filteredPedidos = useMemo(() => {
     return pedidos.list.filter((p) => {
@@ -155,6 +162,14 @@ export const OrderManager: React.FC = () => {
                     </div>
                   ) : (
                     columnOrders.map((pedido) => {
+                      const isDelivery = pedido.tipo_despacho === 'delivery' || pedido.tipo_entrega === 'domicilio';
+                      const mapsUrl = getGoogleMapsUrl(pedido.direccion_entrega || '', pedido.punto_referencia);
+                      const driverWaUrl = generateDriverWhatsAppMessage(
+                        pedido.repartidor_telefono || '',
+                        pedido,
+                        { nombre: pedido.cliente_nombre, telefono: pedido.cliente_telefono }
+                      );
+
                       return (
                         <div
                           key={pedido.id}
@@ -176,6 +191,20 @@ export const OrderManager: React.FC = () => {
                             <p className="text-[11px] text-gray-500">
                               📅 {formatDate(pedido.fecha_entrega)} • ⏰ {pedido.hora_entrega}
                             </p>
+
+                            {/* Indicador de Despacho */}
+                            {isDelivery ? (
+                              <div className="mt-1.5 flex items-center gap-1 text-[11px] text-amber-900 bg-amber-50/90 px-2 py-1 rounded-lg border border-amber-200">
+                                <Truck className="w-3.5 h-3.5 text-amber-700 shrink-0" />
+                                <span className="truncate font-semibold">
+                                  {pedido.direccion_entrega || 'Envío a domicilio'}
+                                </span>
+                              </div>
+                            ) : (
+                              <div className="mt-1 flex items-center gap-1 text-[11px] text-stone-600 bg-stone-100 px-2 py-0.5 rounded-lg border border-stone-200">
+                                <span className="font-semibold">🏬 Retiro en Taller</span>
+                              </div>
+                            )}
                           </div>
 
                           <div className="space-y-1 bg-canvas/60 p-2 rounded-xl text-[11px] text-chocolate-700">
@@ -228,13 +257,61 @@ export const OrderManager: React.FC = () => {
                             )}
                           </div>
 
-                          {/* Acciones Rápidas: WhatsApp y Ticket Térmico */}
+                          {/* Acciones Rápidas de Logística (Para Delivery) */}
+                          {isDelivery && (
+                            <div className="p-2 rounded-xl bg-amber-50/80 border border-amber-200 space-y-1.5">
+                              <div className="flex items-center justify-between text-[10px] font-extrabold text-amber-900 uppercase tracking-wider">
+                                <span className="flex items-center gap-1">
+                                  <Truck className="w-3 h-3 text-amber-700" /> Logística de Entrega
+                                </span>
+                                {pedido.costo_delivery ? (
+                                  <span>Flete: {formatCurrency(pedido.costo_delivery)}</span>
+                                ) : null}
+                              </div>
+
+                              <div className="grid grid-cols-3 gap-1">
+                                <a
+                                  href={mapsUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  title="Abrir mapa en Google Maps"
+                                  className="min-h-[36px] py-1 px-1.5 rounded-lg bg-white hover:bg-amber-100 text-stone-700 border border-amber-200 font-bold flex items-center justify-center gap-1 transition text-center shadow-xs"
+                                >
+                                  <MapPin className="w-3.5 h-3.5 text-rose-500 shrink-0" />
+                                  <span className="text-[10px]">GPS Maps</span>
+                                </a>
+
+                                <a
+                                  href={driverWaUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  title="Despachar a Chofer con balance y cuidados"
+                                  className="min-h-[36px] py-1 px-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold flex items-center justify-center gap-1 transition text-center shadow-xs"
+                                >
+                                  <Send className="w-3.5 h-3.5 shrink-0" />
+                                  <span className="text-[10px]">A Chofer</span>
+                                </a>
+
+                                <button
+                                  type="button"
+                                  onClick={() => setCareCardPedido(pedido)}
+                                  title="Ver e Imprimir Cuidados del Pastel"
+                                  className="min-h-[36px] py-1 px-1.5 rounded-lg bg-amber-800 hover:bg-amber-900 text-white font-bold flex items-center justify-center gap-1 transition text-center shadow-xs"
+                                >
+                                  <ShieldCheck className="w-3.5 h-3.5 shrink-0" />
+                                  <span className="text-[10px]">Cuidados</span>
+                                </button>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Acciones Rápidas: WhatsApp, Ticket Térmico y Eliminar */}
                           <div className="flex items-center gap-1.5 pt-1 border-t border-trigo-100">
                             <a
                               href={generateOrderWhatsAppUrl(pedido)}
                               target="_blank"
                               rel="noreferrer"
-                              title="Enviar por WhatsApp"
+                              title="Enviar por WhatsApp al Cliente"
                               className="p-1.5 rounded-lg bg-emerald-50 text-emerald-600 hover:bg-emerald-100 transition-colors flex items-center justify-center flex-1"
                             >
                               <MessageCircle className="w-3.5 h-3.5" />
@@ -250,6 +327,17 @@ export const OrderManager: React.FC = () => {
                               <Printer className="w-3.5 h-3.5" />
                               <span className="text-[10px] font-bold ml-1">Ticket POS</span>
                             </button>
+
+                            {!isDelivery && (
+                              <button
+                                type="button"
+                                onClick={() => setCareCardPedido(pedido)}
+                                title="Etiqueta de Cuidados para el Cliente"
+                                className="p-1.5 rounded-lg bg-amber-100 text-amber-800 hover:bg-amber-200 transition-colors"
+                              >
+                                <ShieldCheck className="w-3.5 h-3.5" />
+                              </button>
+                            )}
 
                             <button
                               type="button"
@@ -304,7 +392,16 @@ export const OrderManager: React.FC = () => {
                       <span className="font-medium text-chocolate-800 block">
                         {formatDate(p.fecha_entrega)}
                       </span>
-                      <span className="text-gray-500 text-[11px]">{p.hora_entrega}</span>
+                      <span className="text-gray-500 text-[11px] block">{p.hora_entrega}</span>
+                      {(p.tipo_despacho === 'delivery' || p.tipo_entrega === 'domicilio') ? (
+                        <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-900 bg-amber-100 px-1.5 py-0.5 rounded mt-0.5 border border-amber-200">
+                          <Truck className="w-3 h-3 text-amber-700" /> Delivery
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-stone-600 bg-stone-100 px-1.5 py-0.5 rounded mt-0.5 border border-stone-200">
+                          🏬 Retiro
+                        </span>
+                      )}
                     </td>
                     <td className="py-3.5 px-4 max-w-xs truncate text-chocolate-700">
                       {p.items.map((i) => `${i.receta_nombre} (x${i.cantidad})`).join(', ')}
@@ -348,11 +445,44 @@ export const OrderManager: React.FC = () => {
                         >
                           Ver
                         </button>
+
+                        {(p.tipo_despacho === 'delivery' || p.tipo_entrega === 'domicilio') && (
+                          <>
+                            <a
+                              href={getGoogleMapsUrl(p.direccion_entrega || '', p.punto_referencia)}
+                              target="_blank"
+                              rel="noreferrer"
+                              title="Navegación GPS Google Maps"
+                              className="p-1.5 rounded-lg bg-amber-50 text-rose-600 hover:bg-amber-100 transition-colors border border-amber-200"
+                            >
+                              <MapPin className="w-3.5 h-3.5" />
+                            </a>
+                            <a
+                              href={generateDriverWhatsAppMessage(p.repartidor_telefono || '', p, { nombre: p.cliente_nombre, telefono: p.cliente_telefono })}
+                              target="_blank"
+                              rel="noreferrer"
+                              title="Despachar a Chofer vía WhatsApp"
+                              className="p-1.5 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-colors border border-emerald-200"
+                            >
+                              <Send className="w-3.5 h-3.5" />
+                            </a>
+                          </>
+                        )}
+
+                        <button
+                          type="button"
+                          onClick={() => setCareCardPedido(p)}
+                          title="Guía y Etiqueta de Cuidados"
+                          className="p-1.5 rounded-lg bg-amber-800 text-white hover:bg-amber-900 transition-colors"
+                        >
+                          <ShieldCheck className="w-3.5 h-3.5" />
+                        </button>
+
                         <a
                           href={generateOrderWhatsAppUrl(p)}
                           target="_blank"
                           rel="noreferrer"
-                          title="Enviar por WhatsApp"
+                          title="Enviar por WhatsApp al Cliente"
                           className="p-1.5 rounded-lg bg-emerald-50 text-emerald-600 hover:bg-emerald-100 transition-colors"
                         >
                           <MessageCircle className="w-3.5 h-3.5" />
@@ -441,6 +571,21 @@ export const OrderManager: React.FC = () => {
           insumosMap={insumosMap}
           onConfirmDelete={pedidos.eliminarPedido}
         />
+      )}
+
+      {/* Modal Guía y Etiqueta de Cuidados */}
+      {careCardPedido && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in print:p-0 print:bg-white">
+          <div className="relative max-w-sm w-full">
+            <CakeCareCard
+              pedidoId={careCardPedido.numero_factura}
+              clienteNombre={careCardPedido.cliente_nombre}
+              nombrePastel={careCardPedido.items.map((i) => i.receta_nombre).join(', ') || 'Pastel Artesanal'}
+              fechaEntrega={formatDate(careCardPedido.fecha_entrega)}
+              onClose={() => setCareCardPedido(null)}
+            />
+          </div>
+        </div>
       )}
     </div>
   );

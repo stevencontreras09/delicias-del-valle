@@ -1,4 +1,4 @@
-import { Insumo, Receta, Cotizacion, Pedido, Merma, Usuario, Cliente } from '../types';
+import { Insumo, Receta, Cotizacion, Pedido, Merma, Usuario, Cliente, ZonaDelivery } from '../types';
 
 // ==============================================================================
 // 106 INSUMOS DEL CATÁLOGO EXACTO DEL TALLER (DOP / RD$)
@@ -3452,4 +3452,38 @@ export const INITIAL_CLIENTES: Cliente[] = [
     ultimo_pedido: '2026-08-14',
     created_at: '2026-08-01T09:15:00Z',
   }
+];
+
+// ==============================================================================
+// ZONAS DE DELIVERY Y TARIFAS DE TRANSPORTE
+// ==============================================================================
+export const INITIAL_ZONAS_DELIVERY: ZonaDelivery[] = [
+  {
+    id: 1,
+    nombre: 'Zona 1 - Local / Cercano (Taller y alrededores)',
+    tarifa: 150.00,
+    tiempo_estimado_min: 25,
+    activo: true,
+  },
+  {
+    id: 2,
+    nombre: 'Zona 2 - Centro Metropolitano',
+    tarifa: 250.00,
+    tiempo_estimado_min: 40,
+    activo: true,
+  },
+  {
+    id: 3,
+    nombre: 'Zona 3 - Zona Metropolitana Ampliada',
+    tarifa: 350.00,
+    tiempo_estimado_min: 55,
+    activo: true,
+  },
+  {
+    id: 4,
+    nombre: 'Zona 4 - Periferia / Envíos Especiales',
+    tarifa: 500.00,
+    tiempo_estimado_min: 75,
+    activo: true,
+  },
 ];

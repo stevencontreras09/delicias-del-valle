@@ -18,6 +18,7 @@ import {
   ChefHat,
   Receipt,
   Sparkles,
+  Truck,
 } from 'lucide-react';
 import { Modal } from '../ui/Modal';
 import { formatDate } from '../../utils/formatters';
@@ -134,7 +135,7 @@ export const UserManager: React.FC = () => {
     setIsSubmitting(true);
     try {
       if (editingUser) {
-        updateUsuario(editingUser.id, {
+        const res = await updateUsuario(editingUser.id, {
           username,
           nombre_completo,
           email,
@@ -142,14 +143,16 @@ export const UserManager: React.FC = () => {
           rol: formData.rol,
           activo: formData.activo,
         });
-        setIsModalOpen(false);
+        if (res?.success) {
+          setIsModalOpen(false);
+        }
       } else {
         if (!password || password.length < 6) {
           showToast('warning', 'Contraseña Requerida', 'Ingresa una contraseña de al menos 6 caracteres para el nuevo usuario.');
           setIsSubmitting(false);
           return;
         }
-        addUsuario({
+        const res = await addUsuario({
           username,
           password,
           nombre_completo,
@@ -158,7 +161,9 @@ export const UserManager: React.FC = () => {
           rol: formData.rol,
           activo: formData.activo,
         });
-        setIsModalOpen(false);
+        if (res?.success) {
+          setIsModalOpen(false);
+        }
       }
     } finally {
       setIsSubmitting(false);
@@ -203,6 +208,13 @@ export const UserManager: React.FC = () => {
             <span>Ventas & Caja</span>
           </span>
         );
+      case 'delivery':
+        return (
+          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-100 text-amber-900 border border-amber-300">
+            <Truck className="w-3 h-3 text-amber-700" />
+            <span>Repartidor / Delivery</span>
+          </span>
+        );
       default:
         return (
           <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-gray-100 text-gray-700 border border-gray-300">
@@ -241,7 +253,7 @@ export const UserManager: React.FC = () => {
       </div>
 
       {/* Métricas de Usuarios */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
         <div className="bg-white p-4 rounded-2xl border border-trigo-200 shadow-sm">
           <span className="text-xs text-gray-400 font-bold uppercase block">Total Usuarios</span>
           <span className="text-2xl font-black text-chocolate-800">{validUsers.length}</span>
@@ -268,6 +280,13 @@ export const UserManager: React.FC = () => {
           </span>
           <span className="text-[10px] text-gray-500 block">cotizaciones y cobros</span>
         </div>
+        <div className="bg-white p-4 rounded-2xl border border-trigo-200 shadow-sm col-span-2 sm:col-span-1">
+          <span className="text-xs text-gray-400 font-bold uppercase block">Repartidores</span>
+          <span className="text-2xl font-black text-amber-800">
+            {validUsers.filter((u) => u.rol === 'delivery').length}
+          </span>
+          <span className="text-[10px] text-gray-500 block">delivery & despacho</span>
+        </div>
       </div>
 
       {/* Filtros y Búsqueda */}
@@ -285,7 +304,7 @@ export const UserManager: React.FC = () => {
 
         <div className="flex items-center gap-2 w-full sm:w-auto overflow-x-auto text-xs">
           <span className="text-gray-400 font-bold text-[11px] uppercase">Rol:</span>
-          {['todos', 'admin', 'pastelero', 'cajero'].map((r) => (
+          {['todos', 'admin', 'pastelero', 'cajero', 'delivery'].map((r) => (
             <button
               key={r}
               onClick={() => setRoleFilter(r)}
@@ -520,6 +539,7 @@ export const UserManager: React.FC = () => {
                 <option value="coadmin">Co-Administrador (Operativo Total sin BD/Usuarios)</option>
                 <option value="pastelero">Pastelero / Chef (Taller & Cocina)</option>
                 <option value="cajero">Cajero / Ventas (Cotizaciones & Cobros)</option>
+                <option value="delivery">🛵 Repartidor / Chofer (Delivery & Logística)</option>
                 <option value="admin">Administrador Maestro (Acceso Total + SQL)</option>
                 <option value="operador">Operador General</option>
               </select>

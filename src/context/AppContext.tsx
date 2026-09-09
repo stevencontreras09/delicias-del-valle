@@ -12,6 +12,8 @@ import {
   KitchenTimerState,
   Cliente,
   BancoRD,
+  ZonaDelivery,
+  TipoDespacho,
 } from '../types';
 import {
   INITIAL_INSUMOS,
@@ -21,6 +23,7 @@ import {
   INITIAL_MERMAS,
   INITIAL_USUARIOS,
   INITIAL_CLIENTES,
+  INITIAL_ZONAS_DELIVERY,
 } from '../utils/initialData';
 import { calcularCostoUnitarioBase } from '../utils/calculations';
 import { playSuccessChime, playNotificationChime } from '../utils/kitchenAudio';
@@ -52,6 +55,8 @@ import {
   deleteClienteFromSupabase,
   syncMermaToSupabase,
   cancelarPedidoConInventarioRpc,
+  syncZonaDeliveryToSupabase,
+  deleteZonaDeliveryFromSupabase,
 } from '../services/supabaseService';
 import {
   sanitizeInput,
@@ -86,8 +91,8 @@ interface AppContextType {
   logout: () => void;
   // Gestión de Usuarios (Exclusivo Admin)
   usuarios: Usuario[];
-  addUsuario: (usuario: Omit<Usuario, 'id' | 'created_at'>) => Usuario;
-  updateUsuario: (id: number, usuario: Partial<Usuario>) => void;
+  addUsuario: (usuario: Omit<Usuario, 'id' | 'created_at'>) => Promise<{ success: boolean; message?: string }>;
+  updateUsuario: (id: number, usuario: Partial<Usuario>) => Promise<{ success: boolean; message?: string }>;
   deleteUsuario: (id: number) => { success: boolean; message?: string };
   toggleUsuarioEstado: (id: number) => void;
   resetPasswordUsuario: (id: number, newPassword: string) => void;
@@ -119,7 +124,28 @@ interface AppContextType {
   updateCotizacion: (id: number, cotizacion: Partial<Cotizacion>) => Promise<boolean>;
   deleteCotizacion: (id: number) => void;
   cambiarEstadoCotizacion: (id: number, estado: EstadoCotizacion) => void;
-  convertirCotizacionAPedido: (cotizacionId: number, anticipo: number, fechaEntrega: string, horaEntrega: string, tipoEntrega: 'recogida_local' | 'domicilio', direccion?: string) => Pedido;
+  convertirCotizacionAPedido: (
+    cotizacionId: number,
+    anticipo: number,
+    fechaEntrega: string,
+    horaEntrega: string,
+    tipoEntrega: 'recogida_local' | 'domicilio',
+    direccion?: string,
+    despachoData?: {
+      tipo_despacho?: TipoDespacho;
+      zona_delivery_id?: number | null;
+      costo_delivery?: number;
+      punto_referencia?: string;
+      repartidor_nombre?: string;
+      repartidor_telefono?: string;
+      cobro_delivery_al_recibir?: boolean;
+    }
+  ) => Pedido;
+  // Zonas de Delivery & Logística
+  zonasDelivery: ZonaDelivery[];
+  addZonaDelivery: (zona: Omit<ZonaDelivery, 'id'>) => Promise<boolean>;
+  updateZonaDelivery: (id: number, zona: Partial<ZonaDelivery>) => Promise<boolean>;
+  deleteZonaDelivery: (id: number) => Promise<boolean>;
   // Pedidos
   pedidos: PedidosContextActions;
   // Modo Cocina
@@ -286,6 +312,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   useEffect(() => {
     localStorage.setItem(`${STORAGE_KEY}_clientes`, JSON.stringify(clientes));
   }, [clientes]);
+
+  const [zonasDelivery, setZonasDelivery] = useState<ZonaDelivery[]>(() => {
+    const saved = localStorage.getItem(`${STORAGE_KEY}_zonas_delivery`);
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      } catch {}
+    }
+    return INITIAL_ZONAS_DELIVERY;
+  });
+
+  useEffect(() => {
+    localStorage.setItem(`${STORAGE_KEY}_zonas_delivery`, JSON.stringify(zonasDelivery));
+  }, [zonasDelivery]);
 
   const [timers, setTimers] = useState<KitchenTimerState[]>([
     {
@@ -515,62 +556,89 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // ==========================================
   // GESTIÓN DE USUARIOS (CRUD CON HASH BCRYPT)
   // ==========================================
-  const addUsuario = useCallback((data: Omit<Usuario, 'id' | 'created_at'>): Usuario => {
-    const cleanUsername = sanitizeInput(data.username || '').trim();
-    const cleanFullName = sanitizeInput(data.nombre_completo || '').trim();
-    const cleanEmail = sanitizeInput(data.email || '').trim();
+  const addUsuario = useCallback(
+    async (data: Omit<Usuario, 'id' | 'created_at'>): Promise<{ success: boolean; message?: string }> => {
+      const cleanUsername = sanitizeInput(data.username || '').trim();
+      const cleanFullName = sanitizeInput(data.nombre_completo || '').trim();
+      const cleanEmail = sanitizeInput(data.email || '').trim();
 
-    if (!cleanUsername || !cleanFullName || !cleanEmail) {
-      showToast('error', 'Campos Incompletos', 'El nombre de usuario, nombre completo y correo son obligatorios.');
-      return null as any;
-    }
+      if (!cleanUsername || !cleanFullName || !cleanEmail) {
+        showToast('error', 'Campos Incompletos', 'El nombre de usuario, nombre completo y correo son obligatorios.');
+        return { success: false, message: 'Campos incompletos.' };
+      }
 
-    const nextId = usuarios.length > 0 ? Math.max(...usuarios.map((u) => u.id)) + 1 : 1;
-    const sanitizedNewUser: Usuario = {
-      id: nextId,
-      username: cleanUsername,
-      password: data.password ? data.password.trim() : undefined,
-      nombre_completo: cleanFullName,
-      email: cleanEmail,
-      telefono: sanitizeInput(data.telefono || '').trim(),
-      rol: data.rol || 'pastelero',
-      activo: Boolean(data.activo),
-      created_at: new Date().toISOString(),
-    };
+      const nextId = usuarios.length > 0 ? Math.max(...usuarios.map((u) => u.id)) + 1 : 1;
+      const sanitizedNewUser: Usuario = {
+        id: nextId,
+        username: cleanUsername,
+        password: data.password ? data.password.trim() : undefined,
+        nombre_completo: cleanFullName,
+        email: cleanEmail,
+        telefono: sanitizeInput(data.telefono || '').trim(),
+        rol: data.rol || 'pastelero',
+        activo: Boolean(data.activo),
+        created_at: new Date().toISOString(),
+      };
 
-    // Agregar a la lista local omitiendo la contraseña para evitar exposición en memoria/storage
-    const safeLocalUser = sanitizeUserForStorage(sanitizedNewUser) as Usuario;
-    if (!safeLocalUser) {
-      showToast('error', 'Error al Crear Usuario', 'Los datos del usuario son inválidos.');
-      return null as any;
-    }
+      if (isSupabaseConfigured()) {
+        // Enviar a Supabase con contraseña para cifrado bcrypt en PostgreSQL
+        const syncRes = await syncUsuarioToSupabase(sanitizedNewUser);
+        if (!syncRes.success) {
+          showToast(
+            'error',
+            'Error al Guardar en Supabase',
+            syncRes.message || 'La base de datos rechazó el usuario. Revisa si ejecutaste el parche SQL.'
+          );
+          return syncRes;
+        }
+      }
 
-    setUsuarios((prev) => [safeLocalUser, ...prev.filter((u) => u && u.username && u.username.trim().length > 0)]);
+      // Agregar a la lista local omitiendo la contraseña para evitar exposición en memoria/storage
+      const safeLocalUser = sanitizeUserForStorage(sanitizedNewUser) as Usuario;
+      if (!safeLocalUser) {
+        showToast('error', 'Error al Crear Usuario', 'Los datos del usuario son inválidos.');
+        return { success: false, message: 'Datos inválidos.' };
+      }
 
-    if (isSupabaseConfigured()) {
-      // Enviar a Supabase con contraseña para cifrado bcrypt en el servidor PostgreSQL
-      syncUsuarioToSupabase(sanitizedNewUser);
-    }
+      setUsuarios((prev) => [safeLocalUser, ...prev.filter((u) => u && u.username && u.username.trim().length > 0)]);
 
-    showToast('success', 'Usuario Creado', `Usuario "${safeLocalUser.username}" registrado exitosamente.`);
-    return safeLocalUser;
-  }, [usuarios, showToast]);
+      showToast('success', 'Usuario Creado', `Usuario "${safeLocalUser.username}" registrado y sincronizado exitosamente.`);
+      return { success: true };
+    },
+    [usuarios, showToast]
+  );
 
-  const updateUsuario = useCallback((id: number, data: Partial<Usuario>) => {
-    const sanitizedData: Partial<Usuario> = {
-      ...data,
-      username: data.username ? sanitizeInput(data.username).trim() : undefined,
-      nombre_completo: data.nombre_completo ? sanitizeInput(data.nombre_completo).trim() : undefined,
-      email: data.email ? sanitizeInput(data.email).trim() : undefined,
-      telefono: data.telefono ? sanitizeInput(data.telefono).trim() : undefined,
-    };
+  const updateUsuario = useCallback(
+    async (id: number, data: Partial<Usuario>): Promise<{ success: boolean; message?: string }> => {
+      const sanitizedData: Partial<Usuario> = {
+        ...data,
+        username: data.username ? sanitizeInput(data.username).trim() : undefined,
+        nombre_completo: data.nombre_completo ? sanitizeInput(data.nombre_completo).trim() : undefined,
+        email: data.email ? sanitizeInput(data.email).trim() : undefined,
+        telefono: data.telefono ? sanitizeInput(data.telefono).trim() : undefined,
+      };
 
-    setUsuarios((prev) =>
-      prev.map((u) => {
-        if (u.id !== id) return u;
-        const updated = { ...u, ...sanitizedData };
-        const safeUpdated = sanitizeUserForStorage(updated) as Usuario;
-        if (!safeUpdated) return u;
+      const targetUser = usuarios.find((u) => u.id === id);
+      if (!targetUser) return { success: false, message: 'Usuario no encontrado' };
+
+      const updatedUser: Usuario = { ...targetUser, ...sanitizedData };
+
+      if (isSupabaseConfigured()) {
+        const syncRes = await syncUsuarioToSupabase(updatedUser);
+        if (!syncRes.success) {
+          showToast('error', 'Error en Supabase', syncRes.message || 'No se pudo actualizar el usuario en la base de datos.');
+          return syncRes;
+        }
+      }
+
+      const safeUpdated = sanitizeUserForStorage(updatedUser) as Usuario;
+      if (safeUpdated) {
+        setUsuarios((prev) =>
+          prev.map((u) => {
+            if (u.id !== id) return u;
+            return safeUpdated;
+          })
+        );
 
         if (currentUser?.id === id) {
           if (data.activo === false) {
@@ -585,23 +653,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             localStorage.setItem(`${STORAGE_KEY}_session_user`, JSON.stringify(safeUpdated));
           }
         }
+      }
 
-        if (isSupabaseConfigured()) {
-          syncUsuarioToSupabase({ ...updated, id });
-        }
-        return safeUpdated;
-      })
-    );
-
-    if (data.activo === false) {
-      const targetUser = usuarios.find((u) => u.id === id);
-      if (targetUser) {
+      if (data.activo === false) {
         broadcastUserDeactivation(targetUser.id, targetUser.username);
       }
-    }
 
-    showToast('info', 'Usuario Actualizado', 'Los datos del usuario fueron guardados.');
-  }, [currentUser, showToast, usuarios, broadcastUserDeactivation]);
+      showToast('info', 'Usuario Actualizado', 'Los datos del usuario fueron guardados.');
+      return { success: true };
+    },
+    [currentUser, showToast, usuarios, broadcastUserDeactivation]
+  );
 
   const deleteUsuario = useCallback((id: number): { success: boolean; message?: string } => {
     const user = usuarios.find((u) => u.id === id);
@@ -740,6 +802,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             setClientes(dbClientes);
           }
         } catch {}
+        if (res.data.zonasDelivery && res.data.zonasDelivery.length > 0) {
+          setZonasDelivery(res.data.zonasDelivery);
+        }
         const usersDb = res.data.usuarios;
         if (usersDb && usersDb.length > 0) {
           setUsuarios(prev => {
@@ -961,6 +1026,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'usuarios' },
+        () => {
+          syncFromSupabase(true);
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'zonas_delivery' },
         () => {
           syncFromSupabase(true);
         }
@@ -1500,6 +1572,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       cliente_telefono: sanitizeInput(data.cliente_telefono),
       cliente_email: data.cliente_email ? sanitizeInput(data.cliente_email) : undefined,
       direccion_entrega: data.direccion_entrega ? sanitizeInput(data.direccion_entrega) : undefined,
+      punto_referencia: data.punto_referencia ? sanitizeInput(data.punto_referencia) : undefined,
+      repartidor_nombre: data.repartidor_nombre ? sanitizeInput(data.repartidor_nombre) : undefined,
+      repartidor_telefono: data.repartidor_telefono ? sanitizeInput(data.repartidor_telefono) : undefined,
       notas_cocina: data.notas_cocina ? sanitizeInput(data.notas_cocina) : undefined,
       saldo_pendiente,
       inventario_descontado: false,
@@ -1533,7 +1608,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     fechaEntrega: string,
     horaEntrega: string,
     tipoEntrega: 'recogida_local' | 'domicilio',
-    direccion?: string
+    direccion?: string,
+    despachoData?: {
+      tipo_despacho?: TipoDespacho;
+      zona_delivery_id?: number | null;
+      costo_delivery?: number;
+      punto_referencia?: string;
+      repartidor_nombre?: string;
+      repartidor_telefono?: string;
+      cobro_delivery_al_recibir?: boolean;
+    }
   ): Pedido => {
     const cot = cotizaciones.find((c) => c.id === cotizacionId);
     if (!cot) throw new Error('Cotización no encontrada');
@@ -1573,7 +1657,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       fecha_entrega: fechaEntrega,
       hora_entrega: horaEntrega,
       tipo_entrega: tipoEntrega,
-      direccion_entrega: direccion ? sanitizeInput(direccion) : undefined,
+      direccion_entrega: direccion ? sanitizeInput(direccion) : (cot.direccion_entrega ? sanitizeInput(cot.direccion_entrega) : undefined),
+      // Campos de Logística y Despacho
+      tipo_despacho: despachoData?.tipo_despacho || cot.tipo_despacho || (tipoEntrega === 'domicilio' ? 'delivery' : 'retiro'),
+      zona_delivery_id: despachoData?.zona_delivery_id !== undefined ? despachoData.zona_delivery_id : (cot.zona_delivery_id || null),
+      costo_delivery: despachoData?.costo_delivery !== undefined ? despachoData.costo_delivery : (cot.costo_delivery ?? cot.costo_envio ?? 0),
+      punto_referencia: despachoData?.punto_referencia ? sanitizeInput(despachoData.punto_referencia) : (cot.punto_referencia ? sanitizeInput(cot.punto_referencia) : undefined),
+      repartidor_nombre: despachoData?.repartidor_nombre ? sanitizeInput(despachoData.repartidor_nombre) : (cot.repartidor_nombre ? sanitizeInput(cot.repartidor_nombre) : undefined),
+      repartidor_telefono: despachoData?.repartidor_telefono ? sanitizeInput(despachoData.repartidor_telefono) : (cot.repartidor_telefono ? sanitizeInput(cot.repartidor_telefono) : undefined),
+      cobro_delivery_al_recibir: despachoData?.cobro_delivery_al_recibir ?? false,
       items: pedidoItems,
       subtotal: cot.subtotal,
       costo_envio: cot.costo_envio,
@@ -1924,6 +2016,57 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   // ==========================================
+  // ZONAS DE DELIVERY Y LOGÍSTICA
+  // ==========================================
+  const addZonaDelivery = async (data: Omit<ZonaDelivery, 'id'>): Promise<boolean> => {
+    const nextId = zonasDelivery.length > 0 ? Math.max(...zonasDelivery.map(z => z.id)) + 1 : 1;
+    const newZona: ZonaDelivery = {
+      ...data,
+      id: nextId,
+      nombre: sanitizeInput(data.nombre),
+      tarifa: Number(data.tarifa || 0),
+      tiempo_estimado_min: data.tiempo_estimado_min ? Number(data.tiempo_estimado_min) : undefined,
+      activo: data.activo ?? true,
+      created_at: new Date().toISOString(),
+    };
+
+    setZonasDelivery(prev => [...prev, newZona]);
+    showToast('success', 'Zona de Entrega Creada', `${newZona.nombre} registrada.`);
+
+    if (isSupabaseConfigured()) {
+      await syncZonaDeliveryToSupabase(newZona);
+    }
+    return true;
+  };
+
+  const updateZonaDelivery = async (id: number, data: Partial<ZonaDelivery>): Promise<boolean> => {
+    let updatedZona: ZonaDelivery | null = null;
+    setZonasDelivery(prev => prev.map(z => {
+      if (z.id !== id) return z;
+      updatedZona = {
+        ...z,
+        ...data,
+        nombre: data.nombre ? sanitizeInput(data.nombre) : z.nombre,
+      };
+      return updatedZona;
+    }));
+
+    if (updatedZona && isSupabaseConfigured()) {
+      await syncZonaDeliveryToSupabase(updatedZona);
+    }
+    return true;
+  };
+
+  const deleteZonaDelivery = async (id: number): Promise<boolean> => {
+    setZonasDelivery(prev => prev.filter(z => z.id !== id));
+    showToast('info', 'Zona Eliminada', 'La zona de entrega fue removida.');
+    if (isSupabaseConfigured()) {
+      await deleteZonaDeliveryFromSupabase(id);
+    }
+    return true;
+  };
+
+  // ==========================================
   // RESET Y EXPORTACIÓN
   // ==========================================
   const resetAllData = () => {
@@ -2000,6 +2143,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         deleteCotizacion,
         cambiarEstadoCotizacion,
         convertirCotizacionAPedido,
+        zonasDelivery,
+        addZonaDelivery,
+        updateZonaDelivery,
+        deleteZonaDelivery,
         pedidos: {
           list: pedidos,
           addPedidoDirecto,

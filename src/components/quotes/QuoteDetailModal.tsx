@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Cotizacion, TipoEntrega } from '../../types';
+import { Cotizacion, TipoEntrega, TipoDespacho } from '../../types';
+import { useApp } from '../../context/AppContext';
 import { Modal } from '../ui/Modal';
 import { formatCurrency, formatDate } from '../../utils/formatters';
 import {
@@ -11,6 +12,8 @@ import {
   User,
   ShoppingBag,
   Sparkles,
+  Truck,
+  Store,
 } from 'lucide-react';
 import { Badge } from '../ui/Badge';
 import { generarPdfCotizacion } from '../../utils/pdfGenerator';
@@ -26,7 +29,16 @@ interface QuoteDetailModalProps {
     fechaEntrega: string,
     horaEntrega: string,
     tipoEntrega: TipoEntrega,
-    direccion?: string
+    direccion?: string,
+    despachoData?: {
+      tipo_despacho?: TipoDespacho;
+      zona_delivery_id?: number | null;
+      costo_delivery?: number;
+      punto_referencia?: string;
+      repartidor_nombre?: string;
+      repartidor_telefono?: string;
+      cobro_delivery_al_recibir?: boolean;
+    }
   ) => void;
   onEdit?: (cotizacion: Cotizacion) => void;
 }
@@ -38,34 +50,67 @@ export const QuoteDetailModal: React.FC<QuoteDetailModalProps> = ({
   onConvertToOrder,
   onEdit,
 }) => {
+  const { zonasDelivery, usuarios } = useApp();
+  const deliveryUsers = (usuarios || []).filter((u) => u.rol === 'delivery' && u.activo);
   const [showConvertDialog, setShowConvertDialog] = useState(false);
   const [anticipoMonto, setAnticipoMonto] = useState<number | ''>('');
   const [fechaEntrega, setFechaEntrega] = useState('');
   const [horaEntrega, setHoraEntrega] = useState('14:00');
   const [tipoEntrega, setTipoEntrega] = useState<TipoEntrega>('recogida_local');
+  const [tipoDespacho, setTipoDespacho] = useState<TipoDespacho>('retiro');
+  const [zonaDeliveryId, setZonaDeliveryId] = useState<number | ''>('');
   const [direccion, setDireccion] = useState('');
+  const [puntoReferencia, setPuntoReferencia] = useState('');
+  const [repartidorNombre, setRepartidorNombre] = useState('');
+  const [repartidorTelefono, setRepartidorTelefono] = useState('');
+  const [cobroDeliveryAlRecibir, setCobroDeliveryAlRecibir] = useState(false);
 
   if (!cotizacion) return null;
 
   const handleOpenConvert = () => {
-    // 50% por defecto
     setAnticipoMonto(Math.round((cotizacion.total * 0.5) * 100) / 100);
     setFechaEntrega(cotizacion.fecha_evento || new Date().toISOString().split('T')[0]);
     setHoraEntrega('14:00');
-    setTipoEntrega('recogida_local');
-    setDireccion('');
+    const isDelivery = cotizacion.tipo_despacho === 'delivery' || Number(cotizacion.costo_delivery || cotizacion.costo_envio || 0) > 0;
+    setTipoEntrega(isDelivery ? 'domicilio' : 'recogida_local');
+    setTipoDespacho(isDelivery ? 'delivery' : 'retiro');
+    setZonaDeliveryId(cotizacion.zona_delivery_id || '');
+    setDireccion(cotizacion.direccion_entrega || '');
+    setPuntoReferencia(cotizacion.punto_referencia || '');
+    setRepartidorNombre(cotizacion.repartidor_nombre || '');
+    setRepartidorTelefono(cotizacion.repartidor_telefono || '');
+    setCobroDeliveryAlRecibir(false);
     setShowConvertDialog(true);
   };
 
   const handleConfirmOrder = () => {
     const anticipo = typeof anticipoMonto === 'number' ? anticipoMonto : 0;
+    if (tipoDespacho === 'delivery') {
+      if (!direccion.trim()) {
+        alert('Para entrega a domicilio, la Dirección de Entrega es obligatoria.');
+        return;
+      }
+      if (!puntoReferencia.trim()) {
+        alert('Para entrega a domicilio, el Punto de Referencia es obligatorio.');
+        return;
+      }
+    }
     onConvertToOrder(
       cotizacion.id,
       anticipo,
       fechaEntrega,
       horaEntrega,
-      tipoEntrega,
-      direccion.trim()
+      tipoDespacho === 'delivery' ? 'domicilio' : 'recogida_local',
+      direccion.trim(),
+      {
+        tipo_despacho: tipoDespacho,
+        zona_delivery_id: tipoDespacho === 'delivery' && zonaDeliveryId ? Number(zonaDeliveryId) : null,
+        costo_delivery: tipoDespacho === 'delivery' ? (cotizacion.costo_delivery || cotizacion.costo_envio || 0) : 0,
+        punto_referencia: tipoDespacho === 'delivery' ? puntoReferencia.trim() : undefined,
+        repartidor_nombre: repartidorNombre.trim() || undefined,
+        repartidor_telefono: repartidorTelefono.trim() || undefined,
+        cobro_delivery_al_recibir: cobroDeliveryAlRecibir,
+      }
     );
     setShowConvertDialog(false);
     onClose();
@@ -203,33 +248,172 @@ export const QuoteDetailModal: React.FC<QuoteDetailModalProps> = ({
                 />
               </div>
 
-              <div>
-                <label className="block font-semibold text-chocolate-700 mb-1">
-                  Tipo de Entrega
+              <div className="sm:col-span-2">
+                <label className="block font-semibold text-chocolate-700 mb-1.5">
+                  Modalidad de Despacho
                 </label>
-                <select
-                  value={tipoEntrega}
-                  onChange={(e) => setTipoEntrega(e.target.value as TipoEntrega)}
-                  className="w-full px-3 py-2 rounded-xl border border-trigo-300 focus:ring-2 focus:ring-frambuesa-400 text-xs bg-white"
-                >
-                  <option value="recogida_local">Recogida en Taller (Local)</option>
-                  <option value="domicilio">Entrega a Domicilio</option>
-                </select>
+                <div className="grid grid-cols-2 gap-2 p-1 bg-crema/80 rounded-2xl border border-trigo-300">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setTipoDespacho('retiro');
+                      setTipoEntrega('recogida_local');
+                    }}
+                    className={`flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-xs font-bold transition-all min-h-[40px] ${
+                      tipoDespacho === 'retiro'
+                        ? 'bg-chocolate-700 text-white shadow-sm'
+                        : 'text-chocolate-700 hover:bg-white'
+                    }`}
+                  >
+                    <Store className="w-4 h-4" />
+                    <span>🏬 Retiro en Taller</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setTipoDespacho('delivery');
+                      setTipoEntrega('domicilio');
+                      if (!zonaDeliveryId && zonasDelivery.length > 0) {
+                        const first = zonasDelivery.find(z => z.activo) || zonasDelivery[0];
+                        if (first) setZonaDeliveryId(first.id);
+                      }
+                    }}
+                    className={`flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-xs font-bold transition-all min-h-[40px] ${
+                      tipoDespacho === 'delivery'
+                        ? 'bg-frambuesa-500 text-white shadow-sm'
+                        : 'text-chocolate-700 hover:bg-white'
+                    }`}
+                  >
+                    <Truck className="w-4 h-4" />
+                    <span>🛵 Envío a Domicilio</span>
+                  </button>
+                </div>
               </div>
 
-              {tipoEntrega === 'domicilio' && (
-                <div className="sm:col-span-2">
-                  <label className="block font-semibold text-chocolate-700 mb-1">
-                    Dirección de Entrega
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="Calle, Carrera, Apto, Barrio..."
-                    value={direccion}
-                    onChange={(e) => setDireccion(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl border border-trigo-300 focus:ring-2 focus:ring-frambuesa-400 text-xs"
-                  />
-                </div>
+              {tipoDespacho === 'delivery' && (
+                <>
+                  <div className="sm:col-span-2">
+                    <label className="block font-semibold text-chocolate-700 mb-1">
+                      Zona de Envío Asignada
+                    </label>
+                    <select
+                      value={zonaDeliveryId}
+                      onChange={(e) => setZonaDeliveryId(e.target.value === '' ? '' : Number(e.target.value))}
+                      className="w-full px-3 py-2 rounded-xl border border-trigo-300 focus:ring-2 focus:ring-frambuesa-400 text-xs bg-white font-medium"
+                    >
+                      <option value="">-- Seleccionar zona --</option>
+                      {zonasDelivery.filter(z => z.activo).map((z) => (
+                        <option key={z.id} value={z.id}>
+                          {z.nombre} — {formatCurrency(z.tarifa)} ({z.tiempo_estimado_min || 45} min)
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block font-semibold text-chocolate-700 mb-1">
+                      Dirección de Entrega *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="Calle, Número, Apto, Sector..."
+                      value={direccion}
+                      onChange={(e) => setDireccion(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl border border-trigo-300 focus:ring-2 focus:ring-frambuesa-400 text-xs"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-semibold text-chocolate-700 mb-1">
+                      Punto de Referencia *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="Frente a..., portón..., color..."
+                      value={puntoReferencia}
+                      onChange={(e) => setPuntoReferencia(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl border border-trigo-300 focus:ring-2 focus:ring-frambuesa-400 text-xs"
+                    />
+                  </div>
+
+                  {deliveryUsers.length > 0 && (
+                    <div className="sm:col-span-2 flex items-center gap-1.5 flex-wrap pb-1 border-b border-trigo-200/80">
+                      <span className="text-[10px] font-bold text-chocolate-700">Repartidores en equipo:</span>
+                      {deliveryUsers.map((u) => (
+                        <button
+                          key={u.id}
+                          type="button"
+                          onClick={() => {
+                            setRepartidorNombre(u.nombre_completo);
+                            if (u.telefono) setRepartidorTelefono(u.telefono);
+                          }}
+                          className="px-2 py-0.5 rounded-lg bg-white hover:bg-amber-100 text-stone-700 border border-trigo-300 text-[10px] font-semibold transition flex items-center gap-1 shadow-2xs"
+                        >
+                          <span>🛵 {u.nombre_completo}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  <div>
+                    <label className="block font-semibold text-chocolate-700 mb-1">
+                      Chofer / Mensajero <span className="text-gray-400 font-normal">(Opcional)</span>
+                    </label>
+                    <input
+                      type="text"
+                      list="choferes-registrados-modal-list"
+                      placeholder="Nombre del repartidor"
+                      value={repartidorNombre}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setRepartidorNombre(val);
+                        const matched = deliveryUsers.find(
+                          (u) =>
+                            u.nombre_completo.toLowerCase() === val.toLowerCase() ||
+                            u.username.toLowerCase() === val.toLowerCase()
+                        );
+                        if (matched && matched.telefono) {
+                          setRepartidorTelefono(matched.telefono);
+                        }
+                      }}
+                      className="w-full px-3 py-2 rounded-xl border border-trigo-300 focus:ring-2 focus:ring-frambuesa-400 text-xs"
+                    />
+                    <datalist id="choferes-registrados-modal-list">
+                      {deliveryUsers.map((u) => (
+                        <option key={u.id} value={u.nombre_completo}>
+                          {u.telefono ? `Tel: ${u.telefono}` : `@${u.username}`}
+                        </option>
+                      ))}
+                    </datalist>
+                  </div>
+
+                  <div>
+                    <label className="block font-semibold text-chocolate-700 mb-1">
+                      Teléfono del Chofer
+                    </label>
+                    <input
+                      type="tel"
+                      placeholder="Ej: 809-555-0101"
+                      value={repartidorTelefono}
+                      onChange={(e) => setRepartidorTelefono(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl border border-trigo-300 focus:ring-2 focus:ring-frambuesa-400 text-xs"
+                    />
+                  </div>
+
+                  <div className="sm:col-span-2">
+                    <label className="flex items-center gap-2 text-xs font-semibold text-chocolate-800 cursor-pointer bg-amber-50/70 p-2 rounded-xl border border-amber-200/70">
+                      <input
+                        type="checkbox"
+                        checked={cobroDeliveryAlRecibir}
+                        onChange={(e) => setCobroDeliveryAlRecibir(e.target.checked)}
+                        className="w-4 h-4 rounded text-frambuesa-600 focus:ring-frambuesa-400"
+                      />
+                      <span>El chofer debe cobrar la tarifa de delivery en efectivo al cliente en el destino</span>
+                    </label>
+                  </div>
+                </>
               )}
             </div>
 

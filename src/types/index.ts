@@ -150,6 +150,17 @@ export interface CotizacionItem {
 
 export type EstadoCotizacion = 'pendiente' | 'enviada' | 'aprobada' | 'rechazada' | 'convertida';
 
+export type TipoDespacho = 'retiro' | 'delivery';
+
+export interface ZonaDelivery {
+  id: number;
+  nombre: string;
+  tarifa: number;
+  tiempo_estimado_min?: number;
+  activo: boolean;
+  created_at?: string;
+}
+
 export interface Cotizacion {
   id: number;
   codigo: string; // 'COT-2026-001'
@@ -167,6 +178,14 @@ export interface Cotizacion {
   total: number;
   notas?: string;
   estado: EstadoCotizacion;
+  // Campos de Logística & Despacho
+  tipo_despacho?: TipoDespacho;
+  zona_delivery_id?: number | null;
+  costo_delivery?: number;
+  direccion_entrega?: string;
+  punto_referencia?: string;
+  repartidor_nombre?: string;
+  repartidor_telefono?: string;
   created_at: string;
 }
 
@@ -230,6 +249,14 @@ export interface Pedido {
   inventario_descontado: boolean;
   notas_cocina?: string;
   checklist_completado?: { [key: string]: boolean };
+  // Campos de Logística & Despacho
+  tipo_despacho?: TipoDespacho;
+  zona_delivery_id?: number | null;
+  costo_delivery?: number;
+  punto_referencia?: string;
+  repartidor_nombre?: string;
+  repartidor_telefono?: string;
+  cobro_delivery_al_recibir?: boolean;
   created_at: string;
 }
 
@@ -246,7 +273,7 @@ export interface KitchenTimerState {
 // ==========================================
 // USUARIOS & AUTENTICACIÓN (RBAC)
 // ==========================================
-export type UserRole = 'admin' | 'coadmin' | 'pastelero' | 'cajero' | 'operador';
+export type UserRole = 'admin' | 'coadmin' | 'pastelero' | 'cajero' | 'operador' | 'delivery';
 
 export interface Usuario {
   id: number;

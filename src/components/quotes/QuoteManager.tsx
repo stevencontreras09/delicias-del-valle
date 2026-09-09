@@ -310,8 +310,8 @@ export const QuoteManager: React.FC = () => {
           isOpen={!!selectedCotizacion}
           onClose={() => setSelectedCotizacion(null)}
           cotizacion={selectedCotizacion}
-          onConvertToOrder={(cotId, anticipo, fecha, hora, tipo, dir) => {
-            convertirCotizacionAPedido(cotId, anticipo, fecha, hora, tipo, dir);
+          onConvertToOrder={(cotId, anticipo, fecha, hora, tipo, dir, despachoData) => {
+            convertirCotizacionAPedido(cotId, anticipo, fecha, hora, tipo, dir, despachoData);
           }}
           onEdit={(c) => {
             setEditingCotizacion(c);
