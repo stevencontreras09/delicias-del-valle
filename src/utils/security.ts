@@ -12,6 +12,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, Record<ActiveTab, boolean>> = {
     quotes: true,
     orders: true,
     kitchen: true,
+    delivery: true,
     users: true,
     database: true,
   },
@@ -22,46 +23,51 @@ export const ROLE_PERMISSIONS: Record<UserRole, Record<ActiveTab, boolean>> = {
     quotes: true,
     orders: true,
     kitchen: true,
+    delivery: true,
     users: true,
     database: false, // Restricción: credenciales y consola SQL restringidas al Admin Maestro
   },
   pastelero: {
-    dashboard: true,
-    inventory: true, // Consulta de stock y registro de mermas
-    recipes: true,   // Fórmulas BOM, escalado y recetas
-    quotes: false,   // Restricción: no tiene acceso a presupuestos comerciales
-    orders: true,    // Consulta de pedidos en producción
-    kitchen: true,   // Acceso completo al Modo Cocina / Display
-    users: false,    // Restricción: sin gestión de usuarios
-    database: false, // Restricción: sin acceso a base de datos
+    dashboard: false, // Restricción: métricas financieras e Inicio reservadas a Admin/Coadmin
+    inventory: true,  // Consulta de stock y registro de mermas
+    recipes: true,    // Fórmulas BOM, escalado y recetas
+    quotes: false,    // Restricción: no tiene acceso a presupuestos comerciales
+    orders: true,     // Consulta de pedidos en producción
+    kitchen: true,    // Acceso completo al Modo Cocina / Display
+    delivery: false,
+    users: false,     // Restricción: sin gestión de usuarios
+    database: false,  // Restricción: sin acceso a base de datos
   },
   cajero: {
-    dashboard: true,
-    inventory: true, // Verificación de disponibilidad de producto
-    recipes: false,  // Restricción: sin acceso a márgenes y escandallos técnicos
-    quotes: true,    // Elaboración y emisión de cotizaciones
-    orders: true,    // Registro de pedidos, anticipos y cobros
-    kitchen: false,  // Restricción: no opera en cocina
-    users: false,    // Restricción: sin gestión de usuarios
-    database: false, // Restricción: sin acceso a base de datos
+    dashboard: false, // Restricción: métricas financieras e Inicio reservadas a Admin/Coadmin
+    inventory: true,  // Verificación de disponibilidad de producto
+    recipes: false,   // Restricción: sin acceso a márgenes y escandallos técnicos
+    quotes: true,     // Elaboración y emisión de cotizaciones
+    orders: true,     // Registro de pedidos, anticipos y cobros
+    kitchen: false,   // Restricción: no opera en cocina
+    delivery: false,
+    users: false,     // Restricción: sin gestión de usuarios
+    database: false,  // Restricción: sin acceso a base de datos
   },
   operador: {
-    dashboard: true,
+    dashboard: false, // Restricción: métricas financieras e Inicio reservadas a Admin/Coadmin
     inventory: true,
     recipes: false,
     quotes: false,
     orders: true,
     kitchen: true,
+    delivery: false,
     users: false,
     database: false,
   },
   delivery: {
-    dashboard: true,
+    dashboard: false, // Restricción: métricas financieras e Inicio reservadas a Admin/Coadmin
     inventory: false, // Restricción: repartidor no administra almacén
     recipes: false,   // Restricción: sin acceso a recetas
     quotes: false,    // Restricción: sin presupuestos comerciales
-    orders: true,     // Acceso esencial: visualización de pedidos a entregar, GPS y chofer
+    orders: false,    // Restricción: utiliza exclusivamente el Modo Delivery simplificado
     kitchen: false,   // Restricción: no opera en línea de horneado
+    delivery: true,   // Acceso exclusivo al Modo Delivery móvil y táctil
     users: false,     // Restricción: sin gestión de usuarios
     database: false,  // Restricción: sin acceso a base de datos
   },
@@ -84,10 +90,13 @@ export function canAccessTab(role: UserRole | string | undefined, tab: ActiveTab
 export function getDefaultTabForRole(role: UserRole | string | undefined): ActiveTab {
   if (!role) return 'dashboard';
   const normalizedRole = role.toLowerCase() as UserRole;
-  if (normalizedRole === 'delivery') return 'orders';
+  if (normalizedRole === 'delivery') return 'delivery';
+  if (normalizedRole === 'pastelero' || normalizedRole === 'operador') return 'kitchen';
+  if (normalizedRole === 'cajero') return 'quotes';
   const permissions = ROLE_PERMISSIONS[normalizedRole];
   if (!permissions) return 'dashboard';
   if (permissions.dashboard) return 'dashboard';
+  if (permissions.delivery) return 'delivery';
   if (permissions.kitchen) return 'kitchen';
   if (permissions.orders) return 'orders';
   if (permissions.quotes) return 'quotes';

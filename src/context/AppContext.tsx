@@ -72,6 +72,7 @@ export type ActiveTab =
   | 'quotes'
   | 'orders'
   | 'kitchen'
+  | 'delivery'
   | 'database'
   | 'users';
 

@@ -71,6 +71,42 @@ export const generateDriverWhatsAppMessage = (
     : `https://wa.me/?text=${encodeURIComponent(fullText)}`;
 };
 
+/**
+ * Genera el enlace wa.me para que el chofer notifique al cliente que va en camino con su pedido
+ */
+export const generateClientDeliveryNotificationUrl = (pedido: Pedido): string => {
+  const phoneClean = (pedido.cliente_telefono || '').replace(/\D/g, '');
+  const clienteNombre = pedido.cliente_nombre || 'Estimado/a cliente';
+  const factura = pedido.numero_factura || `Orden #${pedido.id}`;
+
+  const saldoPendienteNum = Number(pedido.saldo_pendiente ?? 0);
+  const fleteNum = Number(pedido.costo_delivery ?? pedido.costo_envio ?? 0);
+  const totalCobrarNum = saldoPendienteNum + (pedido.cobro_delivery_al_recibir ? fleteNum : 0);
+
+  let mensajeCobro = '';
+  if (totalCobrarNum > 0) {
+    mensajeCobro = `\n💵 *Monto a pagar al recibir:* RD$ ${totalCobrarNum.toLocaleString('es-DO', { minimumFractionDigits: 2 })} en efectivo.`;
+  } else {
+    mensajeCobro = `\n✅ *Tu pedido se encuentra pagado al 100%.*`;
+  }
+
+  const lines = [
+    `🛵 *¡HOLA ${clienteNombre.toUpperCase()}!* 🎂`,
+    `Te saluda tu repartidor de *Delicias del Valle*.`,
+    ``,
+    `Estoy *en camino* con tu pedido (*${factura}*).`,
+    `📍 Dirección: ${pedido.direccion_entrega || 'Dirección acordada'}`,
+    mensajeCobro,
+    ``,
+    `Estaré llegando en breve. Por favor estar atento/a para recibir tu pastel artesanal bien frío y seguro. ¡Gracias! ✨`
+  ];
+
+  const fullText = lines.join('\n');
+  return phoneClean
+    ? `https://wa.me/${phoneClean}?text=${encodeURIComponent(fullText)}`
+    : `https://wa.me/?text=${encodeURIComponent(fullText)}`;
+};
+
 export interface ParsedWhatsAppAddress {
   direccion: string;
   punto_referencia: string;

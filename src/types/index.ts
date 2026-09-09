@@ -303,6 +303,7 @@ export type ActiveTab =
   | 'quotes'
   | 'orders'
   | 'kitchen'
+  | 'delivery'
   | 'users'
   | 'database';
 

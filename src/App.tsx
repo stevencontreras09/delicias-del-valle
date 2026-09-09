@@ -8,6 +8,7 @@ import { RecipeManager } from './components/recipes/RecipeManager';
 import { QuoteManager } from './components/quotes/QuoteManager';
 import { OrderManager } from './components/orders/OrderManager';
 import { KitchenMode } from './components/kitchen/KitchenMode';
+import { DeliveryMode } from './components/delivery/DeliveryMode';
 import { DatabaseViewer } from './components/database/DatabaseViewer';
 import { UserManager } from './components/users/UserManager';
 import { canAccessTab, getDefaultTabForRole } from './utils/security';
@@ -60,12 +61,18 @@ export const App: React.FC = () => {
         return <OrderManager />;
       case 'kitchen':
         return <KitchenMode />;
+      case 'delivery':
+        return <DeliveryMode />;
       case 'users':
         return <UserManager />;
       case 'database':
         return <DatabaseViewer />;
       default:
-        return <Dashboard />;
+        return canAccessTab(currentUser.rol, 'dashboard') ? (
+          <Dashboard />
+        ) : (
+          <div className="p-4 text-center">Redirigiendo...</div>
+        );
     }
   };
 

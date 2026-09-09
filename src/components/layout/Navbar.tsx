@@ -14,8 +14,9 @@ import {
   LogOut,
   Shield,
   Trash2,
+  Truck,
 } from 'lucide-react';
-import { canAccessTab } from '../../utils/security';
+import { canAccessTab, getDefaultTabForRole } from '../../utils/security';
 
 export const Navbar: React.FC = () => {
   const {
@@ -41,6 +42,12 @@ export const Navbar: React.FC = () => {
     (p) => p.estado === 'confirmado' || p.estado === 'en_produccion'
   ).length;
   const pendingQuotesCount = cotizaciones.filter((c) => c.estado === 'pendiente').length;
+  const pendingDeliveriesCount = pedidos.list.filter(
+    (p) =>
+      (p.tipo_despacho === 'delivery' || p.tipo_entrega === 'domicilio') &&
+      p.estado !== 'entregado' &&
+      p.estado !== 'cancelado'
+  ).length;
 
   const allNavItems: { id: ActiveTab; label: string; icon: React.ReactNode; badge?: number }[] = [
     { id: 'dashboard', label: 'Inicio', icon: <LayoutDashboard className="w-3.5 h-3.5" /> },
@@ -64,6 +71,12 @@ export const Navbar: React.FC = () => {
       badge: activeOrdersCount > 0 ? activeOrdersCount : undefined,
     },
     { id: 'kitchen', label: 'Cocina', icon: <ChefHat className="w-3.5 h-3.5" /> },
+    {
+      id: 'delivery',
+      label: 'Modo Delivery',
+      icon: <Truck className="w-3.5 h-3.5" />,
+      badge: pendingDeliveriesCount > 0 ? pendingDeliveriesCount : undefined,
+    },
     { id: 'users', label: 'Usuarios', icon: <Users className="w-3.5 h-3.5" /> },
     { id: 'database', label: 'Base SQL', icon: <Database className="w-3.5 h-3.5" /> },
   ];
@@ -77,7 +90,7 @@ export const Navbar: React.FC = () => {
         <div className="flex items-center justify-between h-16 sm:h-20 gap-2">
           {/* Logo & Marca (shrink-0 para evitar que se comprima o corte) */}
           <div
-            onClick={() => setActiveTab('dashboard')}
+            onClick={() => setActiveTab(getDefaultTabForRole(currentUser?.rol))}
             className="flex items-center gap-2 cursor-pointer group select-none shrink-0 py-1"
           >
             <img
