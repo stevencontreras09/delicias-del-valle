@@ -3,7 +3,10 @@ import { Pedido, ZonaDelivery } from '../types';
 /**
  * Genera el enlace directo a Google Maps para navegación
  */
-export const getGoogleMapsUrl = (direccion: string, referencia?: string): string => {
+export const getGoogleMapsUrl = (direccion: string, referencia?: string, explicitMapsUrl?: string): string => {
+  if (explicitMapsUrl && (explicitMapsUrl.startsWith('http://') || explicitMapsUrl.startsWith('https://'))) {
+    return explicitMapsUrl;
+  }
   if (!direccion) return 'https://www.google.com/maps';
   const query = `${direccion}${referencia ? ` (${referencia})` : ''}, República Dominicana`;
   return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
@@ -38,7 +41,7 @@ export const generateDriverWhatsAppMessage = (
   const flete = fleteNum.toLocaleString('es-DO', { minimumFractionDigits: 2 });
   const totalCobrar = totalCobrarNum.toLocaleString('es-DO', { minimumFractionDigits: 2 });
   
-  const mapsUrl = getGoogleMapsUrl(pedido.direccion_entrega || '', pedido.punto_referencia);
+  const mapsUrl = getGoogleMapsUrl(pedido.direccion_entrega || '', pedido.punto_referencia, pedido.maps_url);
   const wazeUrl = getWazeUrl(pedido.direccion_entrega || '');
 
   const lines = [

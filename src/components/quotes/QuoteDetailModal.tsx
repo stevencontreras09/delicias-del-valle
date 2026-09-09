@@ -21,10 +21,13 @@ import {
   X,
   CreditCard,
   DollarSign,
+  Map,
+  ExternalLink,
 } from 'lucide-react';
 import { Badge } from '../ui/Badge';
 import { generarPdfCotizacion } from '../../utils/pdfGenerator';
 import { generarMensajeCotizacionWhatsApp } from '../../utils/whatsappShare';
+import { LocationGoogleMapsModal } from './LocationGoogleMapsModal';
 
 interface QuoteDetailModalProps {
   isOpen: boolean;
@@ -83,6 +86,8 @@ export const QuoteDetailModal: React.FC<QuoteDetailModalProps> = ({
   const [editMetodoPago, setEditMetodoPago] = useState<MetodoPago>('transferencia');
   const [editPagoDelivery, setEditPagoDelivery] = useState<'completo' | 'efectivo_aparte'>('completo');
   const [editCobroContraEntrega, setEditCobroContraEntrega] = useState<boolean>(false);
+  const [editMapsUrl, setEditMapsUrl] = useState('');
+  const [isMapPreviewOpen, setIsMapPreviewOpen] = useState(false);
   const [isSavingDespacho, setIsSavingDespacho] = useState(false);
 
   if (!cotizacion) return null;
@@ -97,6 +102,7 @@ export const QuoteDetailModal: React.FC<QuoteDetailModalProps> = ({
     setEditMetodoPago(cotizacion.metodo_pago || 'transferencia');
     setEditPagoDelivery(cotizacion.pago_delivery || (cotizacion.cobro_delivery_al_recibir ? 'efectivo_aparte' : 'completo'));
     setEditCobroContraEntrega(Boolean(cotizacion.cobro_contra_entrega));
+    setEditMapsUrl(cotizacion.maps_url || '');
     setIsEditingDespacho(true);
   };
 
@@ -126,6 +132,7 @@ export const QuoteDetailModal: React.FC<QuoteDetailModalProps> = ({
       pago_delivery: editTipoDespacho === 'delivery' ? editPagoDelivery : undefined,
       cobro_delivery_al_recibir: editTipoDespacho === 'delivery' && editPagoDelivery === 'efectivo_aparte',
       cobro_contra_entrega: editCobroContraEntrega,
+      maps_url: editTipoDespacho === 'delivery' ? (editMapsUrl.trim() || undefined) : undefined,
       direccion_confirmada: marcarConfirmada ? true : cotizacion.direccion_confirmada,
     });
 
@@ -133,6 +140,25 @@ export const QuoteDetailModal: React.FC<QuoteDetailModalProps> = ({
     if (ok) {
       setIsEditingDespacho(false);
       showToast?.('success', 'Logística Actualizada', marcarConfirmada ? 'Dirección confirmada y guardada correctamente.' : 'Datos de entrega actualizados.');
+    }
+  };
+
+  const handleApplyLocationFromMap = async (data: { direccion: string; punto_referencia: string; mapsUrl?: string }) => {
+    if (isEditingDespacho) {
+      setEditDireccion(data.direccion);
+      setEditPuntoRef(data.punto_referencia);
+      if (data.mapsUrl) setEditMapsUrl(data.mapsUrl);
+      showToast?.('info', 'Ubicación Ajustada', 'Los datos se sincronizaron en el formulario con Google Maps.');
+    } else {
+      const ok = await updateCotizacion(cotizacion.id, {
+        direccion_entrega: data.direccion,
+        punto_referencia: data.punto_referencia,
+        maps_url: data.mapsUrl || cotizacion.maps_url,
+        direccion_confirmada: true,
+      });
+      if (ok) {
+        showToast?.('success', 'Ubicación Confirmada', 'La dirección se validó con Google Maps y quedó guardada en la cotización.');
+      }
     }
   };
 
@@ -565,14 +591,26 @@ export const QuoteDetailModal: React.FC<QuoteDetailModalProps> = ({
             </div>
 
             {cotizacion.estado !== 'convertida' && !isEditingDespacho && (
-              <button
-                type="button"
-                onClick={handleStartEditDespacho}
-                className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-crema hover:bg-trigo-100 text-chocolate-700 text-xs font-bold border border-trigo-300 transition-all shadow-2xs"
-              >
-                <Edit3 className="w-3.5 h-3.5 text-chocolate-600" />
-                <span>Confirmar / Editar Dirección</span>
-              </button>
+              <div className="flex items-center gap-2">
+                {cotizacion.tipo_despacho === 'delivery' && (
+                  <button
+                    type="button"
+                    onClick={() => setIsMapPreviewOpen(true)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold shadow-2xs transition cursor-pointer"
+                  >
+                    <Map className="w-3.5 h-3.5" />
+                    <span>🗺️ Vista Previa Google Maps</span>
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={handleStartEditDespacho}
+                  className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-crema hover:bg-trigo-100 text-chocolate-700 text-xs font-bold border border-trigo-300 transition-all shadow-2xs cursor-pointer"
+                >
+                  <Edit3 className="w-3.5 h-3.5 text-chocolate-600" />
+                  <span>Confirmar / Editar Dirección</span>
+                </button>
+              </div>
             )}
           </div>
 
@@ -643,6 +681,23 @@ export const QuoteDetailModal: React.FC<QuoteDetailModalProps> = ({
                           </option>
                         ))}
                       </select>
+                    </div>
+
+                    <div className="sm:col-span-2 flex flex-wrap items-center justify-between gap-2 p-2.5 rounded-xl bg-sky-50 border border-sky-200">
+                      <div className="flex items-center gap-2">
+                        <MapPin className="w-4 h-4 text-sky-600" />
+                        <span className="text-xs text-sky-950 font-bold">
+                          Verificar o ajustar en Google Maps:
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setIsMapPreviewOpen(true)}
+                        className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold shadow-2xs transition cursor-pointer"
+                      >
+                        <Map className="w-3.5 h-3.5" />
+                        <span>🗺️ Previsualizar & Corregir en Mapa</span>
+                      </button>
                     </div>
 
                     <div>
@@ -857,6 +912,29 @@ export const QuoteDetailModal: React.FC<QuoteDetailModalProps> = ({
                         Ref: {cotizacion.punto_referencia}
                       </span>
                     )}
+                    <div className="mt-1 flex items-center gap-1.5 flex-wrap">
+                      <button
+                        type="button"
+                        onClick={() => setIsMapPreviewOpen(true)}
+                        className="flex items-center gap-1 px-2 py-0.5 rounded-lg bg-sky-100 hover:bg-sky-200 text-sky-900 border border-sky-300 text-[10px] font-bold transition shadow-2xs cursor-pointer"
+                        title="Ver mapa y corregir ubicación"
+                      >
+                        <Map className="w-3 h-3 text-sky-700" />
+                        <span>🗺️ Ver / Corregir en Maps</span>
+                      </button>
+                      {cotizacion.maps_url && (
+                        <a
+                          href={cotizacion.maps_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-0.5 text-[10px] font-bold text-sky-700 hover:underline"
+                          title="Abrir enlace de Google Maps guardado"
+                        >
+                          <span>Link GPS</span>
+                          <ExternalLink className="w-2.5 h-2.5" />
+                        </a>
+                      )}
+                    </div>
                   </div>
                 ) : (
                   <span className="font-medium text-chocolate-700 mt-0.5 block">
@@ -1061,6 +1139,18 @@ export const QuoteDetailModal: React.FC<QuoteDetailModalProps> = ({
           )}
         </div>
       </div>
+
+      {/* Modal de Vista Previa y Corrección de Ubicación con Google Maps */}
+      <LocationGoogleMapsModal
+        isOpen={isMapPreviewOpen}
+        onClose={() => setIsMapPreviewOpen(false)}
+        direccion={isEditingDespacho ? editDireccion : (cotizacion.direccion_entrega || '')}
+        puntoReferencia={isEditingDespacho ? editPuntoRef : (cotizacion.punto_referencia || '')}
+        mapsUrl={isEditingDespacho ? editMapsUrl : (cotizacion.maps_url || '')}
+        clienteNombre={cotizacion.cliente_nombre}
+        zonaNombre={zonasDelivery.find(z => z.id === Number(isEditingDespacho ? editZonaId : cotizacion.zona_delivery_id))?.nombre}
+        onSave={handleApplyLocationFromMap}
+      />
     </Modal>
   );
 };

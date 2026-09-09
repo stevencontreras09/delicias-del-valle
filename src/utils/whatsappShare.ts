@@ -37,6 +37,9 @@ export function generarMensajeCotizacionWhatsApp(cotizacion: Cotizacion): { mens
     if (cotizacion.punto_referencia) {
       texto += `• *Punto de Referencia:* ${cotizacion.punto_referencia}\n`;
     }
+    if (cotizacion.maps_url) {
+      texto += `• *Ubicación Google Maps:* ${cotizacion.maps_url}\n`;
+    }
     if (cotizacion.repartidor_nombre) {
       const telRep = cotizacion.repartidor_telefono ? ` (Tel: ${cotizacion.repartidor_telefono})` : '';
       texto += `• *Repartidor:* ${cotizacion.repartidor_nombre}${telRep}\n`;

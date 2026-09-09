@@ -187,6 +187,7 @@ export interface Cotizacion {
   repartidor_nombre?: string;
   repartidor_telefono?: string;
   direccion_confirmada?: boolean;
+  maps_url?: string;
   // Campos de Pago
   metodo_pago?: MetodoPago;
   pago_delivery?: 'completo' | 'efectivo_aparte';
@@ -263,6 +264,7 @@ export interface Pedido {
   repartidor_nombre?: string;
   repartidor_telefono?: string;
   cobro_delivery_al_recibir?: boolean;
+  maps_url?: string;
   created_at: string;
 }
 

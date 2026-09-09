@@ -41,8 +41,11 @@ import {
   Navigation,
   ExternalLink,
   MessageSquare,
+  MapPin,
+  Map,
 } from 'lucide-react';
 import { OptionsManagerModal, CategoriaOpcion } from './OptionsManagerModal';
+import { LocationGoogleMapsModal } from './LocationGoogleMapsModal';
 
 interface QuoteBuilderModalProps {
   isOpen: boolean;
@@ -246,6 +249,7 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
   const [isWhatsAppBoxOpen, setIsWhatsAppBoxOpen] = useState(false);
   const [whatsAppInputText, setWhatsAppInputText] = useState('');
   const [detectedMapsLink, setDetectedMapsLink] = useState<string | null>(null);
+  const [isMapPreviewOpen, setIsMapPreviewOpen] = useState(false);
 
   // Condiciones de Pago
   const [metodoPago, setMetodoPago] = useState<MetodoPago>('transferencia');
@@ -527,7 +531,8 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
       setCobroContraEntrega(Boolean(initialCotizacion.cobro_contra_entrega));
       setIsWhatsAppBoxOpen(false);
       setWhatsAppInputText('');
-      setDetectedMapsLink(null);
+      setDetectedMapsLink(initialCotizacion.maps_url || null);
+      setIsMapPreviewOpen(false);
     } else {
       setClienteNombre('');
       setClienteTelefono('');
@@ -882,6 +887,7 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
       pago_delivery: tipoDespacho === 'delivery' ? pagoDelivery : undefined,
       cobro_delivery_al_recibir: tipoDespacho === 'delivery' && pagoDelivery === 'efectivo_aparte',
       cobro_contra_entrega: cobroContraEntrega,
+      maps_url: tipoDespacho === 'delivery' ? (detectedMapsLink || undefined) : undefined,
     });
 
     if (res === null || res === false) {
@@ -1177,12 +1183,49 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
                 )}
               </div>
 
+              {/* Barra / Botón de Vista Previa y Corrección con Google Maps */}
+              <div className="flex flex-wrap items-center justify-between gap-2.5 p-3 rounded-2xl bg-sky-50/90 border border-sky-200">
+                <div className="flex items-center gap-2 min-w-0">
+                  <div className="p-1.5 rounded-xl bg-sky-100 text-sky-700 shrink-0">
+                    <MapPin className="w-4 h-4" />
+                  </div>
+                  <div className="min-w-0">
+                    <span className="text-xs font-bold text-sky-950 block truncate">
+                      {direccionEntrega ? `📍 ${direccionEntrega}` : 'Aún no has fijado la ubicación'}
+                    </span>
+                    <span className="text-[11px] text-sky-700 block truncate">
+                      {puntoReferencia ? `Ref: ${puntoReferencia}` : 'Verifica el mapa para asegurar la entrega sin demoras'}
+                      {detectedMapsLink && ' • ✅ Enlace Maps vinculado'}
+                    </span>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setIsMapPreviewOpen(true)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold shadow-sm transition transform hover:scale-[1.02] active:scale-98 cursor-pointer shrink-0"
+                >
+                  <Map className="w-3.5 h-3.5" />
+                  <span>🗺️ Vista Previa & Corrección Google Maps</span>
+                </button>
+              </div>
+
               {/* Campos Obligatorios: Dirección exacta y Punto de referencia */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                 <div>
-                  <label className="block font-semibold text-chocolate-700 mb-1">
-                    Dirección Exacta de Entrega *
-                  </label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block font-semibold text-chocolate-700">
+                      Dirección Exacta de Entrega *
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => setIsMapPreviewOpen(true)}
+                      className="text-[10px] font-bold text-sky-700 hover:text-sky-900 flex items-center gap-1 hover:underline cursor-pointer"
+                    >
+                      <MapPin className="w-3 h-3" />
+                      <span>Ver en Mapa</span>
+                    </button>
+                  </div>
                   <input
                     type="text"
                     required={tipoDespacho === 'delivery'}
@@ -2501,6 +2544,24 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
         extras={extrasOpciones}
         onSave={handleSaveCustomOptions}
         onResetDefaults={handleResetCustomOptions}
+      />
+
+      {/* Modal de Vista Previa y Corrección de Ubicación con Google Maps */}
+      <LocationGoogleMapsModal
+        isOpen={isMapPreviewOpen}
+        onClose={() => setIsMapPreviewOpen(false)}
+        direccion={direccionEntrega}
+        puntoReferencia={puntoReferencia}
+        mapsUrl={detectedMapsLink || undefined}
+        clienteNombre={clienteNombre}
+        zonaNombre={zonasDelivery.find(z => z.id === Number(zonaDeliveryId))?.nombre}
+        onSave={(data) => {
+          setDireccionEntrega(data.direccion);
+          setPuntoReferencia(data.punto_referencia);
+          if (data.mapsUrl) {
+            setDetectedMapsLink(data.mapsUrl);
+          }
+        }}
       />
     </Modal>
   );
