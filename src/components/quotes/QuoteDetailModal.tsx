@@ -82,6 +82,7 @@ export const QuoteDetailModal: React.FC<QuoteDetailModalProps> = ({
   const [editRepartidorTel, setEditRepartidorTel] = useState('');
   const [editMetodoPago, setEditMetodoPago] = useState<MetodoPago>('transferencia');
   const [editPagoDelivery, setEditPagoDelivery] = useState<'completo' | 'efectivo_aparte'>('completo');
+  const [editCobroContraEntrega, setEditCobroContraEntrega] = useState<boolean>(false);
   const [isSavingDespacho, setIsSavingDespacho] = useState(false);
 
   if (!cotizacion) return null;
@@ -95,6 +96,7 @@ export const QuoteDetailModal: React.FC<QuoteDetailModalProps> = ({
     setEditRepartidorTel(cotizacion.repartidor_telefono || '');
     setEditMetodoPago(cotizacion.metodo_pago || 'transferencia');
     setEditPagoDelivery(cotizacion.pago_delivery || (cotizacion.cobro_delivery_al_recibir ? 'efectivo_aparte' : 'completo'));
+    setEditCobroContraEntrega(Boolean(cotizacion.cobro_contra_entrega));
     setIsEditingDespacho(true);
   };
 
@@ -123,6 +125,7 @@ export const QuoteDetailModal: React.FC<QuoteDetailModalProps> = ({
       metodo_pago: editMetodoPago,
       pago_delivery: editTipoDespacho === 'delivery' ? editPagoDelivery : undefined,
       cobro_delivery_al_recibir: editTipoDespacho === 'delivery' && editPagoDelivery === 'efectivo_aparte',
+      cobro_contra_entrega: editCobroContraEntrega,
       direccion_confirmada: marcarConfirmada ? true : cotizacion.direccion_confirmada,
     });
 
@@ -134,7 +137,8 @@ export const QuoteDetailModal: React.FC<QuoteDetailModalProps> = ({
   };
 
   const handleOpenConvert = () => {
-    setAnticipoMonto(Math.round((cotizacion.total * 0.5) * 100) / 100);
+    const defaultAnticipo = cotizacion.cobro_contra_entrega ? 0 : Math.round((cotizacion.total * 0.5) * 100) / 100;
+    setAnticipoMonto(defaultAnticipo);
     setFechaEntrega(cotizacion.fecha_evento || new Date().toISOString().split('T')[0]);
     setHoraEntrega('14:00');
     const isDelivery = cotizacion.tipo_despacho === 'delivery' || Number(cotizacion.costo_delivery || cotizacion.costo_envio || 0) > 0;
@@ -761,6 +765,36 @@ export const QuoteDetailModal: React.FC<QuoteDetailModalProps> = ({
                     </button>
                   </div>
                 </div>
+
+                <div className="sm:col-span-2">
+                  <label className="block font-semibold text-chocolate-700 mb-1">
+                    Modalidad de Cobro y Anticipo
+                  </label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setEditCobroContraEntrega(false)}
+                      className={`p-2 rounded-xl border text-left text-xs font-bold transition-all ${
+                        !editCobroContraEntrega
+                          ? 'border-chocolate-700 bg-chocolate-700 text-white shadow-sm'
+                          : 'border-trigo-300 bg-white text-chocolate-700 hover:bg-crema'
+                      }`}
+                    >
+                      ⚖️ 50% Anticipo / 50% Saldo
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setEditCobroContraEntrega(true)}
+                      className={`p-2 rounded-xl border text-left text-xs font-bold transition-all ${
+                        editCobroContraEntrega
+                          ? 'border-emerald-600 bg-emerald-600 text-white shadow-sm'
+                          : 'border-trigo-300 bg-white text-chocolate-700 hover:bg-crema'
+                      }`}
+                    >
+                      🛵 100% Contra Entrega (Pedidos Pequeños)
+                    </button>
+                  </div>
+                </div>
               </div>
 
               <div className="flex flex-wrap items-center justify-end gap-2 pt-2 border-t border-trigo-200">
@@ -920,9 +954,26 @@ export const QuoteDetailModal: React.FC<QuoteDetailModalProps> = ({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="bg-crema/70 p-4 rounded-2xl border border-trigo-200 text-xs space-y-1.5">
             <span className="font-bold text-chocolate-800 uppercase block mb-1">
-              Esquema de Pago 50/50 ({cotizacion.metodo_pago === 'efectivo' ? 'Efectivo' : cotizacion.metodo_pago === 'tarjeta' ? 'Tarjeta' : 'Transferencia'}):
+              Esquema de Pago ({cotizacion.metodo_pago === 'efectivo' ? 'Efectivo' : cotizacion.metodo_pago === 'tarjeta' ? 'Tarjeta' : 'Transferencia'}):
             </span>
-            {cotizacion.tipo_despacho === 'delivery' && (cotizacion.pago_delivery === 'efectivo_aparte' || cotizacion.cobro_delivery_al_recibir) ? (
+            {cotizacion.cobro_contra_entrega ? (
+              <div className="bg-emerald-50 border border-emerald-300 rounded-xl p-2.5 text-xs text-emerald-900 space-y-1 my-1">
+                <span className="font-bold flex items-center gap-1 text-emerald-800 text-xs">
+                  <span>🛵 Modalidad: 100% Contra Entrega (Pedido Pequeño)</span>
+                </span>
+                <p className="text-[11px] text-emerald-800">
+                  • <b>Anticipo previo requerido:</b> RD$ 0.00 (Sin depósito para agendar)
+                </p>
+                <p className="text-[11px] text-emerald-800">
+                  • <b>Total a abonar al recibir:</b> <strong>{formatCurrency(cotizacion.total)}</strong> ({cotizacion.metodo_pago === 'efectivo' ? 'Efectivo' : cotizacion.metodo_pago === 'tarjeta' ? 'Tarjeta' : 'Transferencia'})
+                </p>
+                {cotizacion.tipo_despacho === 'delivery' && (cotizacion.pago_delivery === 'efectivo_aparte' || cotizacion.cobro_delivery_al_recibir) && (
+                  <p className="text-[10px] text-emerald-700 italic">
+                    * El delivery ({formatCurrency(cotizacion.costo_delivery || cotizacion.costo_envio || 0)}) se entrega en efectivo directo al chofer.
+                  </p>
+                )}
+              </div>
+            ) : cotizacion.tipo_despacho === 'delivery' && (cotizacion.pago_delivery === 'efectivo_aparte' || cotizacion.cobro_delivery_al_recibir) ? (
               <>
                 <p className="text-chocolate-700">
                   • <b>50% de anticipo (Productos):</b> {formatCurrency(Math.max(0, cotizacion.subtotal - (cotizacion.descuento || 0)) * 0.5)}

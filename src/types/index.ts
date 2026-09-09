@@ -191,6 +191,7 @@ export interface Cotizacion {
   metodo_pago?: MetodoPago;
   pago_delivery?: 'completo' | 'efectivo_aparte';
   cobro_delivery_al_recibir?: boolean;
+  cobro_contra_entrega?: boolean;
   created_at: string;
 }
 

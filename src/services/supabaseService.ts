@@ -218,6 +218,7 @@ export async function fetchAllFromSupabase(): Promise<{
       metodo_pago: c.metodo_pago || 'transferencia',
       pago_delivery: c.pago_delivery || (c.cobro_delivery_al_recibir ? 'efectivo_aparte' : 'completo'),
       cobro_delivery_al_recibir: Boolean(c.cobro_delivery_al_recibir || c.pago_delivery === 'efectivo_aparte'),
+      cobro_contra_entrega: Boolean(c.cobro_contra_entrega),
       created_at: c.created_at || new Date().toISOString(),
       items: (c.cotizacion_items || []).map((item: any) => ({
         id: `item-cot-${item.id}`,
@@ -594,16 +595,18 @@ export async function syncCotizacionToSupabase(
     if (cotizacion.metodo_pago) payload.metodo_pago = cotizacion.metodo_pago;
     if (cotizacion.pago_delivery) payload.pago_delivery = cotizacion.pago_delivery;
     if (cotizacion.cobro_delivery_al_recibir !== undefined) payload.cobro_delivery_al_recibir = cotizacion.cobro_delivery_al_recibir;
+    if (cotizacion.cobro_contra_entrega !== undefined) payload.cobro_contra_entrega = cotizacion.cobro_contra_entrega;
 
     let { data: cotDb, error: cotErr } = await client.from('cotizaciones').upsert(payload).select().single();
 
     // Si falla porque alguna columna opcional no existe aún en la tabla de Supabase
-    if (cotErr && (cotErr.message?.includes('cliente_email') || cotErr.message?.includes('metodo_pago') || cotErr.message?.includes('pago_delivery') || cotErr.message?.includes('direccion_confirmada') || cotErr.code === 'PGRST204')) {
+    if (cotErr && (cotErr.message?.includes('cliente_email') || cotErr.message?.includes('metodo_pago') || cotErr.message?.includes('pago_delivery') || cotErr.message?.includes('direccion_confirmada') || cotErr.message?.includes('cobro_contra_entrega') || cotErr.code === 'PGRST204')) {
       delete payload.cliente_email;
       delete payload.metodo_pago;
       delete payload.pago_delivery;
       delete payload.direccion_confirmada;
       delete payload.cobro_delivery_al_recibir;
+      delete payload.cobro_contra_entrega;
       const retry = await client.from('cotizaciones').upsert(payload).select().single();
       cotDb = retry.data;
       cotErr = retry.error;

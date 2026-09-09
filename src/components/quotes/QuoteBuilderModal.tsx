@@ -250,6 +250,7 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
   // Condiciones de Pago
   const [metodoPago, setMetodoPago] = useState<MetodoPago>('transferencia');
   const [pagoDelivery, setPagoDelivery] = useState<'completo' | 'efectivo_aparte'>('completo');
+  const [cobroContraEntrega, setCobroContraEntrega] = useState<boolean>(false);
 
   // Mini CRM Clientes Autocompletado
   const [selectedClienteCrm, setSelectedClienteCrm] = useState<Cliente | null>(null);
@@ -523,6 +524,7 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
       setRepartidorTelefono(initialCotizacion.repartidor_telefono || '');
       setMetodoPago(initialCotizacion.metodo_pago || 'transferencia');
       setPagoDelivery(initialCotizacion.pago_delivery || (initialCotizacion.cobro_delivery_al_recibir ? 'efectivo_aparte' : 'completo'));
+      setCobroContraEntrega(Boolean(initialCotizacion.cobro_contra_entrega));
       setIsWhatsAppBoxOpen(false);
       setWhatsAppInputText('');
       setDetectedMapsLink(null);
@@ -544,6 +546,7 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
       setRepartidorTelefono('');
       setMetodoPago('transferencia');
       setPagoDelivery('completo');
+      setCobroContraEntrega(false);
       setIsWhatsAppBoxOpen(false);
       setWhatsAppInputText('');
       setDetectedMapsLink(null);
@@ -878,6 +881,7 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
       metodo_pago: metodoPago,
       pago_delivery: tipoDespacho === 'delivery' ? pagoDelivery : undefined,
       cobro_delivery_al_recibir: tipoDespacho === 'delivery' && pagoDelivery === 'efectivo_aparte',
+      cobro_contra_entrega: cobroContraEntrega,
     });
 
     if (res === null || res === false) {
@@ -2338,7 +2342,64 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
             </div>
           </div>
 
-          <div className="sm:col-span-2 md:col-span-4 flex flex-col justify-center items-end text-right bg-crema/30 p-3 rounded-2xl border border-trigo-200">
+          {/* Esquema de Cobro: Anticipo 50% vs Contra Entrega 100% (Pedidos Pequeños) */}
+          <div className="sm:col-span-2 md:col-span-4 bg-white p-3.5 rounded-2xl border border-trigo-200">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
+              <div>
+                <label className="block font-bold text-chocolate-900 text-xs">
+                  Modalidad de Cobro y Anticipo *
+                </label>
+                <p className="text-[11px] text-chocolate-600">
+                  Selecciona si se requiere el 50% de anticipo tradicional o si se autoriza el cobro 100% contra entrega para pedidos pequeños.
+                </p>
+              </div>
+              {totalCotizacion > 0 && totalCotizacion <= 1500 && (
+                <span className="self-start sm:self-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-300">
+                  💡 Pedido Pequeño (Sugerido Contra Entrega)
+                </span>
+              )}
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setCobroContraEntrega(false)}
+                className={`p-2.5 rounded-xl border text-xs font-bold transition-all text-left flex items-start gap-2.5 ${
+                  !cobroContraEntrega
+                    ? 'bg-chocolate-700 text-white border-chocolate-800 shadow-sm'
+                    : 'bg-crema/40 text-chocolate-800 border-trigo-300 hover:bg-white'
+                }`}
+              >
+                <span className="text-base leading-none">⚖️</span>
+                <div>
+                  <div className="font-bold">50% Anticipo / 50% Saldo</div>
+                  <div className={`text-[10px] ${!cobroContraEntrega ? 'text-trigo-200' : 'text-chocolate-500'}`}>
+                    Esquema estándar: requiere 50% de depósito para confirmar y agendar en taller.
+                  </div>
+                </div>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setCobroContraEntrega(true)}
+                className={`p-2.5 rounded-xl border text-xs font-bold transition-all text-left flex items-start gap-2.5 ${
+                  cobroContraEntrega
+                    ? 'bg-emerald-700 text-white border-emerald-800 shadow-sm'
+                    : 'bg-crema/40 text-chocolate-800 border-trigo-300 hover:bg-white'
+                }`}
+              >
+                <span className="text-base leading-none">🛵</span>
+                <div>
+                  <div className="font-bold">100% Contra Entrega (Pedidos Pequeños)</div>
+                  <div className={`text-[10px] ${cobroContraEntrega ? 'text-emerald-100' : 'text-chocolate-500'}`}>
+                    Sin anticipo previo. El cliente abona el monto total en efectivo/transferencia al recibir.
+                  </div>
+                </div>
+              </button>
+            </div>
+          </div>
+
+          <div className="sm:col-span-2 md:col-span-4 flex flex-col justify-center items-end text-right bg-crema/30 p-3.5 rounded-2xl border border-trigo-200 space-y-1">
             <span className="text-gray-500 text-xs">Subtotal Productos: {formatCurrency(subtotalCotizacion)}</span>
             {descNum > 0 && (
               <span className="text-emerald-700 font-semibold text-xs">
@@ -2366,6 +2427,26 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
                 <span className="text-frambuesa-600">{formatCurrency(totalCotizacion)}</span>
               </div>
             )}
+
+            {/* Desglose de Anticipo vs Contra Entrega */}
+            <div className="pt-2 mt-1 border-t border-trigo-200/80 w-full flex flex-col items-end text-xs">
+              {cobroContraEntrega ? (
+                <div className="bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-1.5 text-right w-full sm:w-auto">
+                  <span className="font-bold text-emerald-800 flex items-center justify-end gap-1">
+                    <span>🛵 Autorizado 100% Contra Entrega</span>
+                  </span>
+                  <span className="text-[11px] text-emerald-700 block">
+                    Anticipo: <strong>RD$ 0.00</strong> • Cobrar <strong>{formatCurrency(totalCotizacion)}</strong> al recibir
+                  </span>
+                </div>
+              ) : (
+                <div className="text-chocolate-700 text-[11px]">
+                  <span>Anticipo 50%: <strong>{formatCurrency(totalCotizacion * 0.5)}</strong></span>
+                  <span className="mx-1.5">•</span>
+                  <span>Saldo al entregar (50%): <strong>{formatCurrency(totalCotizacion * 0.5)}</strong></span>
+                </div>
+              )}
+            </div>
           </div>
 
           <div className="sm:col-span-2 md:col-span-4">

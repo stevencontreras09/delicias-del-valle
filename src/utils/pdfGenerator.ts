@@ -27,6 +27,7 @@ export function generarPdfCotizacion(cotizacion: Cotizacion): void {
   const frambuesaColor: [number, number, number] = [233, 30, 99]; // #E91E63
   const trigoColor: [number, number, number] = [197, 160, 118]; // #C5A076
   const cremaColor: [number, number, number] = [253, 244, 224]; // #FDF4E0
+  const verdeColor: [number, number, number] = [16, 122, 64]; // #107A40
 
   // Encabezado superior con barra frambuesa
   doc.setFillColor(...frambuesaColor);
@@ -276,6 +277,8 @@ export function generarPdfCotizacion(cotizacion: Cotizacion): void {
     ? 'Tarjeta'
     : 'Transferencia Bancaria';
 
+  const esContraEntrega = Boolean(cotizacion.cobro_contra_entrega);
+
   doc.setFillColor(...cremaColor);
   doc.roundedRect(14, finalY - 2, 105, 34, 2, 2, 'F');
   doc.setDrawColor(...trigoColor);
@@ -290,7 +293,38 @@ export function generarPdfCotizacion(cotizacion: Cotizacion): void {
   doc.setFontSize(8);
   doc.setTextColor(60, 60, 60);
 
-  if (esDeliveryAparte) {
+  if (esContraEntrega) {
+    if (esDeliveryAparte) {
+      const totalProd = Math.max(0, cotizacion.subtotal - (cotizacion.descuento || 0));
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(...verdeColor);
+      doc.text('• Modalidad: 100% Contra Entrega (Pedido Pequeño)', 18, finalY + 8.5);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(60, 60, 60);
+      doc.text('• Anticipo previo requerido: RD$ 0.00 (Sin anticipo)', 18, finalY + 13.5);
+      doc.text(`• Saldo productos al recibir: ${formatCurrency(totalProd)} por ${metodoPagoNom}`, 18, finalY + 18.5);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(...frambuesaColor);
+      doc.text(`• Delivery: ${formatCurrency(costoDelivery)} (En EFECTIVO APARTE al chofer)`, 18, finalY + 23.5);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(60, 60, 60);
+      doc.text('• Favor confirmar si la dirección y contacto son 100% correctos.', 18, finalY + 28.5);
+    } else {
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(...verdeColor);
+      doc.text('• Modalidad: 100% Contra Entrega (Pedido Pequeño)', 18, finalY + 8.5);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(60, 60, 60);
+      doc.text('• Anticipo previo requerido: RD$ 0.00 (Sin anticipo)', 18, finalY + 13.5);
+      doc.text(`• Saldo total contra entrega: ${formatCurrency(cotizacion.total)} por ${metodoPagoNom}`, 18, finalY + 18.5);
+      if (costoDelivery > 0) {
+        doc.text(`• Delivery (${formatCurrency(costoDelivery)}) incluido en el total a pagar.`, 18, finalY + 23.5);
+      } else {
+        doc.text('• Retiro programado en taller con cobro al recibir.', 18, finalY + 23.5);
+      }
+      doc.text('• Pedidos personalizados requieren mínimo 48h de anticipación.', 18, finalY + 28.5);
+    }
+  } else if (esDeliveryAparte) {
     const totalProd = Math.max(0, cotizacion.subtotal - (cotizacion.descuento || 0));
     doc.text(`• Anticipo del 50% (Productos): ${formatCurrency(totalProd * 0.5)} por ${metodoPagoNom}`, 18, finalY + 9);
     doc.text(`• Saldo al entregar (50%): ${formatCurrency(totalProd * 0.5)}`, 18, finalY + 14.5);

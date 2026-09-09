@@ -91,20 +91,36 @@ export function generarMensajeCotizacionWhatsApp(cotizacion: Cotizacion): { mens
     ? 'Tarjeta'
     : 'Transferencia Bancaria';
 
+  const esContraEntrega = Boolean(cotizacion.cobro_contra_entrega);
+
   if (esDeliveryAparte) {
     const totalProd = Math.max(0, cotizacion.subtotal - (cotizacion.descuento || 0));
     texto += `🎂 *TOTAL PRODUCTOS:* *${formatCurrency(totalProd)}*\n`;
     texto += `--------------------------------\n\n`;
     texto += `💳 *CONDICIONES DE PAGO (${metodoPagoNom.toUpperCase()}):*\n`;
-    texto += `• *Anticipo del 50%:* ${formatCurrency(totalProd * 0.5)} (para agendar)\n`;
-    texto += `• *Saldo al entregar (50%):* ${formatCurrency(totalProd * 0.5)}\n`;
-    texto += `• *Flete Delivery:* ${formatCurrency(costoDelivery)} (_Se entrega en efectivo al repartidor_)\n\n`;
+    if (esContraEntrega) {
+      texto += `• *Modalidad:* 🛵 100% Contra Entrega (Pedido Pequeño)\n`;
+      texto += `• *Anticipo previo requerido:* RD$ 0.00 (_Sin anticipo previo_)\n`;
+      texto += `• *Saldo productos al recibir:* ${formatCurrency(totalProd)}\n`;
+      texto += `• *Flete Delivery:* ${formatCurrency(costoDelivery)} (_Se entrega en efectivo aparte al chofer_)\n`;
+      texto += `• *Total a entregar al chofer:* *${formatCurrency(totalProd + costoDelivery)}*\n\n`;
+    } else {
+      texto += `• *Anticipo del 50%:* ${formatCurrency(totalProd * 0.5)} (para agendar)\n`;
+      texto += `• *Saldo al entregar (50%):* ${formatCurrency(totalProd * 0.5)}\n`;
+      texto += `• *Flete Delivery:* ${formatCurrency(costoDelivery)} (_Se entrega en efectivo al repartidor_)\n\n`;
+    }
   } else {
     texto += `🎂 *TOTAL A PAGAR:* *${formatCurrency(cotizacion.total)}*\n`;
     texto += `--------------------------------\n\n`;
     texto += `💳 *CONDICIONES DE PAGO (${metodoPagoNom.toUpperCase()}):*\n`;
-    texto += `• *Anticipo del 50%:* ${formatCurrency(cotizacion.total * 0.5)} (para agendar)\n`;
-    texto += `• *Saldo restante (50%):* ${formatCurrency(cotizacion.total * 0.5)} contra entrega\n\n`;
+    if (esContraEntrega) {
+      texto += `• *Modalidad:* 🛵 100% Contra Entrega (Pedido Pequeño)\n`;
+      texto += `• *Anticipo previo requerido:* RD$ 0.00 (_Sin anticipo previo_)\n`;
+      texto += `• *Total a pagar al recibir:* *${formatCurrency(cotizacion.total)}* contra entrega\n\n`;
+    } else {
+      texto += `• *Anticipo del 50%:* ${formatCurrency(cotizacion.total * 0.5)} (para agendar)\n`;
+      texto += `• *Saldo restante (50%):* ${formatCurrency(cotizacion.total * 0.5)} contra entrega\n\n`;
+    }
   }
 
   if (cotizacion.notas) {
