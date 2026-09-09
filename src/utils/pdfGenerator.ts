@@ -2,6 +2,7 @@ import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import { Cotizacion, Pedido } from '../types';
 import { formatCurrency, formatDate } from './formatters';
+import { LOGO_DELICIAS_BASE64 } from './logoBase64';
 
 // Extensión para que TypeScript reconozca autoTable en jsPDF
 declare module 'jspdf' {
@@ -30,22 +31,28 @@ export function generarPdfCotizacion(cotizacion: Cotizacion): void {
   doc.setFillColor(...frambuesaColor);
   doc.rect(0, 0, 210, 8, 'F');
 
-  // Membrete
+  // Membrete con Logo Oficial
+  try {
+    doc.addImage(LOGO_DELICIAS_BASE64, 'JPEG', 14, 12, 28, 28);
+  } catch (err) {
+    console.error('Error insertando logo en cotización:', err);
+  }
+
   doc.setTextColor(...chocolateColor);
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(22);
-  doc.text('DELICIAS DEL VALLE', 14, 22);
+  doc.setFontSize(20);
+  doc.text('DELICIAS DEL VALLE', 46, 21);
 
   doc.setFontSize(10);
   doc.setFont('helvetica', 'italic');
   doc.setTextColor(...trigoColor);
-  doc.text('Pastelería y Panadería Artesanal', 14, 28);
+  doc.text('Pastelería y Panadería Artesanal', 46, 27);
 
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(100, 100, 100);
   doc.setFontSize(9);
-  doc.text('Taller Gastronómico Artesanal', 14, 34);
-  doc.text('Tel / WhatsApp: +1 (809) 555-0142 | Instagram: @deliciasdelvalle', 14, 39);
+  doc.text('Tel / WhatsApp: +1 (829) 522-9264', 46, 33);
+  doc.text('Instagram: @deliciasdelvalle', 46, 38);
 
   // Recuadro de Cotización (Lado derecho)
   doc.setFillColor(...cremaColor);
@@ -239,16 +246,28 @@ export function generarPdfPedido(pedido: Pedido): void {
   doc.setFillColor(...chocolateColor);
   doc.rect(0, 0, 210, 8, 'F');
 
-  // Membrete
+  // Membrete con Logo Oficial
+  try {
+    doc.addImage(LOGO_DELICIAS_BASE64, 'JPEG', 14, 12, 28, 28);
+  } catch (err) {
+    console.error('Error insertando logo en pedido:', err);
+  }
+
   doc.setTextColor(...chocolateColor);
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(22);
-  doc.text('DELICIAS DEL VALLE', 14, 22);
+  doc.setFontSize(20);
+  doc.text('DELICIAS DEL VALLE', 46, 21);
 
   doc.setFontSize(10);
   doc.setFont('helvetica', 'italic');
   doc.setTextColor(...trigoColor);
-  doc.text('Pastelería y Panadería Artesanal - Comprobante de Pedido', 14, 28);
+  doc.text('Pastelería y Panadería Artesanal', 46, 27);
+
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(100, 100, 100);
+  doc.setFontSize(9);
+  doc.text('Tel / WhatsApp: +1 (829) 522-9264', 46, 33);
+  doc.text('Instagram: @deliciasdelvalle', 46, 38);
 
   // Recuadro Factura
   doc.setFillColor(...cremaColor);

@@ -93,7 +93,7 @@ export const PrintTicketModal: React.FC<PrintTicketModalProps> = ({
                 DELICIAS DEL VALLE
               </div>
               <div className="text-[10px]">Pastelería & Panadería Artesanal</div>
-              <div className="text-[10px]">Tel: +1 (809) 555-0101</div>
+              <div className="text-[10px]">Tel: +1 (829) 522-9264</div>
               <div className="text-[9px] text-gray-600">República Dominicana</div>
             </div>
 
