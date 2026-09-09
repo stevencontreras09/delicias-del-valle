@@ -186,6 +186,11 @@ export interface Cotizacion {
   punto_referencia?: string;
   repartidor_nombre?: string;
   repartidor_telefono?: string;
+  direccion_confirmada?: boolean;
+  // Campos de Pago
+  metodo_pago?: MetodoPago;
+  pago_delivery?: 'completo' | 'efectivo_aparte';
+  cobro_delivery_al_recibir?: boolean;
   created_at: string;
 }
 

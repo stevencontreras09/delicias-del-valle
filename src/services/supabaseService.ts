@@ -214,6 +214,10 @@ export async function fetchAllFromSupabase(): Promise<{
       punto_referencia: c.punto_referencia || '',
       repartidor_nombre: c.repartidor_nombre || '',
       repartidor_telefono: c.repartidor_telefono || '',
+      direccion_confirmada: Boolean(c.direccion_confirmada),
+      metodo_pago: c.metodo_pago || 'transferencia',
+      pago_delivery: c.pago_delivery || (c.cobro_delivery_al_recibir ? 'efectivo_aparte' : 'completo'),
+      cobro_delivery_al_recibir: Boolean(c.cobro_delivery_al_recibir || c.pago_delivery === 'efectivo_aparte'),
       created_at: c.created_at || new Date().toISOString(),
       items: (c.cotizacion_items || []).map((item: any) => ({
         id: `item-cot-${item.id}`,
@@ -586,12 +590,20 @@ export async function syncCotizacionToSupabase(
     if (cotizacion.punto_referencia) payload.punto_referencia = cotizacion.punto_referencia;
     if (cotizacion.repartidor_nombre) payload.repartidor_nombre = cotizacion.repartidor_nombre;
     if (cotizacion.repartidor_telefono) payload.repartidor_telefono = cotizacion.repartidor_telefono;
+    if (cotizacion.direccion_confirmada !== undefined) payload.direccion_confirmada = cotizacion.direccion_confirmada;
+    if (cotizacion.metodo_pago) payload.metodo_pago = cotizacion.metodo_pago;
+    if (cotizacion.pago_delivery) payload.pago_delivery = cotizacion.pago_delivery;
+    if (cotizacion.cobro_delivery_al_recibir !== undefined) payload.cobro_delivery_al_recibir = cotizacion.cobro_delivery_al_recibir;
 
     let { data: cotDb, error: cotErr } = await client.from('cotizaciones').upsert(payload).select().single();
 
-    // Si falla porque la columna cliente_email o fecha_evento no existe aún en la tabla de Supabase
-    if (cotErr && (cotErr.message?.includes('cliente_email') || cotErr.code === 'PGRST204')) {
+    // Si falla porque alguna columna opcional no existe aún en la tabla de Supabase
+    if (cotErr && (cotErr.message?.includes('cliente_email') || cotErr.message?.includes('metodo_pago') || cotErr.message?.includes('pago_delivery') || cotErr.message?.includes('direccion_confirmada') || cotErr.code === 'PGRST204')) {
       delete payload.cliente_email;
+      delete payload.metodo_pago;
+      delete payload.pago_delivery;
+      delete payload.direccion_confirmada;
+      delete payload.cobro_delivery_al_recibir;
       const retry = await client.from('cotizaciones').upsert(payload).select().single();
       cotDb = retry.data;
       cotErr = retry.error;

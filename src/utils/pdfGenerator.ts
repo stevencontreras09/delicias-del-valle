@@ -1,7 +1,7 @@
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import { Cotizacion, Pedido } from '../types';
-import { formatCurrency, formatDate } from './formatters';
+import { formatCurrency, formatDate, formatDisplayTamano } from './formatters';
 import { LOGO_DELICIAS_BASE64 } from './logoBase64';
 
 // Extensión para que TypeScript reconozca autoTable en jsPDF
@@ -51,7 +51,7 @@ export function generarPdfCotizacion(cotizacion: Cotizacion): void {
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(100, 100, 100);
   doc.setFontSize(9);
-  doc.text('Tel / WhatsApp: +1 (829) 522-9264', 46, 33);
+  doc.text('Tel / WhatsApp: +1 (849) 522-9264', 46, 33);
   doc.text('Instagram: @deliciasdelvalle', 46, 38);
 
   // Recuadro de Cotización (Lado derecho)
@@ -78,27 +78,72 @@ export function generarPdfCotizacion(cotizacion: Cotizacion): void {
   doc.setLineWidth(0.5);
   doc.line(14, 46, 196, 46);
 
-  // Datos del Cliente
+  // Datos del Cliente (Columna Izquierda)
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(11);
+  doc.setFontSize(10);
   doc.setTextColor(...chocolateColor);
-  doc.text('INFORMACIÓN DEL CLIENTE', 14, 53);
+  doc.text('CLIENTE & CONTACTO', 14, 52);
 
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(9);
+  doc.setFontSize(8.5);
   doc.setTextColor(60, 60, 60);
-  doc.text(`Cliente: ${cotizacion.cliente_nombre}`, 14, 59);
-  doc.text(`Teléfono: ${cotizacion.cliente_telefono}`, 14, 64);
+  doc.text(`Cliente: ${cotizacion.cliente_nombre}`, 14, 57);
+  doc.text(`Teléfono: ${cotizacion.cliente_telefono}`, 14, 62);
   if (cotizacion.cliente_email) {
-    doc.text(`Email: ${cotizacion.cliente_email}`, 14, 69);
-  }
-  if (cotizacion.fecha_evento) {
-    doc.text(`Fecha del Evento: ${formatDate(cotizacion.fecha_evento)}`, 120, 59);
+    doc.text(`Email: ${cotizacion.cliente_email}`, 14, 67);
   }
 
-  // Tabla de Productos / Items
+  // Datos de Logística & Despacho (Columna Derecha)
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(10);
+  doc.setTextColor(...chocolateColor);
+  doc.text('LOGÍSTICA & ENTREGA', 110, 52);
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(8.5);
+  doc.setTextColor(60, 60, 60);
+  if (cotizacion.fecha_evento) {
+    doc.text(`Fecha Evento: ${formatDate(cotizacion.fecha_evento)}`, 110, 57);
+  }
+
+  const esDelivery = cotizacion.tipo_despacho === 'delivery' || Boolean(cotizacion.direccion_entrega);
+  let tableStartY = 74;
+
+  if (esDelivery) {
+    doc.text(`Modalidad: 🛵 Envío a Domicilio`, 110, 62);
+    const dir = cotizacion.direccion_entrega || 'Dirección acordada';
+    const dirCorta = dir.length > 44 ? dir.substring(0, 42) + '...' : dir;
+    doc.text(`Dirección: ${dirCorta}`, 110, 67);
+    if (cotizacion.punto_referencia) {
+      const refCorta = cotizacion.punto_referencia.length > 44 ? cotizacion.punto_referencia.substring(0, 42) + '...' : cotizacion.punto_referencia;
+      doc.text(`Ref: ${refCorta}`, 110, 72);
+      tableStartY = 78;
+    }
+    if (cotizacion.repartidor_nombre) {
+      const telRep = cotizacion.repartidor_telefono ? ` (${cotizacion.repartidor_telefono})` : '';
+      const repY = cotizacion.punto_referencia ? 77 : 72;
+      doc.text(`Repartidor: ${cotizacion.repartidor_nombre}${telRep}`, 110, repY);
+      tableStartY = repY + 6;
+    }
+    // Nota de confirmación de dirección
+    doc.setFont('helvetica', 'italic');
+    doc.setFontSize(7.5);
+    doc.setTextColor(...frambuesaColor);
+    doc.text('* Favor confirmar si la dirección y referencia son exactas.', 110, tableStartY);
+    tableStartY += 5;
+  } else {
+    doc.text(`Modalidad: 🏬 Retiro en Taller`, 110, 62);
+    doc.text(`Ubicación: Taller Delicias del Valle`, 110, 67);
+    tableStartY = 74;
+  }
+
+  if (cotizacion.cliente_email && tableStartY < 74) {
+    tableStartY = 74;
+  }
+
+  // Tabla de Productos / Items (Solo tamaño, masa, relleno, decoración y extras sin variables internas)
   const tableData = cotizacion.items.map((item, index) => {
-    let descripcion = `${item.receta_nombre}\n• Tamaño: ${item.tamano_porciones}`;
+    let descripcion = `${item.receta_nombre}\n• Tamaño: ${formatDisplayTamano(item.tamano_porciones)}`;
     if (item.masa_base && !item.masa_base.toLowerCase().startsWith('ningun') && !item.masa_base.toLowerCase().startsWith('no aplica')) {
       descripcion += ` | Masa: ${item.masa_base}`;
     }
@@ -109,9 +154,6 @@ export function generarPdfCotizacion(cotizacion: Cotizacion): void {
       descripcion += `\n• Decoración: ${item.decoracion}`;
     }
     if (item.dedicatoria) descripcion += `\n• Dedicatoria: "${item.dedicatoria}"`;
-    if (item.variables_receta && item.variables_receta.length > 0) {
-      descripcion += `\n• Variables de Receta: ${item.variables_receta.join(', ')}`;
-    }
     if (item.extras && item.extras.length > 0) {
       descripcion += `\n• Extras: ${item.extras.map(e => e.nombre).join(', ')}`;
     }
@@ -125,10 +167,8 @@ export function generarPdfCotizacion(cotizacion: Cotizacion): void {
     ];
   });
 
-  const startY = cotizacion.cliente_email ? 74 : 70;
-
   doc.autoTable({
-    startY: startY,
+    startY: tableStartY,
     head: [['#', 'Descripción y Especificaciones', 'Cant.', 'Precio Unit.', 'Subtotal']],
     body: tableData,
     theme: 'grid',
@@ -174,10 +214,21 @@ export function generarPdfCotizacion(cotizacion: Cotizacion): void {
     offset += 6;
   }
 
-  if (cotizacion.costo_envio > 0) {
-    doc.text('Domicilio / Envío:', rightX, finalY + offset);
-    doc.text(formatCurrency(cotizacion.costo_envio), 196, finalY + offset, { align: 'right' });
-    offset += 6;
+  const esDeliveryAparte = cotizacion.tipo_despacho === 'delivery' && (
+    cotizacion.pago_delivery === 'efectivo_aparte' || Boolean(cotizacion.cobro_delivery_al_recibir)
+  );
+  const costoDelivery = Number(cotizacion.costo_delivery || cotizacion.costo_envio || 0);
+
+  if (costoDelivery > 0) {
+    if (esDeliveryAparte) {
+      doc.text('Delivery (efectivo a chofer):', rightX, finalY + offset);
+      doc.text(formatCurrency(costoDelivery), 196, finalY + offset, { align: 'right' });
+      offset += 6;
+    } else {
+      doc.text('Domicilio / Envío:', rightX, finalY + offset);
+      doc.text(formatCurrency(costoDelivery), 196, finalY + offset, { align: 'right' });
+      offset += 6;
+    }
   }
 
   // Total Destacado
@@ -185,27 +236,60 @@ export function generarPdfCotizacion(cotizacion: Cotizacion): void {
   doc.roundedRect(rightX - 3, finalY + offset - 4, 64, 10, 2, 2, 'F');
   doc.setTextColor(255, 255, 255);
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(10.5);
-  doc.text('TOTAL:', rightX, finalY + offset + 2.5);
-  doc.text(formatCurrency(cotizacion.total), 194, finalY + offset + 2.5, { align: 'right' });
+  doc.setFontSize(10);
+  
+  if (esDeliveryAparte) {
+    const totalProd = Math.max(0, cotizacion.subtotal - (cotizacion.descuento || 0));
+    doc.text('TOTAL PEDIDO:', rightX, finalY + offset + 2.5);
+    doc.text(formatCurrency(totalProd), 194, finalY + offset + 2.5, { align: 'right' });
+  } else {
+    doc.text('TOTAL:', rightX, finalY + offset + 2.5);
+    doc.text(formatCurrency(cotizacion.total), 194, finalY + offset + 2.5, { align: 'right' });
+  }
 
   // Esquema de Pago (Lado Izquierdo)
+  const metodoPagoNom = cotizacion.metodo_pago === 'efectivo'
+    ? 'Efectivo'
+    : cotizacion.metodo_pago === 'tarjeta'
+    ? 'Tarjeta'
+    : 'Transferencia Bancaria';
+
   doc.setFillColor(...cremaColor);
-  doc.roundedRect(14, finalY - 2, 105, 30, 2, 2, 'F');
+  doc.roundedRect(14, finalY - 2, 105, 34, 2, 2, 'F');
   doc.setDrawColor(...trigoColor);
-  doc.roundedRect(14, finalY - 2, 105, 30, 2, 2, 'D');
+  doc.roundedRect(14, finalY - 2, 105, 34, 2, 2, 'D');
 
   doc.setTextColor(...chocolateColor);
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(9.5);
-  doc.text('ESQUEMA DE PAGO Y CONDICIONES:', 18, finalY + 4);
+  doc.setFontSize(9);
+  doc.text(`CONDICIONES DE PAGO (${metodoPagoNom.toUpperCase()}):`, 18, finalY + 3.5);
 
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(8.5);
+  doc.setFontSize(8);
   doc.setTextColor(60, 60, 60);
-  doc.text(`• Anticipo del 50%: ${formatCurrency(cotizacion.total * 0.5)} (para confirmar)`, 18, finalY + 11);
-  doc.text(`• Saldo contra entrega (50%): ${formatCurrency(cotizacion.total * 0.5)}`, 18, finalY + 17);
-  doc.text('• Pedidos personalizados requieren mínimo 48h de anticipación.', 18, finalY + 23);
+
+  if (esDeliveryAparte) {
+    const totalProd = Math.max(0, cotizacion.subtotal - (cotizacion.descuento || 0));
+    doc.text(`• Anticipo del 50% (Productos): ${formatCurrency(totalProd * 0.5)} por ${metodoPagoNom}`, 18, finalY + 9);
+    doc.text(`• Saldo al entregar (50%): ${formatCurrency(totalProd * 0.5)}`, 18, finalY + 14.5);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(...frambuesaColor);
+    doc.text(`• Delivery: ${formatCurrency(costoDelivery)} (Se paga en EFECTIVO APARTE al repartidor)`, 18, finalY + 20);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(60, 60, 60);
+    doc.text('• Pedidos personalizados requieren mínimo 48h de anticipación.', 18, finalY + 25.5);
+    doc.text('• Favor confirmar si la dirección y contacto son 100% correctos.', 18, finalY + 30);
+  } else {
+    doc.text(`• Anticipo del 50%: ${formatCurrency(cotizacion.total * 0.5)} (por ${metodoPagoNom})`, 18, finalY + 9.5);
+    doc.text(`• Saldo contra entrega (50%): ${formatCurrency(cotizacion.total * 0.5)}`, 18, finalY + 15.5);
+    if (costoDelivery > 0) {
+      doc.text(`• Delivery (${formatCurrency(costoDelivery)}) incluido completo en el pedido.`, 18, finalY + 21);
+      doc.text('• Pedidos personalizados requieren mínimo 48h de anticipación.', 18, finalY + 26.5);
+    } else {
+      doc.text('• Pedidos personalizados requieren mínimo 48h de anticipación.', 18, finalY + 21.5);
+      doc.text('• Retiro programado en taller una vez confirmado.', 18, finalY + 26.5);
+    }
+  }
 
   // Notas Adicionales
   if (cotizacion.notas) {
@@ -266,7 +350,7 @@ export function generarPdfPedido(pedido: Pedido): void {
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(100, 100, 100);
   doc.setFontSize(9);
-  doc.text('Tel / WhatsApp: +1 (829) 522-9264', 46, 33);
+  doc.text('Tel / WhatsApp: +1 (849) 522-9264', 46, 33);
   doc.text('Instagram: @deliciasdelvalle', 46, 38);
 
   // Recuadro Factura
@@ -308,7 +392,7 @@ export function generarPdfPedido(pedido: Pedido): void {
   // Tabla
   const tableData = pedido.items.map((item, index) => [
     (index + 1).toString(),
-    `${item.receta_nombre} (${item.tamano_porciones})${item.dedicatoria ? `\nDedicatoria: "${item.dedicatoria}"` : ''}`,
+    `${item.receta_nombre} (${formatDisplayTamano(item.tamano_porciones)})${item.dedicatoria ? `\nDedicatoria: "${item.dedicatoria}"` : ''}`,
     item.cantidad.toString(),
     formatCurrency(item.precio_unitario),
     formatCurrency(item.subtotal),

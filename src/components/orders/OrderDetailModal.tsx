@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Pedido, EstadoPedido, MetodoPago, TipoPago, BancoRD } from '../../types';
 import { useApp } from '../../context/AppContext';
 import { Modal } from '../ui/Modal';
-import { formatCurrency, formatDate } from '../../utils/formatters';
+import { formatCurrency, formatDate, formatDisplayTamano } from '../../utils/formatters';
 import {
   FileText,
   MessageCircle,
@@ -389,7 +389,7 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({
                   <td className="py-3 px-4">
                     <p className="font-bold text-chocolate-900 text-sm">{item.receta_nombre}</p>
                     <p className="text-xs text-chocolate-600 font-medium mt-0.5">
-                      {item.tamano_porciones} • Masa: {item.masa_base} • Relleno: {item.relleno}
+                      {formatDisplayTamano(item.tamano_porciones)} • Masa: {item.masa_base} • Relleno: {item.relleno}
                     </p>
                     {item.decoracion && (
                       <p className="text-xs text-gray-500">Decoración: {item.decoracion}</p>

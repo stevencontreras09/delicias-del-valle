@@ -69,3 +69,16 @@ export function formatPercentage(value: number | undefined | null): string {
   if (value === undefined || value === null || isNaN(value)) return '0%';
   return `${value % 1 === 0 ? value : value.toFixed(1)}%`;
 }
+
+/**
+ * Limpia y formatea la descripción de tamaño para clientes,
+ * eliminando multiplicadores internos técnicos como [0.0556x], (0.0556x), [1x], etc.
+ */
+export function formatDisplayTamano(tamano?: string): string {
+  if (!tamano) return '';
+  return tamano
+    .replace(/\s*\[[\d\.]+x\]/gi, '')
+    .replace(/\s*\([\d\.]+x\)/gi, '')
+    .replace(/\s*\[Estándar(?:\s*[\d\.]*x?)?\]/gi, '')
+    .trim();
+}

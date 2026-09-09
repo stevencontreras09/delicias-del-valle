@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Pedido } from '../../types';
 import { Modal } from '../ui/Modal';
-import { formatCurrency, formatDate } from '../../utils/formatters';
+import { formatCurrency, formatDate, formatDisplayTamano } from '../../utils/formatters';
 import { Printer, Receipt } from 'lucide-react';
 
 interface PrintTicketModalProps {
@@ -93,7 +93,7 @@ export const PrintTicketModal: React.FC<PrintTicketModalProps> = ({
                 DELICIAS DEL VALLE
               </div>
               <div className="text-[10px]">Pastelería & Panadería Artesanal</div>
-              <div className="text-[10px]">Tel: +1 (829) 522-9264</div>
+              <div className="text-[10px]">Tel: +1 (849) 522-9264</div>
               <div className="text-[9px] text-gray-600">República Dominicana</div>
             </div>
 
@@ -131,7 +131,7 @@ export const PrintTicketModal: React.FC<PrintTicketModalProps> = ({
                     <span>{formatCurrency(item.subtotal)}</span>
                   </div>
                   <div className="text-[10px] pl-2 text-gray-800">
-                    <div>• Porciones: {item.tamano_porciones}</div>
+                    <div>• Porciones: {formatDisplayTamano(item.tamano_porciones)}</div>
                     {item.masa_base && <div>• Masa: {item.masa_base}</div>}
                     {item.relleno && <div>• Relleno: {item.relleno}</div>}
                     {item.decoracion && <div>• Cobertura: {item.decoracion}</div>}

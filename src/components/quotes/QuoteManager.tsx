@@ -12,7 +12,7 @@ import {
   Edit2,
   ArrowRight,
 } from 'lucide-react';
-import { formatCurrency, formatDate } from '../../utils/formatters';
+import { formatCurrency, formatDate, formatDisplayTamano } from '../../utils/formatters';
 import { Badge } from '../ui/Badge';
 import { QuoteBuilderModal } from './QuoteBuilderModal';
 import { QuoteDetailModal } from './QuoteDetailModal';
@@ -195,7 +195,7 @@ export const QuoteManager: React.FC = () => {
                   {cot.items.map((item, idx) => (
                     <div key={idx} className="text-chocolate-800 font-medium flex justify-between">
                       <span className="truncate pr-2">
-                        • {item.receta_nombre} ({item.tamano_porciones})
+                        • {item.receta_nombre} ({formatDisplayTamano(item.tamano_porciones)})
                       </span>
                       <span className="font-bold flex-shrink-0">
                         x{item.cantidad}

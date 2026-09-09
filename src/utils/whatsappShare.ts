@@ -1,5 +1,5 @@
 import { Cotizacion, Pedido } from '../types';
-import { formatCurrency, formatDate } from './formatters';
+import { formatCurrency, formatDate, formatDisplayTamano } from './formatters';
 
 /**
  * Normaliza números telefónicos para WhatsApp en República Dominicana / Internacional.
@@ -18,7 +18,8 @@ function sanitizePhone(phone: string): string {
  */
 export function generarMensajeCotizacionWhatsApp(cotizacion: Cotizacion): { mensaje: string; url: string } {
   let texto = `🧁 *DELICIAS DEL VALLE - PASTELERÍA ARTESANAL* 🍰\n`;
-  texto += `_Tradición, Calidad y Amor en Cada Detalle_\n\n`;
+  texto += `_Tradición, Calidad y Amor en Cada Detalle_\n`;
+  texto += `📞 *Tel/WhatsApp:* +1 (849) 522-9264\n\n`;
   texto += `¡Hola, *${cotizacion.cliente_nombre}*! Es un gusto saludarte. Aquí tienes el detalle de tu cotización personalizada:\n\n`;
   texto += `📋 *Cotización N°:* ${cotizacion.codigo}\n`;
   texto += `📅 *Fecha:* ${formatDate(cotizacion.fecha_emision)}\n`;
@@ -27,10 +28,28 @@ export function generarMensajeCotizacionWhatsApp(cotizacion: Cotizacion): { mens
   }
   texto += `⏳ *Validez:* ${cotizacion.validez_dias} días hábiles\n\n`;
 
+  // Logística y Entrega
+  const esDelivery = cotizacion.tipo_despacho === 'delivery' || Boolean(cotizacion.direccion_entrega);
+  if (esDelivery) {
+    texto += `🛵 *LOGÍSTICA DE ENTREGA:*\n`;
+    texto += `• *Modalidad:* Envío a Domicilio\n`;
+    texto += `• *Dirección:* ${cotizacion.direccion_entrega || 'Por acordar'}\n`;
+    if (cotizacion.punto_referencia) {
+      texto += `• *Punto de Referencia:* ${cotizacion.punto_referencia}\n`;
+    }
+    if (cotizacion.repartidor_nombre) {
+      const telRep = cotizacion.repartidor_telefono ? ` (Tel: ${cotizacion.repartidor_telefono})` : '';
+      texto += `• *Repartidor:* ${cotizacion.repartidor_nombre}${telRep}\n`;
+    }
+    texto += `⚠️ _Favor confirmar si la dirección y referencia son 100% exactas._\n\n`;
+  } else {
+    texto += `🏬 *MODALIDAD:* Retiro en Taller Gastronómico\n\n`;
+  }
+
   texto += `✨ *DETALLE DEL PEDIDO:* ✨\n`;
   cotizacion.items.forEach((item, index) => {
     texto += `\n*${index + 1}. ${item.receta_nombre}*\n`;
-    texto += `   • Tamaño / Porciones: ${item.tamano_porciones}\n`;
+    texto += `   • Tamaño / Porciones: ${formatDisplayTamano(item.tamano_porciones)}\n`;
     if (item.masa_base && !item.masa_base.toLowerCase().startsWith('ningun') && !item.masa_base.toLowerCase().startsWith('no aplica')) {
       texto += `   • Masa Base: ${item.masa_base}\n`;
     }
@@ -41,9 +60,6 @@ export function generarMensajeCotizacionWhatsApp(cotizacion: Cotizacion): { mens
       texto += `   • Decoración: ${item.decoracion}\n`;
     }
     if (item.dedicatoria) texto += `   • Dedicatoria: "${item.dedicatoria}"\n`;
-    if (item.variables_receta && item.variables_receta.length > 0) {
-      texto += `   • Variables de Receta: ${item.variables_receta.join(', ')}\n`;
-    }
     if (item.extras && item.extras.length > 0) {
       texto += `   • Extras: ${item.extras.map((e) => `${e.nombre} (${formatCurrency(e.precio)})`).join(', ')}\n`;
     }
@@ -55,15 +71,41 @@ export function generarMensajeCotizacionWhatsApp(cotizacion: Cotizacion): { mens
   if (cotizacion.descuento > 0) {
     texto += `🏷️ *Descuento:* -${formatCurrency(cotizacion.descuento)}\n`;
   }
-  if (cotizacion.costo_envio > 0) {
-    texto += `🛵 *Domicilio / Entrega:* ${formatCurrency(cotizacion.costo_envio)}\n`;
-  }
-  texto += `🎂 *TOTAL A PAGAR:* *${formatCurrency(cotizacion.total)}*\n`;
-  texto += `--------------------------------\n\n`;
 
-  texto += `💳 *CONDICIONES DE PAGO:*\n`;
-  texto += `• *50% de anticipo* para agendar y asegurar la fecha en producción.\n`;
-  texto += `• *50% restante* contra entrega o recogida en el taller.\n\n`;
+  const esDeliveryAparte = cotizacion.tipo_despacho === 'delivery' && (
+    cotizacion.pago_delivery === 'efectivo_aparte' || Boolean(cotizacion.cobro_delivery_al_recibir)
+  );
+  const costoDelivery = Number(cotizacion.costo_delivery || cotizacion.costo_envio || 0);
+
+  if (costoDelivery > 0) {
+    if (esDeliveryAparte) {
+      texto += `🛵 *Delivery:* ${formatCurrency(costoDelivery)} (_Se paga en efectivo al chofer al recibir_)\n`;
+    } else {
+      texto += `🛵 *Delivery / Flete:* ${formatCurrency(costoDelivery)} (_Incluido en el pedido_)\n`;
+    }
+  }
+
+  const metodoPagoNom = cotizacion.metodo_pago === 'efectivo'
+    ? 'Efectivo'
+    : cotizacion.metodo_pago === 'tarjeta'
+    ? 'Tarjeta'
+    : 'Transferencia Bancaria';
+
+  if (esDeliveryAparte) {
+    const totalProd = Math.max(0, cotizacion.subtotal - (cotizacion.descuento || 0));
+    texto += `🎂 *TOTAL PRODUCTOS:* *${formatCurrency(totalProd)}*\n`;
+    texto += `--------------------------------\n\n`;
+    texto += `💳 *CONDICIONES DE PAGO (${metodoPagoNom.toUpperCase()}):*\n`;
+    texto += `• *Anticipo del 50%:* ${formatCurrency(totalProd * 0.5)} (para agendar)\n`;
+    texto += `• *Saldo al entregar (50%):* ${formatCurrency(totalProd * 0.5)}\n`;
+    texto += `• *Flete Delivery:* ${formatCurrency(costoDelivery)} (_Se entrega en efectivo al repartidor_)\n\n`;
+  } else {
+    texto += `🎂 *TOTAL A PAGAR:* *${formatCurrency(cotizacion.total)}*\n`;
+    texto += `--------------------------------\n\n`;
+    texto += `💳 *CONDICIONES DE PAGO (${metodoPagoNom.toUpperCase()}):*\n`;
+    texto += `• *Anticipo del 50%:* ${formatCurrency(cotizacion.total * 0.5)} (para agendar)\n`;
+    texto += `• *Saldo restante (50%):* ${formatCurrency(cotizacion.total * 0.5)} contra entrega\n\n`;
+  }
 
   if (cotizacion.notas) {
     texto += `📝 *Nota especial:* ${cotizacion.notas}\n\n`;
@@ -91,7 +133,7 @@ export function generarMensajePedidoWhatsApp(pedido: Pedido): { mensaje: string;
 
   texto += `✨ *RESUMEN:* ✨\n`;
   pedido.items.forEach((item, index) => {
-    texto += `${index + 1}. *${item.receta_nombre}* (${item.tamano_porciones}) x${item.cantidad} = ${formatCurrency(item.subtotal)}\n`;
+    texto += `${index + 1}. *${item.receta_nombre}* (${formatDisplayTamano(item.tamano_porciones)}) x${item.cantidad} = ${formatCurrency(item.subtotal)}\n`;
   });
 
   texto += `\n💰 *Total:* ${formatCurrency(pedido.total)}\n`;

@@ -10,10 +10,11 @@ import {
   FormatoPresentacion,
   TipoDespacho,
   ZonaDelivery,
+  MetodoPago,
 } from '../../types';
 import { useApp } from '../../context/AppContext';
 import { Modal } from '../ui/Modal';
-import { formatCurrency, formatUnit } from '../../utils/formatters';
+import { formatCurrency, formatUnit, formatDisplayTamano } from '../../utils/formatters';
 import {
   calcularCostosReceta,
   calcularCostoIngrediente,
@@ -246,6 +247,10 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
   const [whatsAppInputText, setWhatsAppInputText] = useState('');
   const [detectedMapsLink, setDetectedMapsLink] = useState<string | null>(null);
 
+  // Condiciones de Pago
+  const [metodoPago, setMetodoPago] = useState<MetodoPago>('transferencia');
+  const [pagoDelivery, setPagoDelivery] = useState<'completo' | 'efectivo_aparte'>('completo');
+
   // Mini CRM Clientes Autocompletado
   const [selectedClienteCrm, setSelectedClienteCrm] = useState<Cliente | null>(null);
   const [isClientSuggestionsOpen, setIsClientSuggestionsOpen] = useState(false);
@@ -473,7 +478,7 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
     setCustomMiniCount(validCount);
     const factor = Number((validCount * (0.35 / 12)).toFixed(3));
     setFactorReceta(factor);
-    setTamanoPorciones(`${validCount} Mini Bocaditos (${factor}x)`);
+    setTamanoPorciones(`${validCount} Mini Bocaditos`);
   };
 
   // Lista de items de la cotización
@@ -516,6 +521,8 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
       setPuntoReferencia(initialCotizacion.punto_referencia || '');
       setRepartidorNombre(initialCotizacion.repartidor_nombre || '');
       setRepartidorTelefono(initialCotizacion.repartidor_telefono || '');
+      setMetodoPago(initialCotizacion.metodo_pago || 'transferencia');
+      setPagoDelivery(initialCotizacion.pago_delivery || (initialCotizacion.cobro_delivery_al_recibir ? 'efectivo_aparte' : 'completo'));
       setIsWhatsAppBoxOpen(false);
       setWhatsAppInputText('');
       setDetectedMapsLink(null);
@@ -535,6 +542,8 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
       setPuntoReferencia('');
       setRepartidorNombre('');
       setRepartidorTelefono('');
+      setMetodoPago('transferencia');
+      setPagoDelivery('completo');
       setIsWhatsAppBoxOpen(false);
       setWhatsAppInputText('');
       setDetectedMapsLink(null);
@@ -684,7 +693,7 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
       const portions = getRecipePortionsCount(receta);
       const opts = getPorcionOpciones(portions, receta.rendimiento_unidad);
       const defaultOpt = opts[0];
-      setTamanoPorciones(`${defaultOpt?.label || '1 Porción'} [${defaultOpt?.factor || 1}x]`);
+      setTamanoPorciones(defaultOpt?.label || '1 Porción');
       setFactorReceta(defaultOpt?.factor || 1);
       setIsCustomMiniSelected(false);
     } else if (allowed.includes('mini')) {
@@ -775,7 +784,7 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
       id: `item-${Date.now()}`,
       receta_id: currentReceta.id,
       receta_nombre: currentReceta.nombre,
-      tamano_porciones: tamanoPorciones,
+      tamano_porciones: formatDisplayTamano(tamanoPorciones),
       masa_base: masaBase,
       relleno,
       decoracion,
@@ -866,6 +875,9 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
       punto_referencia: tipoDespacho === 'delivery' ? puntoReferencia.trim() : undefined,
       repartidor_nombre: repartidorNombre.trim() || undefined,
       repartidor_telefono: repartidorTelefono.trim() || undefined,
+      metodo_pago: metodoPago,
+      pago_delivery: tipoDespacho === 'delivery' ? pagoDelivery : undefined,
+      cobro_delivery_al_recibir: tipoDespacho === 'delivery' && pagoDelivery === 'efectivo_aparte',
     });
 
     if (res === null || res === false) {
@@ -1257,6 +1269,50 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
                       onChange={(e) => setRepartidorTelefono(e.target.value)}
                       className="w-full px-3 py-2 rounded-xl border border-trigo-300 focus:ring-2 focus:ring-frambuesa-400 bg-white"
                     />
+                  </div>
+                </div>
+
+                {/* Modalidad de Pago del Delivery */}
+                <div className="pt-2 border-t border-trigo-200">
+                  <label className="block font-bold text-chocolate-800 mb-1.5 text-xs">
+                    ¿Cómo se pagará la tarifa de Delivery ({formatCurrency(envioNum)})? *
+                  </label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setPagoDelivery('efectivo_aparte')}
+                      className={`p-2.5 rounded-xl border text-left transition-all flex items-start gap-2.5 ${
+                        pagoDelivery === 'efectivo_aparte'
+                          ? 'border-frambuesa-500 bg-frambuesa-50/80 text-frambuesa-950 font-bold shadow-2xs ring-1 ring-frambuesa-400'
+                          : 'border-trigo-300 bg-white hover:bg-crema/40 text-chocolate-700'
+                      }`}
+                    >
+                      <span className="text-base leading-none">💵</span>
+                      <div>
+                        <div className="text-xs font-bold">En efectivo aparte al repartidor</div>
+                        <div className="text-[10px] text-gray-500 font-normal">
+                          El cliente entrega los {formatCurrency(envioNum)} directamente al chofer en efectivo contra entrega.
+                        </div>
+                      </div>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setPagoDelivery('completo')}
+                      className={`p-2.5 rounded-xl border text-left transition-all flex items-start gap-2.5 ${
+                        pagoDelivery === 'completo'
+                          ? 'border-frambuesa-500 bg-frambuesa-50/80 text-frambuesa-950 font-bold shadow-2xs ring-1 ring-frambuesa-400'
+                          : 'border-trigo-300 bg-white hover:bg-crema/40 text-chocolate-700'
+                      }`}
+                    >
+                      <span className="text-base leading-none">📦</span>
+                      <div>
+                        <div className="text-xs font-bold">Completo con el pedido</div>
+                        <div className="text-[10px] text-gray-500 font-normal">
+                          La tarifa se incluye en el total a transferir o pagar a la pastelería.
+                        </div>
+                      </div>
+                    </button>
                   </div>
                 </div>
               </div>
@@ -2240,20 +2296,76 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
             />
           </div>
 
-          <div className="sm:col-span-2 flex flex-col justify-center items-end text-right">
-            <span className="text-gray-500">Subtotal: {formatCurrency(subtotalCotizacion)}</span>
+          {/* Método de Pago Preferido */}
+          <div className="sm:col-span-2 md:col-span-4 bg-white p-3 rounded-2xl border border-trigo-200">
+            <label className="block font-bold text-chocolate-800 mb-1.5 text-xs">
+              Forma de Pago del Cliente *
+            </label>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              <button
+                type="button"
+                onClick={() => setMetodoPago('transferencia')}
+                className={`py-2 px-3 rounded-xl border text-xs font-bold transition-all flex items-center justify-center gap-2 ${
+                  metodoPago === 'transferencia'
+                    ? 'bg-chocolate-700 text-white border-chocolate-700 shadow-sm'
+                    : 'bg-crema/40 text-chocolate-700 border-trigo-300 hover:bg-white'
+                }`}
+              >
+                <span>🏦 Transferencia</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setMetodoPago('efectivo')}
+                className={`py-2 px-3 rounded-xl border text-xs font-bold transition-all flex items-center justify-center gap-2 ${
+                  metodoPago === 'efectivo'
+                    ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
+                    : 'bg-crema/40 text-chocolate-700 border-trigo-300 hover:bg-white'
+                }`}
+              >
+                <span>💵 Efectivo</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setMetodoPago('tarjeta')}
+                className={`py-2 px-3 rounded-xl border text-xs font-bold transition-all flex items-center justify-center gap-2 col-span-2 sm:col-span-1 ${
+                  metodoPago === 'tarjeta'
+                    ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
+                    : 'bg-crema/40 text-chocolate-700 border-trigo-300 hover:bg-white'
+                }`}
+              >
+                <span>💳 Tarjeta</span>
+              </button>
+            </div>
+          </div>
+
+          <div className="sm:col-span-2 md:col-span-4 flex flex-col justify-center items-end text-right bg-crema/30 p-3 rounded-2xl border border-trigo-200">
+            <span className="text-gray-500 text-xs">Subtotal Productos: {formatCurrency(subtotalCotizacion)}</span>
             {descNum > 0 && (
-              <span className="text-emerald-700 font-semibold">
+              <span className="text-emerald-700 font-semibold text-xs">
                 Descuento: -{formatCurrency(descNum)}
               </span>
             )}
             {envioNum > 0 && (
-              <span className="text-chocolate-700">Envío: +{formatCurrency(envioNum)}</span>
+              <span className="text-chocolate-700 text-xs">
+                Delivery ({tipoDespacho === 'delivery' && pagoDelivery === 'efectivo_aparte' ? 'efectivo directo al chofer' : 'incluido en total'}): +{formatCurrency(envioNum)}
+              </span>
             )}
-            <div className="text-lg sm:text-xl font-black text-chocolate-900 mt-1">
-              <span>Total Cotización: </span>
-              <span className="text-frambuesa-600">{formatCurrency(totalCotizacion)}</span>
-            </div>
+
+            {tipoDespacho === 'delivery' && pagoDelivery === 'efectivo_aparte' ? (
+              <div className="mt-1 space-y-0.5">
+                <div className="text-xs text-chocolate-800 font-bold">
+                  Total Pedido Pastelería: <b className="text-base text-frambuesa-600">{formatCurrency(Math.max(0, subtotalCotizacion - descNum))}</b>
+                </div>
+                <div className="text-[11px] text-gray-500">
+                  + {formatCurrency(envioNum)} flete a pagar en efectivo aparte al repartidor contra entrega
+                </div>
+              </div>
+            ) : (
+              <div className="text-lg sm:text-xl font-black text-chocolate-900 mt-1">
+                <span>Total Cotización: </span>
+                <span className="text-frambuesa-600">{formatCurrency(totalCotizacion)}</span>
+              </div>
+            )}
           </div>
 
           <div className="sm:col-span-2 md:col-span-4">

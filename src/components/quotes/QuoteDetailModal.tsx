@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { Cotizacion, TipoEntrega, TipoDespacho } from '../../types';
+import { Cotizacion, TipoEntrega, TipoDespacho, MetodoPago } from '../../types';
 import { useApp } from '../../context/AppContext';
 import { Modal } from '../ui/Modal';
-import { formatCurrency, formatDate } from '../../utils/formatters';
+import { formatCurrency, formatDate, formatDisplayTamano } from '../../utils/formatters';
 import {
   FileText,
   MessageCircle,
@@ -14,6 +14,13 @@ import {
   Sparkles,
   Truck,
   Store,
+  MapPin,
+  Edit3,
+  Check,
+  Save,
+  X,
+  CreditCard,
+  DollarSign,
 } from 'lucide-react';
 import { Badge } from '../ui/Badge';
 import { generarPdfCotizacion } from '../../utils/pdfGenerator';
@@ -50,7 +57,7 @@ export const QuoteDetailModal: React.FC<QuoteDetailModalProps> = ({
   onConvertToOrder,
   onEdit,
 }) => {
-  const { zonasDelivery, usuarios } = useApp();
+  const { zonasDelivery, usuarios, updateCotizacion, showToast } = useApp();
   const deliveryUsers = (usuarios || []).filter((u) => u.rol === 'delivery' && u.activo);
   const [showConvertDialog, setShowConvertDialog] = useState(false);
   const [anticipoMonto, setAnticipoMonto] = useState<number | ''>('');
@@ -65,7 +72,66 @@ export const QuoteDetailModal: React.FC<QuoteDetailModalProps> = ({
   const [repartidorTelefono, setRepartidorTelefono] = useState('');
   const [cobroDeliveryAlRecibir, setCobroDeliveryAlRecibir] = useState(false);
 
+  // Estados para Edición y Confirmación Directa de Dirección / Despacho / Pagos
+  const [isEditingDespacho, setIsEditingDespacho] = useState(false);
+  const [editTipoDespacho, setEditTipoDespacho] = useState<TipoDespacho>('retiro');
+  const [editZonaId, setEditZonaId] = useState<number | ''>('');
+  const [editDireccion, setEditDireccion] = useState('');
+  const [editPuntoRef, setEditPuntoRef] = useState('');
+  const [editRepartidor, setEditRepartidor] = useState('');
+  const [editRepartidorTel, setEditRepartidorTel] = useState('');
+  const [editMetodoPago, setEditMetodoPago] = useState<MetodoPago>('transferencia');
+  const [editPagoDelivery, setEditPagoDelivery] = useState<'completo' | 'efectivo_aparte'>('completo');
+  const [isSavingDespacho, setIsSavingDespacho] = useState(false);
+
   if (!cotizacion) return null;
+
+  const handleStartEditDespacho = () => {
+    setEditTipoDespacho(cotizacion.tipo_despacho || (Number(cotizacion.costo_delivery || cotizacion.costo_envio || 0) > 0 ? 'delivery' : 'retiro'));
+    setEditZonaId(cotizacion.zona_delivery_id || '');
+    setEditDireccion(cotizacion.direccion_entrega || '');
+    setEditPuntoRef(cotizacion.punto_referencia || '');
+    setEditRepartidor(cotizacion.repartidor_nombre || '');
+    setEditRepartidorTel(cotizacion.repartidor_telefono || '');
+    setEditMetodoPago(cotizacion.metodo_pago || 'transferencia');
+    setEditPagoDelivery(cotizacion.pago_delivery || (cotizacion.cobro_delivery_al_recibir ? 'efectivo_aparte' : 'completo'));
+    setIsEditingDespacho(true);
+  };
+
+  const handleSaveDespacho = async (marcarConfirmada: boolean) => {
+    setIsSavingDespacho(true);
+    let flete = cotizacion.costo_envio;
+    if (editTipoDespacho === 'retiro') {
+      flete = 0;
+    } else if (editZonaId) {
+      const z = zonasDelivery.find(item => item.id === Number(editZonaId));
+      if (z) flete = z.tarifa;
+    }
+
+    const nuevoTotal = Math.max(0, cotizacion.subtotal - cotizacion.descuento + (editTipoDespacho === 'delivery' ? flete : 0));
+
+    const ok = await updateCotizacion(cotizacion.id, {
+      tipo_despacho: editTipoDespacho,
+      zona_delivery_id: editTipoDespacho === 'delivery' && editZonaId ? Number(editZonaId) : null,
+      costo_delivery: editTipoDespacho === 'delivery' ? flete : 0,
+      costo_envio: editTipoDespacho === 'delivery' ? flete : 0,
+      total: nuevoTotal,
+      direccion_entrega: editTipoDespacho === 'delivery' ? editDireccion.trim() : undefined,
+      punto_referencia: editTipoDespacho === 'delivery' ? editPuntoRef.trim() : undefined,
+      repartidor_nombre: editRepartidor.trim() || undefined,
+      repartidor_telefono: editRepartidorTel.trim() || undefined,
+      metodo_pago: editMetodoPago,
+      pago_delivery: editTipoDespacho === 'delivery' ? editPagoDelivery : undefined,
+      cobro_delivery_al_recibir: editTipoDespacho === 'delivery' && editPagoDelivery === 'efectivo_aparte',
+      direccion_confirmada: marcarConfirmada ? true : cotizacion.direccion_confirmada,
+    });
+
+    setIsSavingDespacho(false);
+    if (ok) {
+      setIsEditingDespacho(false);
+      showToast?.('success', 'Logística Actualizada', marcarConfirmada ? 'Dirección confirmada y guardada correctamente.' : 'Datos de entrega actualizados.');
+    }
+  };
 
   const handleOpenConvert = () => {
     setAnticipoMonto(Math.round((cotizacion.total * 0.5) * 100) / 100);
@@ -79,7 +145,7 @@ export const QuoteDetailModal: React.FC<QuoteDetailModalProps> = ({
     setPuntoReferencia(cotizacion.punto_referencia || '');
     setRepartidorNombre(cotizacion.repartidor_nombre || '');
     setRepartidorTelefono(cotizacion.repartidor_telefono || '');
-    setCobroDeliveryAlRecibir(false);
+    setCobroDeliveryAlRecibir(cotizacion.pago_delivery === 'efectivo_aparte' || Boolean(cotizacion.cobro_delivery_al_recibir));
     setShowConvertDialog(true);
   };
 
@@ -472,6 +538,334 @@ export const QuoteDetailModal: React.FC<QuoteDetailModalProps> = ({
           )}
         </div>
 
+        {/* Logística, Despacho y Dirección (con Confirmación / Edición) */}
+        <div className="bg-white p-4 rounded-2xl border-2 border-trigo-200 shadow-sm space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-trigo-100 pb-2.5">
+            <div className="flex items-center gap-2">
+              <Truck className="w-4 h-4 text-frambuesa-600" />
+              <h4 className="text-xs font-bold text-chocolate-800 uppercase tracking-wider">
+                Logística, Despacho y Dirección de Entrega
+              </h4>
+              {cotizacion.tipo_despacho === 'delivery' && (
+                cotizacion.direccion_confirmada ? (
+                  <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 flex items-center gap-1">
+                    <Check className="w-3 h-3" />
+                    <span>Dirección Confirmada</span>
+                  </span>
+                ) : (
+                  <span className="text-[10px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200 flex items-center gap-1">
+                    <span>⚠️ Pendiente de Confirmar</span>
+                  </span>
+                )
+              )}
+            </div>
+
+            {cotizacion.estado !== 'convertida' && !isEditingDespacho && (
+              <button
+                type="button"
+                onClick={handleStartEditDespacho}
+                className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-crema hover:bg-trigo-100 text-chocolate-700 text-xs font-bold border border-trigo-300 transition-all shadow-2xs"
+              >
+                <Edit3 className="w-3.5 h-3.5 text-chocolate-600" />
+                <span>Confirmar / Editar Dirección</span>
+              </button>
+            )}
+          </div>
+
+          {/* Formulario de Edición Directa de Dirección / Despacho */}
+          {isEditingDespacho ? (
+            <div className="bg-crema/40 p-3.5 rounded-2xl border border-frambuesa-200 space-y-3 animate-scale-up text-xs">
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-chocolate-800">
+                  Modificar Datos de Despacho & Pago:
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setIsEditingDespacho(false)}
+                  className="p-1 rounded-lg hover:bg-gray-200 text-gray-500"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="sm:col-span-2">
+                  <label className="block font-semibold text-chocolate-700 mb-1">Modalidad de Despacho</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setEditTipoDespacho('retiro')}
+                      className={`py-1.5 px-3 rounded-xl font-bold text-xs border transition ${
+                        editTipoDespacho === 'retiro'
+                          ? 'bg-chocolate-700 text-white border-chocolate-700 shadow-sm'
+                          : 'bg-white text-chocolate-700 border-trigo-300'
+                      }`}
+                    >
+                      🏬 Retiro en Taller
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditTipoDespacho('delivery');
+                        if (!editZonaId && zonasDelivery.length > 0) {
+                          const f = zonasDelivery.find(z => z.activo) || zonasDelivery[0];
+                          if (f) setEditZonaId(f.id);
+                        }
+                      }}
+                      className={`py-1.5 px-3 rounded-xl font-bold text-xs border transition ${
+                        editTipoDespacho === 'delivery'
+                          ? 'bg-frambuesa-500 text-white border-frambuesa-500 shadow-sm'
+                          : 'bg-white text-chocolate-700 border-trigo-300'
+                      }`}
+                    >
+                      🛵 Envío a Domicilio
+                    </button>
+                  </div>
+                </div>
+
+                {editTipoDespacho === 'delivery' && (
+                  <>
+                    <div className="sm:col-span-2">
+                      <label className="block font-semibold text-chocolate-700 mb-1">Zona de Envío</label>
+                      <select
+                        value={editZonaId}
+                        onChange={(e) => setEditZonaId(e.target.value === '' ? '' : Number(e.target.value))}
+                        className="w-full px-3 py-2 rounded-xl border border-trigo-300 bg-white font-medium text-xs"
+                      >
+                        <option value="">-- Seleccionar zona --</option>
+                        {zonasDelivery.filter(z => z.activo).map((z) => (
+                          <option key={z.id} value={z.id}>
+                            {z.nombre} — {formatCurrency(z.tarifa)} ({z.tiempo_estimado_min || 45} min)
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block font-semibold text-chocolate-700 mb-1">Dirección Exacta de Entrega *</label>
+                      <input
+                        type="text"
+                        value={editDireccion}
+                        onChange={(e) => setEditDireccion(e.target.value)}
+                        placeholder="Calle, Número, Apto, Sector..."
+                        className="w-full px-3 py-2 rounded-xl border border-trigo-300 bg-white text-xs"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block font-semibold text-chocolate-700 mb-1">Punto de Referencia *</label>
+                      <input
+                        type="text"
+                        value={editPuntoRef}
+                        onChange={(e) => setEditPuntoRef(e.target.value)}
+                        placeholder="Frente a..., portón color..."
+                        className="w-full px-3 py-2 rounded-xl border border-trigo-300 bg-white text-xs"
+                      />
+                    </div>
+
+                    {deliveryUsers.length > 0 && (
+                      <div className="sm:col-span-2 flex items-center gap-1.5 flex-wrap">
+                        <span className="text-[10px] font-bold text-chocolate-700">Choferes en equipo:</span>
+                        {deliveryUsers.map((u) => (
+                          <button
+                            key={u.id}
+                            type="button"
+                            onClick={() => {
+                              setEditRepartidor(u.nombre_completo);
+                              if (u.telefono) setEditRepartidorTel(u.telefono);
+                            }}
+                            className="px-2 py-0.5 rounded-lg bg-white hover:bg-amber-100 text-stone-700 border border-trigo-300 text-[10px] font-semibold"
+                          >
+                            🛵 {u.nombre_completo}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+
+                    <div>
+                      <label className="block font-semibold text-chocolate-700 mb-1">Chofer / Repartidor</label>
+                      <input
+                        type="text"
+                        value={editRepartidor}
+                        onChange={(e) => setEditRepartidor(e.target.value)}
+                        placeholder="Nombre del repartidor"
+                        className="w-full px-3 py-2 rounded-xl border border-trigo-300 bg-white text-xs"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block font-semibold text-chocolate-700 mb-1">Teléfono del Chofer</label>
+                      <input
+                        type="tel"
+                        value={editRepartidorTel}
+                        onChange={(e) => setEditRepartidorTel(e.target.value)}
+                        placeholder="Ej: 849-555-0101"
+                        className="w-full px-3 py-2 rounded-xl border border-trigo-300 bg-white text-xs"
+                      />
+                    </div>
+
+                    <div className="sm:col-span-2">
+                      <label className="block font-semibold text-chocolate-700 mb-1">¿Cómo se pagará el Delivery?</label>
+                      <div className="grid grid-cols-2 gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setEditPagoDelivery('efectivo_aparte')}
+                          className={`p-2 rounded-xl border text-left text-xs font-semibold ${
+                            editPagoDelivery === 'efectivo_aparte'
+                              ? 'border-frambuesa-500 bg-frambuesa-50 text-frambuesa-900 font-bold'
+                              : 'border-trigo-300 bg-white text-chocolate-700'
+                          }`}
+                        >
+                          💵 En efectivo aparte al chofer
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setEditPagoDelivery('completo')}
+                          className={`p-2 rounded-xl border text-left text-xs font-semibold ${
+                            editPagoDelivery === 'completo'
+                              ? 'border-frambuesa-500 bg-frambuesa-50 text-frambuesa-900 font-bold'
+                              : 'border-trigo-300 bg-white text-chocolate-700'
+                          }`}
+                        >
+                          📦 Completo con el pedido
+                        </button>
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                <div className="sm:col-span-2">
+                  <label className="block font-semibold text-chocolate-700 mb-1">Forma de Pago del Cliente</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setEditMetodoPago('transferencia')}
+                      className={`py-1.5 px-3 rounded-xl font-bold text-xs border ${
+                        editMetodoPago === 'transferencia'
+                          ? 'bg-chocolate-700 text-white border-chocolate-700'
+                          : 'bg-white text-chocolate-700 border-trigo-300'
+                      }`}
+                    >
+                      🏦 Transferencia Bancaria
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setEditMetodoPago('efectivo')}
+                      className={`py-1.5 px-3 rounded-xl font-bold text-xs border ${
+                        editMetodoPago === 'efectivo'
+                          ? 'bg-emerald-600 text-white border-emerald-600'
+                          : 'bg-white text-chocolate-700 border-trigo-300'
+                      }`}
+                    >
+                      💵 Efectivo
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-center justify-end gap-2 pt-2 border-t border-trigo-200">
+                <button
+                  type="button"
+                  onClick={() => setIsEditingDespacho(false)}
+                  className="px-3 py-1.5 rounded-xl border border-trigo-300 text-chocolate-600 hover:bg-gray-100 text-xs"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  disabled={isSavingDespacho}
+                  onClick={() => handleSaveDespacho(false)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-chocolate-700 hover:bg-chocolate-800 text-white font-bold text-xs"
+                >
+                  <Save className="w-3.5 h-3.5" />
+                  <span>{isSavingDespacho ? 'Guardando...' : 'Guardar Cambios'}</span>
+                </button>
+                <button
+                  type="button"
+                  disabled={isSavingDespacho}
+                  onClick={() => handleSaveDespacho(true)}
+                  className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-sm"
+                >
+                  <Check className="w-3.5 h-3.5" />
+                  <span>{isSavingDespacho ? 'Guardando...' : 'Confirmar Dirección con Cliente'}</span>
+                </button>
+              </div>
+            </div>
+          ) : (
+            /* Vista Normal Resumida de Despacho */
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+              <div>
+                <span className="text-gray-500 font-medium block">Modalidad:</span>
+                <span className="font-bold text-chocolate-900 flex items-center gap-1.5 mt-0.5">
+                  {cotizacion.tipo_despacho === 'delivery' ? (
+                    <>
+                      <Truck className="w-4 h-4 text-frambuesa-600" />
+                      <span>Envío a Domicilio</span>
+                    </>
+                  ) : (
+                    <>
+                      <Store className="w-4 h-4 text-chocolate-600" />
+                      <span>Retiro en Taller</span>
+                    </>
+                  )}
+                </span>
+              </div>
+
+              <div>
+                <span className="text-gray-500 font-medium block">Dirección & Referencia:</span>
+                {cotizacion.tipo_despacho === 'delivery' ? (
+                  <div className="mt-0.5">
+                    <span className="font-semibold text-chocolate-900 block truncate" title={cotizacion.direccion_entrega}>
+                      {cotizacion.direccion_entrega || 'Sin dirección acordada'}
+                    </span>
+                    {cotizacion.punto_referencia && (
+                      <span className="text-[11px] text-gray-500 block truncate" title={cotizacion.punto_referencia}>
+                        Ref: {cotizacion.punto_referencia}
+                      </span>
+                    )}
+                  </div>
+                ) : (
+                  <span className="font-medium text-chocolate-700 mt-0.5 block">
+                    Taller Delicias del Valle
+                  </span>
+                )}
+              </div>
+
+              <div>
+                <span className="text-gray-500 font-medium block">Chofer / Repartidor:</span>
+                <span className="font-semibold text-chocolate-900 flex items-center gap-1 mt-0.5">
+                  {cotizacion.repartidor_nombre ? (
+                    <>
+                      <span>🛵 {cotizacion.repartidor_nombre}</span>
+                      {cotizacion.repartidor_telefono && (
+                        <span className="text-gray-500 text-[11px]">({cotizacion.repartidor_telefono})</span>
+                      )}
+                    </>
+                  ) : (
+                    <span className="text-gray-400 font-normal">Por asignar en taller</span>
+                  )}
+                </span>
+              </div>
+
+              <div>
+                <span className="text-gray-500 font-medium block">Condiciones de Pago:</span>
+                <div className="mt-0.5 space-y-0.5">
+                  <span className="font-bold text-chocolate-800 block">
+                    {cotizacion.metodo_pago === 'efectivo' ? '💵 Efectivo' : cotizacion.metodo_pago === 'tarjeta' ? '💳 Tarjeta' : '🏦 Transferencia'}
+                  </span>
+                  {cotizacion.tipo_despacho === 'delivery' && (
+                    <span className="text-[10px] text-frambuesa-600 font-semibold block">
+                      {cotizacion.pago_delivery === 'efectivo_aparte' || cotizacion.cobro_delivery_al_recibir
+                        ? '🛵 Delivery: en efectivo aparte al chofer'
+                        : '📦 Delivery: incluido en total'}
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
         {/* Tabla de Items */}
         <div className="border border-trigo-200 rounded-2xl overflow-hidden shadow-sm">
           <table className="w-full text-left text-xs">
@@ -489,17 +883,12 @@ export const QuoteDetailModal: React.FC<QuoteDetailModalProps> = ({
                   <td className="py-3 px-4">
                     <p className="font-bold text-chocolate-900 text-sm">{item.receta_nombre}</p>
                     <p className="text-xs text-chocolate-600 font-medium mt-0.5">
-                      {item.tamano_porciones}
+                      {formatDisplayTamano(item.tamano_porciones)}
                       {item.masa_base && !item.masa_base.toLowerCase().startsWith('ningun') && ` • Masa: ${item.masa_base}`}
                       {item.relleno && !item.relleno.toLowerCase().startsWith('ningun') && ` • Relleno: ${item.relleno}`}
                     </p>
                     {item.decoracion && !item.decoracion.toLowerCase().startsWith('ningun') && (
                       <p className="text-xs text-gray-500">Decoración: {item.decoracion}</p>
-                    )}
-                    {item.variables_receta && item.variables_receta.length > 0 && (
-                      <p className="text-[11px] text-emerald-700 font-semibold mt-1">
-                        🎨 Variables de receta: {item.variables_receta.join(', ')}
-                      </p>
                     )}
                     {item.dedicatoria && (
                       <p className="text-xs text-frambuesa-700 font-semibold italic mt-0.5">
@@ -531,14 +920,30 @@ export const QuoteDetailModal: React.FC<QuoteDetailModalProps> = ({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="bg-crema/70 p-4 rounded-2xl border border-trigo-200 text-xs space-y-1.5">
             <span className="font-bold text-chocolate-800 uppercase block mb-1">
-              Esquema de Pago 50/50:
+              Esquema de Pago 50/50 ({cotizacion.metodo_pago === 'efectivo' ? 'Efectivo' : cotizacion.metodo_pago === 'tarjeta' ? 'Tarjeta' : 'Transferencia'}):
             </span>
-            <p className="text-chocolate-700">
-              • <b>50% de anticipo al confirmar:</b> {formatCurrency(cotizacion.total * 0.5)}
-            </p>
-            <p className="text-chocolate-700">
-              • <b>50% saldo contra entrega:</b> {formatCurrency(cotizacion.total * 0.5)}
-            </p>
+            {cotizacion.tipo_despacho === 'delivery' && (cotizacion.pago_delivery === 'efectivo_aparte' || cotizacion.cobro_delivery_al_recibir) ? (
+              <>
+                <p className="text-chocolate-700">
+                  • <b>50% de anticipo (Productos):</b> {formatCurrency(Math.max(0, cotizacion.subtotal - (cotizacion.descuento || 0)) * 0.5)}
+                </p>
+                <p className="text-chocolate-700">
+                  • <b>50% saldo al entregar (Productos):</b> {formatCurrency(Math.max(0, cotizacion.subtotal - (cotizacion.descuento || 0)) * 0.5)}
+                </p>
+                <p className="text-frambuesa-700 font-bold">
+                  • <b>Flete Delivery:</b> {formatCurrency(cotizacion.costo_delivery || cotizacion.costo_envio || 0)} (Se paga en EFECTIVO APARTE al chofer al recibir)
+                </p>
+              </>
+            ) : (
+              <>
+                <p className="text-chocolate-700">
+                  • <b>50% de anticipo al confirmar:</b> {formatCurrency(cotizacion.total * 0.5)}
+                </p>
+                <p className="text-chocolate-700">
+                  • <b>50% saldo contra entrega:</b> {formatCurrency(cotizacion.total * 0.5)}
+                </p>
+              </>
+            )}
             {cotizacion.notas && (
               <p className="text-gray-500 italic pt-2 border-t border-trigo-200">
                 Nota: {cotizacion.notas}
@@ -562,7 +967,14 @@ export const QuoteDetailModal: React.FC<QuoteDetailModalProps> = ({
             {cotizacion.costo_envio > 0 && (
               <div className="flex justify-between text-chocolate-700">
                 <span>Domicilio / Envío:</span>
-                <span>{formatCurrency(cotizacion.costo_envio)}</span>
+                <span>
+                  {formatCurrency(cotizacion.costo_envio)}
+                  {cotizacion.tipo_despacho === 'delivery' && (cotizacion.pago_delivery === 'efectivo_aparte' || cotizacion.cobro_delivery_al_recibir) && (
+                    <span className="text-[10px] text-gray-400 block text-right font-normal">
+                      (en efectivo aparte al chofer)
+                    </span>
+                  )}
+                </span>
               </div>
             )}
             <div className="flex justify-between pt-2 border-t-2 border-chocolate-700 font-extrabold text-sm text-chocolate-900">
