@@ -114,6 +114,7 @@ export function calcularCostosReceta(
   const precioSugeridoMarkup = redondearPrecioHaciaArribaCero(precioSugeridoMarkupRaw);
 
   const gananciaEstimada = precioSugeridoMargenVenta - costoTotalProduccion;
+  const gananciaEstimadaRaw = precioSugeridoMargenVentaRaw - costoTotalProduccion;
 
   return {
     costo_ingredientes_fijos: costoFijos,
@@ -128,8 +129,12 @@ export function calcularCostosReceta(
     costo_mano_obra: costoManoObra,
     costo_total_produccion: costoTotalProduccion,
     precio_sugerido_markup: precioSugeridoMarkup,
+    precio_sugerido_markup_raw: precioSugeridoMarkupRaw,
     precio_sugerido_margen_venta: precioSugeridoMargenVenta,
+    precio_sugerido_margen_venta_raw: precioSugeridoMargenVentaRaw,
+    precio_sugerido_venta: precioSugeridoMargenVenta,
     ganancia_estimada: gananciaEstimada,
+    ganancia_estimada_raw: gananciaEstimadaRaw,
   };
 }
 

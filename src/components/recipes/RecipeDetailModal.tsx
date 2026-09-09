@@ -732,13 +732,24 @@ export const RecipeDetailModal: React.FC<RecipeDetailModalProps> = ({
                       <span className="text-xs font-bold text-emerald-900 block">
                         {activeVariableIds.size === 0 ? 'Precio Base de Venta:' : 'Precio Final de Venta:'}
                       </span>
-                      <span className="text-[10px] text-emerald-700">
+                      <span className="text-[10px] text-emerald-700 block">
                         Ganancia neta: {formatCurrency(costBreakdown.ganancia_estimada)}
                       </span>
                     </div>
-                    <span className="text-2xl font-black text-emerald-700">
-                      {formatCurrency(costBreakdown.precio_sugerido_margen_venta)}
-                    </span>
+                    <div className="text-right">
+                      <div className="text-xs text-chocolate-700 font-semibold flex items-center justify-end gap-1 mb-0.5">
+                        <span className="text-[10px] text-gray-500 font-medium uppercase tracking-wider">Precio Real:</span>
+                        <span className="font-mono font-bold text-chocolate-900">
+                          {formatCurrency(costBreakdown.precio_sugerido_margen_venta_raw ?? costBreakdown.precio_sugerido_margen_venta)}
+                        </span>
+                      </div>
+                      <div className="text-2xl font-black text-emerald-700 leading-none">
+                        {formatCurrency(costBreakdown.precio_sugerido_margen_venta)}
+                      </div>
+                      <span className="text-[10px] text-emerald-800 font-medium block mt-0.5">
+                        (Redondeado al 0 superior)
+                      </span>
+                    </div>
                   </div>
 
                   {/* Comparativa Dinámica: Base vs Variables */}
@@ -746,7 +757,12 @@ export const RecipeDetailModal: React.FC<RecipeDetailModalProps> = ({
                     <div className="bg-canvas p-3 rounded-xl border border-trigo-200 space-y-1.5 text-xs">
                       <div className="flex items-center justify-between text-chocolate-700">
                         <span>Precio Base (Insumos Fijos):</span>
-                        <span className="font-bold text-chocolate-900">{formatCurrency(costBasePuro.precio_sugerido_margen_venta)}</span>
+                        <div className="text-right">
+                          <span className="text-[10px] text-gray-500 block font-normal">
+                            Real: {formatCurrency(costBasePuro.precio_sugerido_margen_venta_raw ?? costBasePuro.precio_sugerido_margen_venta)}
+                          </span>
+                          <span className="font-bold text-chocolate-900">{formatCurrency(costBasePuro.precio_sugerido_margen_venta)}</span>
+                        </div>
                       </div>
                       {activeVariableIds.size > 0 ? (
                         <div className="flex items-center justify-between text-emerald-800 font-semibold text-[11px] pt-1 border-t border-trigo-200">

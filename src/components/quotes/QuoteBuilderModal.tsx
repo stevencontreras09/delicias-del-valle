@@ -17,6 +17,7 @@ import {
   calcularCostoIngrediente,
   getRecipePortionsCount,
   getPorcionOpciones,
+  redondearPrecioHaciaArribaCero,
 } from '../../utils/calculations';
 import {
   Plus,
@@ -30,6 +31,7 @@ import {
   Package,
   Settings,
   UserCheck,
+  DollarSign,
 } from 'lucide-react';
 import { OptionsManagerModal, CategoriaOpcion } from './OptionsManagerModal';
 
@@ -444,6 +446,7 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
   }, [selectedExtras, extrasOpciones]);
   const [cantidad, setCantidad] = useState<number>(1);
   const [precioBaseManual, setPrecioBaseManual] = useState<number | ''>('');
+  const [tipoPrecioSeleccionado, setTipoPrecioSeleccionado] = useState<'redondeado' | 'real' | 'personalizado'>('redondeado');
 
   const handleCustomMiniQuoteChange = (count: number) => {
     const validCount = Math.max(1, count);
@@ -619,6 +622,10 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
     : null;
 
   const precioBaseRecetaCalculado = calcReceta ? calcReceta.precio_sugerido_margen_venta : 1500;
+  const precioBaseRecetaReal = calcReceta
+    ? (calcReceta.precio_sugerido_margen_venta_raw ?? calcReceta.precio_sugerido_margen_venta)
+    : 1500;
+
   const diferenciaPrecioVariablesReceta = calcReceta && calcRecetaBasePuro
     ? Math.max(0, calcReceta.precio_sugerido_margen_venta - calcRecetaBasePuro.precio_sugerido_margen_venta)
     : 0;
@@ -639,23 +646,32 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
   const factorDeco = factorReceta >= 1 ? Math.min(2.5, factorReceta) : 0.7;
   const costoDecoracion = (opcionDecoObj.precio_adicional_base || 0) * factorDeco;
 
+  const costoPersonalizaciones = costoMasa + costoRelleno + costoDecoracion;
+
   // Extras adicionales por unidad
   const totalExtrasUnitario = selectedExtras.reduce((sum, extId) => {
     const ext = extrasOpciones.find((e) => e.id === extId);
     return sum + (ext ? ext.precio : 0);
   }, 0);
 
-  // Precio Sugerido Total con todas las personalizaciones
-  const precioSugeridoConPersonalizacion =
-    precioBaseRecetaCalculado + costoMasa + costoRelleno + costoDecoracion;
+  // Precios Sugeridos Totales del Producto (Receta + Masa + Relleno + Decoración)
+  const precioSugeridoRedondeado = redondearPrecioHaciaArribaCero(precioBaseRecetaCalculado + costoPersonalizaciones);
+  const precioSugeridoReal = Number((precioBaseRecetaReal + costoPersonalizaciones).toFixed(2));
 
-  // Precio Unitario Final (manual o calculado)
+  // Precio Unitario Final (manual o según modo seleccionado)
   const precioUnitarioFinal =
-    precioBaseManual !== '' && typeof precioBaseManual === 'number'
+    tipoPrecioSeleccionado === 'personalizado' && precioBaseManual !== '' && typeof precioBaseManual === 'number'
       ? precioBaseManual
-      : precioSugeridoConPersonalizacion;
+      : tipoPrecioSeleccionado === 'real'
+      ? precioSugeridoReal
+      : precioSugeridoRedondeado;
 
   const subtotalItemActual = (precioUnitarioFinal + totalExtrasUnitario) * cantidad;
+
+  const handleSelectTipoPrecio = (tipo: 'real' | 'redondeado') => {
+    setTipoPrecioSeleccionado(tipo);
+    setPrecioBaseManual(tipo === 'real' ? precioSugeridoReal : precioSugeridoRedondeado);
+  };
 
   const handleAddItem = () => {
     if (!currentReceta) return;
@@ -688,6 +704,9 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
       factor_receta: factorReceta,
       variables_receta: variablesRecetaNombres,
       variables_seleccionadas: Array.from(activeRecipeVariableIds),
+      tipo_precio_aplicado: tipoPrecioSeleccionado,
+      precio_real_base: precioSugeridoReal,
+      precio_redondeado_base: precioSugeridoRedondeado,
     };
 
     setItems((prev) => [...prev, newItem]);
@@ -698,6 +717,22 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
     setActiveRecipeVariableIds(new Set());
     setCantidad(1);
     setPrecioBaseManual('');
+    setTipoPrecioSeleccionado('redondeado');
+  };
+
+  const handleUpdateItemPrice = (id: string, newPrice: number) => {
+    setItems((prev) =>
+      prev.map((i) => {
+        if (i.id !== id) return i;
+        const validPrice = Math.max(0, isNaN(newPrice) ? 0 : newPrice);
+        return {
+          ...i,
+          precio_unitario: validPrice,
+          subtotal: Number((validPrice * i.cantidad).toFixed(2)),
+          tipo_precio_aplicado: 'personalizado',
+        };
+      })
+    );
   };
 
   const handleRemoveItem = (id: string) => {
@@ -1302,19 +1337,42 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
 
             {/* Precio Unitario Personalizado (Opcional) */}
             <div>
-              <label className="block font-bold text-chocolate-700 mb-1">
-                Precio Unitario Personalizado (Opcional)
-              </label>
-              <input
-                type="number"
-                step="1"
-                placeholder={`Calculado: ${formatCurrency(precioSugeridoConPersonalizacion)}`}
-                value={precioBaseManual}
-                onChange={(e) =>
-                  setPrecioBaseManual(e.target.value === '' ? '' : parseFloat(e.target.value))
-                }
-                className="w-full px-3 py-2.5 rounded-xl border border-trigo-300 focus:ring-2 focus:ring-frambuesa-400 focus:outline-none bg-white font-semibold text-chocolate-900"
-              />
+              <div className="flex items-center justify-between mb-1">
+                <label className="block font-bold text-chocolate-700">
+                  Precio Unitario
+                </label>
+                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
+                  tipoPrecioSeleccionado === 'real'
+                    ? 'bg-crema text-chocolate-700 border border-trigo-200'
+                    : tipoPrecioSeleccionado === 'redondeado'
+                    ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                    : 'bg-amber-50 text-amber-800 border border-amber-200'
+                }`}>
+                  {tipoPrecioSeleccionado === 'real' ? 'Real' : tipoPrecioSeleccionado === 'redondeado' ? 'Redondeado' : 'Editado'}
+                </span>
+              </div>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-gray-400">
+                  RD$
+                </span>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  placeholder={`Calculado: ${formatCurrency(tipoPrecioSeleccionado === 'real' ? precioSugeridoReal : precioSugeridoRedondeado)}`}
+                  value={
+                    precioBaseManual !== ''
+                      ? precioBaseManual
+                      : (tipoPrecioSeleccionado === 'real' ? precioSugeridoReal : precioSugeridoRedondeado)
+                  }
+                  onChange={(e) => {
+                    const val = e.target.value === '' ? '' : parseFloat(e.target.value);
+                    setPrecioBaseManual(val);
+                    setTipoPrecioSeleccionado('personalizado');
+                  }}
+                  className="w-full pl-10 pr-3 py-2.5 rounded-xl border border-trigo-300 focus:ring-2 focus:ring-frambuesa-400 focus:outline-none bg-white font-mono font-bold text-chocolate-900"
+                />
+              </div>
             </div>
 
             {/* Dedicatoria / Tarjeta con Mensaje */}
@@ -1549,20 +1607,134 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
             </div>
           </div>
 
+          {/* Selector de Modalidad de Precio (Real vs Redondeado) y Edición Libre */}
+          <div className="bg-canvas/80 p-4 rounded-2xl border-2 border-trigo-300 shadow-sm space-y-3">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <span className="text-xs font-black text-chocolate-900 flex items-center gap-1.5 uppercase tracking-wide">
+                  <DollarSign className="w-4 h-4 text-emerald-600" />
+                  Modalidad de Precio Unitario
+                </span>
+                <p className="text-[11px] text-gray-500 mt-0.5">
+                  Selecciona entre el precio de costo real exacto o el redondeado comercial, o escribe un precio personalizado.
+                </p>
+              </div>
+
+              {/* Botones de Selección Rápida */}
+              <div className="flex items-center gap-1.5 bg-white p-1 rounded-2xl border border-trigo-300 shadow-sm self-start sm:self-auto">
+                <button
+                  type="button"
+                  onClick={() => handleSelectTipoPrecio('real')}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all text-left flex flex-col ${
+                    tipoPrecioSeleccionado === 'real'
+                      ? 'bg-chocolate-700 text-white shadow-sm ring-2 ring-chocolate-800'
+                      : 'text-chocolate-800 hover:bg-crema/60'
+                  }`}
+                >
+                  <span className={`text-[9px] uppercase font-semibold ${tipoPrecioSeleccionado === 'real' ? 'text-trigo-200' : 'text-gray-500'}`}>
+                    Precio Real (Sin Redondeo)
+                  </span>
+                  <span className="font-mono text-xs font-extrabold">
+                    {formatCurrency(precioSugeridoReal)}
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleSelectTipoPrecio('redondeado')}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all text-left flex flex-col ${
+                    tipoPrecioSeleccionado === 'redondeado'
+                      ? 'bg-emerald-600 text-white shadow-sm ring-2 ring-emerald-700'
+                      : 'text-chocolate-800 hover:bg-crema/60'
+                  }`}
+                >
+                  <span className={`text-[9px] uppercase font-semibold ${tipoPrecioSeleccionado === 'redondeado' ? 'text-emerald-100' : 'text-gray-500'}`}>
+                    Precio Redondeado (0 Superior)
+                  </span>
+                  <span className="font-mono text-xs font-extrabold">
+                    {formatCurrency(precioSugeridoRedondeado)}
+                  </span>
+                </button>
+              </div>
+            </div>
+
+            {/* Input Editable de Precio Unitario */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-2.5 border-t border-trigo-200">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-chocolate-800">
+                  Precio Unitario Base Aplicado:
+                </span>
+                <span className="text-[11px] text-gray-500">
+                  (Masa, relleno, deco y receta incluidos; extras se suman aparte)
+                </span>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-gray-400">
+                    RD$
+                  </span>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={
+                      precioBaseManual !== ''
+                        ? precioBaseManual
+                        : tipoPrecioSeleccionado === 'real'
+                        ? precioSugeridoReal
+                        : precioSugeridoRedondeado
+                    }
+                    onChange={(e) => {
+                      const val = e.target.value === '' ? '' : parseFloat(e.target.value);
+                      setPrecioBaseManual(val);
+                      setTipoPrecioSeleccionado('personalizado');
+                    }}
+                    placeholder="0.00"
+                    className="w-36 pl-10 pr-3 py-1.5 rounded-xl border border-trigo-300 text-xs font-mono font-black text-chocolate-900 focus:ring-2 focus:ring-frambuesa-500 outline-none bg-white shadow-inner"
+                  />
+                </div>
+
+                {tipoPrecioSeleccionado === 'personalizado' ? (
+                  <span className="text-[10px] font-bold text-amber-800 bg-amber-100/80 px-2.5 py-1 rounded-lg border border-amber-300">
+                    ✏️ Manual Editado
+                  </span>
+                ) : tipoPrecioSeleccionado === 'real' ? (
+                  <span className="text-[10px] font-bold text-chocolate-700 bg-crema px-2.5 py-1 rounded-lg border border-trigo-300">
+                    ⚖️ Real sin redondeo
+                  </span>
+                ) : (
+                  <span className="text-[10px] font-bold text-emerald-800 bg-emerald-100/80 px-2.5 py-1 rounded-lg border border-emerald-300">
+                    ✨ Redondeado sugerido
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+
           {/* Desglose Dinámico en Tiempo Real y Botón Agregar */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3 border-t border-trigo-200 bg-crema/50 p-4 rounded-2xl">
             <div className="text-xs text-chocolate-700 space-y-1">
               <div className="flex flex-wrap items-center gap-x-2 gap-y-1 font-medium text-[11px]">
-                <span>Base Receta: <b className="text-chocolate-900">{formatCurrency(calcRecetaBasePuro ? calcRecetaBasePuro.precio_sugerido_margen_venta : precioBaseRecetaCalculado)}</b></span>
+                <span>
+                  Base Receta ({tipoPrecioSeleccionado === 'real' ? 'Real' : tipoPrecioSeleccionado === 'redondeado' ? 'Redondeada' : 'Manual'}):{' '}
+                  <b className="text-chocolate-900 font-mono">
+                    {formatCurrency(
+                      tipoPrecioSeleccionado === 'real'
+                        ? (calcRecetaBasePuro ? (calcRecetaBasePuro.precio_sugerido_margen_venta_raw ?? calcRecetaBasePuro.precio_sugerido_margen_venta) : precioBaseRecetaReal)
+                        : (calcRecetaBasePuro ? calcRecetaBasePuro.precio_sugerido_margen_venta : precioBaseRecetaCalculado)
+                    )}
+                  </b>
+                </span>
                 {diferenciaPrecioVariablesReceta > 0 && (
-                  <span className="text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
+                  <span className="text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200 font-mono">
                     + Variables ({activeRecipeVariableIds.size}): <b>+{formatCurrency(diferenciaPrecioVariablesReceta)}</b>
                   </span>
                 )}
-                {costoMasa > 0 && <span className="text-amber-800">+ Masa: <b>+{formatCurrency(costoMasa)}</b></span>}
-                {costoRelleno > 0 && <span className="text-indigo-800">+ Relleno: <b>+{formatCurrency(costoRelleno)}</b></span>}
-                {costoDecoracion > 0 && <span className="text-purple-800">+ Deco: <b>+{formatCurrency(costoDecoracion)}</b></span>}
-                {totalExtrasUnitario > 0 && <span className="text-emerald-800">+ Extras: <b>+{formatCurrency(totalExtrasUnitario)}</b></span>}
+                {costoMasa > 0 && <span className="text-amber-800 font-mono">+ Masa: <b>+{formatCurrency(costoMasa)}</b></span>}
+                {costoRelleno > 0 && <span className="text-indigo-800 font-mono">+ Relleno: <b>+{formatCurrency(costoRelleno)}</b></span>}
+                {costoDecoracion > 0 && <span className="text-purple-800 font-mono">+ Deco: <b>+{formatCurrency(costoDecoracion)}</b></span>}
+                {totalExtrasUnitario > 0 && <span className="text-emerald-800 font-mono">+ Extras: <b>+{formatCurrency(totalExtrasUnitario)}</b></span>}
               </div>
               <div className="text-sm font-extrabold text-frambuesa-600 flex items-center gap-2">
                 <Sparkles className="w-4 h-4" />
@@ -1639,8 +1811,27 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
                       <td className="py-3 px-3 text-center font-bold text-chocolate-800">
                         {item.cantidad}
                       </td>
-                      <td className="py-3 px-3 text-right text-gray-600 font-semibold">
-                        {formatCurrency(item.precio_unitario)}
+                      <td className="py-3 px-3 text-right">
+                        <div className="flex items-center justify-end gap-1">
+                          <span className="text-[10px] text-gray-400 font-mono">RD$</span>
+                          <input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            value={item.precio_unitario}
+                            onChange={(e) => {
+                              const val = parseFloat(e.target.value);
+                              handleUpdateItemPrice(item.id, isNaN(val) ? 0 : val);
+                            }}
+                            className="w-24 px-2 py-1 text-right text-xs font-mono font-bold text-chocolate-900 border border-trigo-300 rounded-lg focus:ring-1 focus:ring-frambuesa-500 bg-canvas/30 hover:bg-white transition-colors"
+                            title="Haz clic para editar el precio unitario de este producto"
+                          />
+                        </div>
+                        {item.tipo_precio_aplicado && (
+                          <span className="text-[9px] text-gray-400 block mt-0.5 capitalize">
+                            {item.tipo_precio_aplicado === 'real' ? 'Precio real' : item.tipo_precio_aplicado === 'redondeado' ? 'Redondeado' : 'Editado'}
+                          </span>
+                        )}
                       </td>
                       <td className="py-3 px-3 text-right font-extrabold text-chocolate-900">
                         {formatCurrency(item.subtotal)}

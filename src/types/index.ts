@@ -110,9 +110,12 @@ export interface RecetaCostosCalculados {
   costo_mano_obra: number;
   costo_total_produccion: number; // CTP = MPD + Indirectos + Operativos + Reposición + Mano Obra
   precio_sugerido_markup: number;
+  precio_sugerido_markup_raw?: number;
   precio_sugerido_margen_venta: number;
+  precio_sugerido_margen_venta_raw?: number;
   precio_sugerido_venta?: number;
   ganancia_estimada: number;
+  ganancia_estimada_raw?: number;
 }
 
 export type CategoriaExtra = 'empaque' | 'topper' | 'sticker' | 'tarjeta' | 'otro';
@@ -140,6 +143,9 @@ export interface CotizacionItem {
   factor_receta: number; // escala respecto al rendimiento base (ej: 0.5, 1, 1.5, 2)
   variables_receta?: string[]; // Nombres descriptivos de variables de la receta seleccionadas
   variables_seleccionadas?: number[]; // IDs de insumos variables seleccionados de la receta
+  tipo_precio_aplicado?: 'redondeado' | 'real' | 'personalizado';
+  precio_real_base?: number;
+  precio_redondeado_base?: number;
 }
 
 export type EstadoCotizacion = 'pendiente' | 'enviada' | 'aprobada' | 'rechazada' | 'convertida';

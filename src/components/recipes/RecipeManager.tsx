@@ -201,21 +201,30 @@ export const RecipeManager: React.FC = () => {
                   return (
                     <div className={`grid ${colsClass} gap-1 pt-2 mt-2 border-t border-trigo-100 text-[10px]`}>
                       {allowed.includes('libra') && (
-                        <div className="bg-canvas p-1 rounded-lg border border-trigo-200 text-center">
+                        <div className="bg-canvas p-1.5 rounded-xl border border-trigo-200 text-center">
                           <span className="text-gray-500 block font-medium">Libra Base</span>
-                          <span className="font-extrabold text-chocolate-900">{formatCurrency(costData.precio_sugerido_margen_venta)}</span>
+                          <span className="text-[9px] text-gray-400 block font-mono">
+                            Real: {formatCurrency(costData.precio_sugerido_margen_venta_raw ?? costData.precio_sugerido_margen_venta)}
+                          </span>
+                          <span className="font-extrabold text-chocolate-900 block">{formatCurrency(costData.precio_sugerido_margen_venta)}</span>
                         </div>
                       )}
                       {allowed.includes('porcion') && (
-                        <div className="bg-canvas p-1 rounded-lg border border-trigo-200 text-center">
+                        <div className="bg-canvas p-1.5 rounded-xl border border-trigo-200 text-center">
                           <span className="text-gray-500 block font-medium">Porción Base</span>
-                          <span className="font-extrabold text-chocolate-900">{formatCurrency(Math.max(10, Math.ceil((costData.precio_sugerido_margen_venta / (receta.rendimiento_base || 12)) / 10) * 10))}</span>
+                          <span className="text-[9px] text-gray-400 block font-mono">
+                            Real: {formatCurrency((costData.precio_sugerido_margen_venta_raw ?? costData.precio_sugerido_margen_venta) / (receta.rendimiento_base || 12))}
+                          </span>
+                          <span className="font-extrabold text-chocolate-900 block">{formatCurrency(Math.max(10, Math.ceil((costData.precio_sugerido_margen_venta / (receta.rendimiento_base || 12)) / 10) * 10))}</span>
                         </div>
                       )}
                       {allowed.includes('mini') && (
-                        <div className="bg-canvas p-1 rounded-lg border border-trigo-200 text-center">
+                        <div className="bg-canvas p-1.5 rounded-xl border border-trigo-200 text-center">
                           <span className="text-gray-500 block font-medium">12 Mini Base</span>
-                          <span className="font-extrabold text-chocolate-900">{formatCurrency(Math.max(10, Math.ceil((costData.precio_sugerido_margen_venta * 0.4) / 10) * 10))}</span>
+                          <span className="text-[9px] text-gray-400 block font-mono">
+                            Real: {formatCurrency((costData.precio_sugerido_margen_venta_raw ?? costData.precio_sugerido_margen_venta) * 0.4)}
+                          </span>
+                          <span className="font-extrabold text-chocolate-900 block">{formatCurrency(Math.max(10, Math.ceil((costData.precio_sugerido_margen_venta * 0.4) / 10) * 10))}</span>
                         </div>
                       )}
                     </div>
@@ -234,10 +243,10 @@ export const RecipeManager: React.FC = () => {
                   </div>
 
                   <div className="text-right">
-                    <span className="text-emerald-800 font-bold block text-[11px]">
-                      Precio Base Sugerido:
+                    <span className="text-gray-500 font-medium text-[10px] block">
+                      Real: <b className="text-chocolate-800">{formatCurrency(costData.precio_sugerido_margen_venta_raw ?? costData.precio_sugerido_margen_venta)}</b>
                     </span>
-                    <span className="text-base font-extrabold text-emerald-700">
+                    <span className="text-base font-extrabold text-emerald-700 block">
                       {formatCurrency(costData.precio_sugerido_margen_venta)}
                     </span>
                   </div>
