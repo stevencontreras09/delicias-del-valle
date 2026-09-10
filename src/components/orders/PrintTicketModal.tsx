@@ -30,7 +30,7 @@ function buildPrintHtml(pedido: Pedido, format: PrintFormat): string {
   <style>
     @page {
       size: letter portrait;
-      margin: 10mm 12mm;
+      margin: 8mm 10mm;
     }
     * {
       box-sizing: border-box;
@@ -43,26 +43,26 @@ function buildPrintHtml(pedido: Pedido, format: PrintFormat): string {
       background: #fff;
       margin: 0;
       padding: 0;
-      font-size: 11.5px;
-      line-height: 1.35;
+      font-size: 11px;
+      line-height: 1.3;
     }
     .header {
       display: flex;
       justify-content: space-between;
       align-items: flex-start;
       border-bottom: 2px solid #5D4037;
-      padding-bottom: 8px;
-      margin-bottom: 12px;
+      padding-bottom: 6px;
+      margin-bottom: 10px;
     }
     .brand-title {
-      font-size: 20px;
+      font-size: 19px;
       font-weight: 900;
       color: #5D4037;
       letter-spacing: -0.5px;
       text-transform: uppercase;
     }
     .brand-sub {
-      font-size: 10px;
+      font-size: 9.5px;
       font-weight: 600;
       color: #8D6E63;
       margin-top: 1px;
@@ -71,18 +71,18 @@ function buildPrintHtml(pedido: Pedido, format: PrintFormat): string {
       text-align: right;
     }
     .doc-number {
-      font-size: 16px;
+      font-size: 15px;
       font-weight: 900;
       color: #9E2A2B;
       font-family: monospace;
     }
     .doc-type {
-      font-size: 9px;
+      font-size: 8.5px;
       font-weight: 800;
       text-transform: uppercase;
       background: #FDF4E0;
       color: #5D4037;
-      padding: 2px 8px;
+      padding: 2px 7px;
       border-radius: 4px;
       display: inline-block;
       margin-top: 2px;
@@ -91,29 +91,29 @@ function buildPrintHtml(pedido: Pedido, format: PrintFormat): string {
     .grid-2 {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 10px;
-      margin-bottom: 12px;
+      gap: 8px;
+      margin-bottom: 10px;
     }
     .info-box {
       border: 1px solid #D7CCC8;
       border-radius: 6px;
-      padding: 8px 10px;
+      padding: 6px 9px;
       background: #FAFAFA;
     }
     .box-title {
-      font-size: 9.5px;
+      font-size: 9px;
       font-weight: 800;
       color: #5D4037;
       text-transform: uppercase;
       letter-spacing: 0.5px;
       border-bottom: 1px solid #EFEBE9;
-      padding-bottom: 3px;
-      margin-bottom: 5px;
+      padding-bottom: 2px;
+      margin-bottom: 4px;
     }
     .info-row {
       display: flex;
       justify-content: space-between;
-      margin-bottom: 3px;
+      margin-bottom: 2px;
     }
     .info-label {
       color: #6D4C41;
@@ -131,21 +131,21 @@ function buildPrintHtml(pedido: Pedido, format: PrintFormat): string {
       border-radius: 4px;
       font-weight: 800;
       color: #E65100;
-      margin-top: 4px;
+      margin-top: 3px;
     }
     table.items-table {
       width: 100%;
       border-collapse: collapse;
-      margin-bottom: 12px;
-      font-size: 11px;
+      margin-bottom: 10px;
+      font-size: 10.5px;
     }
     table.items-table th {
       background: #5D4037;
       color: #fff;
       font-weight: 800;
       text-transform: uppercase;
-      font-size: 9px;
-      padding: 6px 8px;
+      font-size: 8.5px;
+      padding: 5px 7px;
       border: 1px solid #5D4037;
       text-align: left;
     }
@@ -153,7 +153,7 @@ function buildPrintHtml(pedido: Pedido, format: PrintFormat): string {
       text-align: right;
     }
     table.items-table td {
-      padding: 6px 8px;
+      padding: 5px 7px;
       border: 1px solid #D7CCC8;
       vertical-align: top;
     }
@@ -166,91 +166,91 @@ function buildPrintHtml(pedido: Pedido, format: PrintFormat): string {
     }
     .item-title {
       font-weight: 800;
-      font-size: 11.5px;
+      font-size: 11px;
       color: #111;
     }
     .specs-list {
-      font-size: 10px;
+      font-size: 9.5px;
       color: #4E342E;
-      margin-top: 3px;
-      line-height: 1.3;
+      margin-top: 2px;
+      line-height: 1.25;
     }
     .dedicatoria-box {
       background: #FFF9C4;
       border: 1px solid #FFF59D;
-      padding: 3px 6px;
+      padding: 2px 5px;
       border-radius: 4px;
       font-style: italic;
       font-weight: 700;
       color: #795548;
-      margin-top: 4px;
-      font-size: 10px;
+      margin-top: 3px;
+      font-size: 9.5px;
     }
     .summary-grid {
       display: grid;
-      grid-template-columns: 1.3fr 1fr;
-      gap: 12px;
-      margin-bottom: 12px;
+      grid-template-columns: 1.2fr 1fr;
+      gap: 10px;
+      margin-bottom: 8px;
     }
     .notes-box {
       border: 1px solid #D7CCC8;
       border-radius: 6px;
-      padding: 8px 10px;
+      padding: 7px 9px;
       background: #FAFAFA;
     }
     .totales-table {
       width: 100%;
       border-collapse: collapse;
-      font-size: 11px;
+      font-size: 10.5px;
     }
     .totales-table td {
-      padding: 3px 6px;
+      padding: 2px 4px;
     }
     .totales-table td.val {
       text-align: right;
       font-weight: 700;
     }
     .total-row td {
-      font-size: 13px;
+      font-size: 12px;
       font-weight: 900;
-      border-top: 1.5px solid #5D4037;
-      padding-top: 5px;
+      border-top: 1px solid #5D4037;
+      padding-top: 4px;
       color: #5D4037;
     }
     .saldo-box {
       background: #FFEBEE;
-      border: 1.5px solid #EF9A9A;
+      border: 1px solid #EF9A9A;
       color: #B71C1C;
       font-weight: 900;
-      font-size: 13px;
-      padding: 5px 8px;
-      border-radius: 6px;
+      font-size: 12px;
+      padding: 4px 7px;
+      border-radius: 5px;
       display: flex;
       justify-content: space-between;
-      margin-top: 6px;
+      margin-top: 5px;
     }
-    .signatures-grid {
+    .signatures-row {
       display: grid;
-      grid-template-columns: 1fr 1fr 1fr;
-      gap: 12px;
-      margin-top: 18px;
-      padding-top: 10px;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      margin-top: 10px;
+      padding-top: 6px;
     }
     .sig-box {
-      border-top: 1px dashed #8D6E63;
+      border-top: 1px solid #8D6E63;
       text-align: center;
-      padding-top: 4px;
-      font-size: 9px;
+      padding-top: 3px;
+      font-size: 8.5px;
       font-weight: 700;
       color: #5D4037;
       text-transform: uppercase;
     }
     .footer {
-      margin-top: 14px;
+      margin-top: 8px;
       border-top: 1px solid #E0E0E0;
-      padding-top: 6px;
+      padding-top: 5px;
       text-align: center;
-      font-size: 9px;
+      font-size: 8.5px;
       color: #757575;
     }
   </style>
@@ -289,11 +289,11 @@ function buildPrintHtml(pedido: Pedido, format: PrintFormat): string {
   <table class="items-table">
     <thead>
       <tr>
-        <th style="width: 35px;">Cant</th>
+        <th style="width: 32px; text-align: center;">Cant</th>
         <th>Producto & Receta</th>
-        <th style="width: 130px;">Tamaño / Porciones</th>
+        <th style="width: 120px;">Tamaño / Porciones</th>
         <th>Especificaciones de Taller (Masa, Relleno, Extras)</th>
-        <th class="num" style="width: 80px;">Subtotal</th>
+        <th class="num" style="width: 75px;">Subtotal</th>
       </tr>
     </thead>
     <tbody>
@@ -301,7 +301,7 @@ function buildPrintHtml(pedido: Pedido, format: PrintFormat): string {
         .map(
           (item) => `
         <tr>
-          <td style="font-weight: 800; font-size: 13px; text-align: center;">${item.cantidad}x</td>
+          <td style="font-weight: 800; font-size: 12px; text-align: center;">${item.cantidad}x</td>
           <td>
             <div class="item-title">${item.receta_nombre}</div>
             ${item.dedicatoria ? `<div class="dedicatoria-box">✍️ Dedicatoria: "${item.dedicatoria}"</div>` : ''}
@@ -323,50 +323,67 @@ function buildPrintHtml(pedido: Pedido, format: PrintFormat): string {
     </tbody>
   </table>
 
+  <!-- SECCIÓN INFERIOR PROPORCIONADA: TALLER Y FINANZAS A LA PAR -->
   <div class="summary-grid">
-    <div class="notes-box">
-      <div class="box-title">Notas de Producción & Observaciones</div>
-      <div style="font-size: 10.5px; color: #333; min-height: 45px;">
-        ${pedido.notas_cocina ? `<p style="margin: 0; font-style: italic;">${pedido.notas_cocina}</p>` : '<span style="color: #999;">Sin notas especiales de producción.</span>'}
-      </div>
-      ${
-        pedido.pagos && pedido.pagos.length > 0
-          ? `
-        <div style="margin-top: 6px; border-top: 1px dashed #D7CCC8; padding-top: 4px; font-size: 9.5px;">
-          <strong>Historial de Pagos Conciliados:</strong>
-          ${pedido.pagos.map((p) => `<div>• ${formatDate(p.fecha)}: ${formatCurrency(p.monto)} (${p.banco || p.metodo})</div>`).join('')}
+    <!-- COLUMNA IZQUIERDA: NOTAS DE TALLER & FIRMAS -->
+    <div class="notes-box" style="display: flex; flex-direction: column; justify-content: space-between;">
+      <div>
+        <div class="box-title">Notas de Taller & Observaciones</div>
+        <div style="font-size: 10px; color: #333;">
+          ${pedido.notas_cocina ? `<p style="margin: 0; font-style: italic;">${pedido.notas_cocina}</p>` : '<span style="color: #888;">Sin observaciones adicionales de taller.</span>'}
         </div>
-      `
-          : ''
-      }
-    </div>
-
-    <div class="notes-box" style="background: #FFF;">
-      <div class="box-title">Resumen Financiero</div>
-      <table class="totales-table">
-        <tr>
-          <td>Subtotal Productos:</td>
-          <td class="val">${formatCurrency(pedido.subtotal)}</td>
-        </tr>
         ${
-          pedido.costo_envio > 0
+          pedido.pagos && pedido.pagos.length > 0
             ? `
-          <tr>
-            <td>Flete / Envío Domicilio:</td>
-            <td class="val">${formatCurrency(pedido.costo_envio)}</td>
-          </tr>
+          <div style="margin-top: 4px; border-top: 1px dashed #D7CCC8; padding-top: 3px; font-size: 9px; color: #555;">
+            <strong>Pagos:</strong> ${pedido.pagos.map((p) => `${formatDate(p.fecha)}: ${formatCurrency(p.monto)} (${p.banco || p.metodo})`).join(' • ')}
+          </div>
         `
             : ''
         }
-        <tr class="total-row">
-          <td>TOTAL DEL PEDIDO:</td>
-          <td class="val">${formatCurrency(pedido.total)}</td>
-        </tr>
-        <tr>
-          <td style="color: #2E7D32; font-weight: 700;">Anticipo Pagado:</td>
-          <td class="val" style="color: #2E7D32;">${formatCurrency(pedido.anticipo_pagado)}</td>
-        </tr>
-      </table>
+      </div>
+
+      <!-- FIRMAS DIRECTAMENTE INTEGRADAS -->
+      <div style="margin-top: 10px; padding-top: 8px; border-top: 1px solid #EFEBE9;">
+        <div style="font-size: 8.5px; font-weight: 800; color: #8D6E63; text-transform: uppercase; margin-bottom: 12px; letter-spacing: 0.5px;">
+          Firmas de Control & Despacho
+        </div>
+        <div class="signatures-row">
+          <div class="sig-box">Pastelero / Taller</div>
+          <div class="sig-box">Recibido Conforme</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- COLUMNA DERECHA: BALANCE FINANCIERO ELEGANTE -->
+    <div class="notes-box" style="background: #FFF; display: flex; flex-direction: column; justify-content: space-between;">
+      <div>
+        <div class="box-title">Balance de Pagos & Saldo</div>
+        <table class="totales-table">
+          <tr>
+            <td style="color: #6D4C41; font-weight: 600;">Subtotal Productos:</td>
+            <td class="val">${formatCurrency(pedido.subtotal)}</td>
+          </tr>
+          ${
+            pedido.costo_envio > 0
+              ? `
+            <tr>
+              <td style="color: #6D4C41; font-weight: 600;">Envío a Domicilio:</td>
+              <td class="val">${formatCurrency(pedido.costo_envio)}</td>
+            </tr>
+          `
+              : ''
+          }
+          <tr class="total-row">
+            <td>TOTAL DEL PEDIDO:</td>
+            <td class="val">${formatCurrency(pedido.total)}</td>
+          </tr>
+          <tr>
+            <td style="color: #2E7D32; font-weight: 700; padding-top: 3px;">Anticipo Pagado:</td>
+            <td class="val" style="color: #2E7D32; font-weight: 700; padding-top: 3px;">${formatCurrency(pedido.anticipo_pagado)}</td>
+          </tr>
+        </table>
+      </div>
 
       <div class="saldo-box">
         <span>SALDO PENDIENTE:</span>
@@ -375,15 +392,8 @@ function buildPrintHtml(pedido: Pedido, format: PrintFormat): string {
     </div>
   </div>
 
-  <div class="signatures-grid">
-    <div class="sig-box">Pastelero / Taller</div>
-    <div class="sig-box">Control de Calidad</div>
-    <div class="sig-box">Recibido Conforme (Cliente)</div>
-  </div>
-
   <div class="footer">
-    Cuentas Bancarias: Banco Popular: 812-345678-9 | Banreservas: 960-123456-7 | BHD: 023-456789-0<br>
-    <strong>¡Gracias por preferir a Delicias del Valle!</strong>
+    Popular: 812-345678-9 • Banreservas: 960-123456-7 • BHD: 023-456789-0 • <strong>¡Gracias por preferir a Delicias del Valle!</strong>
   </div>
 </body>
 </html>`;
@@ -736,15 +746,15 @@ export const PrintTicketModal: React.FC<PrintTicketModalProps> = ({
         </div>
 
         {/* CONTENEDOR DE VISTA PREVIA SEGÚN EL FORMATO SELECCIONADO */}
-        <div className="overflow-x-auto p-4 bg-slate-100 rounded-2xl flex justify-center border border-slate-200 max-h-[60vh] overflow-y-auto">
+        <div className="overflow-x-auto p-4 sm:p-6 bg-slate-200/90 rounded-2xl flex justify-center border border-slate-300 max-h-[72vh] overflow-y-auto shadow-inner">
           {isHoja ? (
-            /* VISTA PREVIA: PAPEL HOJA (CARTA / A4) */
+            /* VISTA PREVIA: PAPEL HOJA (CARTA / A4) - PROPORCIONES EXACTAS Y ARMONIOSAS */
             <div
-              className="bg-white p-6 sm:p-8 rounded-xl shadow-lg border border-slate-300 w-full max-w-[650px] text-slate-800 text-xs space-y-4"
+              className="bg-white p-6 sm:p-8 rounded-2xl shadow-xl border border-slate-300 w-full max-w-[680px] text-slate-800 text-xs space-y-4 my-2"
               style={{ fontFamily: "'Segoe UI', Roboto, Helvetica, Arial, sans-serif" }}
             >
               {/* Membrete */}
-              <div className="flex justify-between items-start border-b-2 border-chocolate-800 pb-3">
+              <div className="flex justify-between items-start border-b-2 border-chocolate-800 pb-2.5">
                 <div>
                   <h3 className="text-lg font-black text-chocolate-800 tracking-tight">
                     DELICIAS DEL VALLE
@@ -757,16 +767,16 @@ export const PrintTicketModal: React.FC<PrintTicketModalProps> = ({
                   <span className="font-mono text-base font-black text-frambuesa-600">
                     {pedido.numero_factura}
                   </span>
-                  <div className="text-[9px] font-bold uppercase bg-amber-50 text-chocolate-800 px-2 py-0.5 rounded border border-amber-200 mt-1">
+                  <div className="text-[8.5px] font-bold uppercase bg-amber-50 text-chocolate-800 px-2 py-0.5 rounded border border-amber-200 mt-0.5">
                     HOJA DE PRODUCCIÓN & DESPACHO
                   </div>
                 </div>
               </div>
 
               {/* Grid Cliente y Entrega */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-[11px]">
-                <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-1">
-                  <div className="text-[9.5px] font-black uppercase tracking-wider text-chocolate-700 border-b border-slate-200 pb-1">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-[11px]">
+                <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-200 space-y-0.5">
+                  <div className="text-[9px] font-black uppercase tracking-wider text-chocolate-700 border-b border-slate-200 pb-1 mb-1">
                     Cliente & Despacho
                   </div>
                   <div><strong>Nombre:</strong> {pedido.cliente_nombre}</div>
@@ -777,13 +787,13 @@ export const PrintTicketModal: React.FC<PrintTicketModalProps> = ({
                   )}
                 </div>
 
-                <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-1">
-                  <div className="text-[9.5px] font-black uppercase tracking-wider text-chocolate-700 border-b border-slate-200 pb-1">
+                <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-200 space-y-0.5">
+                  <div className="text-[9px] font-black uppercase tracking-wider text-chocolate-700 border-b border-slate-200 pb-1 mb-1">
                     Programación de Taller
                   </div>
                   <div><strong>Emisión:</strong> {formatDate(pedido.fecha_pedido)}</div>
                   <div><strong>Estado:</strong> <span className="uppercase font-bold">{pedido.estado}</span></div>
-                  <div className="p-1.5 bg-amber-100/70 border border-amber-300 rounded-lg text-amber-900 font-black text-[11px] mt-1.5">
+                  <div className="p-1.5 bg-amber-100/70 border border-amber-300 rounded-lg text-amber-900 font-black text-[10.5px] mt-1">
                     📅 ENTREGA: {pedido.fecha_entrega} — {pedido.hora_entrega}
                   </div>
                 </div>
@@ -792,29 +802,29 @@ export const PrintTicketModal: React.FC<PrintTicketModalProps> = ({
               {/* Tabla de Productos de la Receta */}
               <div className="border border-slate-200 rounded-xl overflow-hidden">
                 <table className="w-full text-left text-xs">
-                  <thead className="bg-chocolate-800 text-white text-[10px] uppercase font-black">
+                  <thead className="bg-chocolate-800 text-white text-[9px] uppercase font-black">
                     <tr>
                       <th className="p-2 text-center w-12">Cant</th>
                       <th className="p-2">Producto & Receta</th>
-                      <th className="p-2 w-32">Tamaño</th>
+                      <th className="p-2 w-28">Tamaño</th>
                       <th className="p-2">Especificaciones de Taller</th>
                       <th className="p-2 text-right w-24">Subtotal</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-200">
+                  <tbody className="divide-y divide-slate-200 text-[11px]">
                     {pedido.items.map((item, idx) => (
                       <tr key={idx} className={idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/70'}>
-                        <td className="p-2 font-black text-center text-sm">{item.cantidad}x</td>
+                        <td className="p-2 font-black text-center text-xs">{item.cantidad}x</td>
                         <td className="p-2">
                           <div className="font-bold text-slate-900">{item.receta_nombre}</div>
                           {item.dedicatoria && (
-                            <div className="text-[10px] italic font-semibold text-amber-900 bg-amber-50 p-1 rounded mt-1 border border-amber-200">
+                            <div className="text-[9.5px] italic font-semibold text-amber-900 bg-amber-50 p-1 rounded mt-1 border border-amber-200">
                               ✍️ Dedicatoria: "{item.dedicatoria}"
                             </div>
                           )}
                         </td>
                         <td className="p-2 text-slate-700">{formatDisplayTamano(item.tamano_porciones)}</td>
-                        <td className="p-2 text-[10.5px] text-slate-600 space-y-0.5">
+                        <td className="p-2 text-[10px] text-slate-600 space-y-0.5">
                           {item.masa_base && <div>• <strong>Masa:</strong> {item.masa_base}</div>}
                           {item.relleno && <div>• <strong>Relleno:</strong> {item.relleno}</div>}
                           {item.decoracion && <div>• <strong>Cobertura:</strong> {item.decoracion}</div>}
@@ -827,48 +837,78 @@ export const PrintTicketModal: React.FC<PrintTicketModalProps> = ({
                 </table>
               </div>
 
-              {/* Totales y Notas */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
-                  <div className="text-[9.5px] font-black uppercase text-chocolate-700 border-b border-slate-200 pb-1 mb-1">
-                    Notas de Taller / Cocina
+              {/* SECCIÓN INFERIOR PROPORCIONADA: NOTAS CON FIRMAS A LA IZQUIERDA Y RESUMEN A LA DERECHA */}
+              <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 text-xs">
+                {/* Bloque Izquierdo (7 cols): Notas y Firmas Integradas */}
+                <div className="sm:col-span-7 p-3 bg-slate-50 rounded-xl border border-slate-200 flex flex-col justify-between space-y-3">
+                  <div>
+                    <div className="text-[9px] font-black uppercase text-chocolate-700 border-b border-slate-200 pb-1 mb-1.5">
+                      Notas de Taller & Observaciones
+                    </div>
+                    <p className="italic text-slate-600 text-[10.5px]">
+                      {pedido.notas_cocina || 'Sin observaciones adicionales de taller.'}
+                    </p>
+                    {pedido.pagos && pedido.pagos.length > 0 && (
+                      <div className="mt-1.5 pt-1.5 border-t border-dashed border-slate-300 text-[9.5px] text-slate-500">
+                        <strong>Historial de Pagos:</strong>{' '}
+                        {pedido.pagos.map((p) => `${formatDate(p.fecha)}: ${formatCurrency(p.monto)} (${p.banco || p.metodo})`).join(' • ')}
+                      </div>
+                    )}
                   </div>
-                  <p className="italic text-slate-600 text-[11px]">
-                    {pedido.notas_cocina || 'Sin observaciones adicionales.'}
-                  </p>
+
+                  {/* Firmas Limpias y Proporcionadas */}
+                  <div className="pt-2 border-t border-slate-200">
+                    <div className="text-[8px] font-black uppercase text-chocolate-600 tracking-wider mb-3">
+                      Control de Elaboración & Entrega:
+                    </div>
+                    <div className="grid grid-cols-2 gap-4 text-center">
+                      <div className="border-t border-slate-400 pt-1 text-[8.5px] font-bold text-slate-600 uppercase">
+                        Pastelero / Taller
+                      </div>
+                      <div className="border-t border-slate-400 pt-1 text-[8.5px] font-bold text-slate-600 uppercase">
+                        Recibido Conforme
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
-                <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-1">
-                  <div className="flex justify-between">
-                    <span className="text-slate-600">Subtotal:</span>
-                    <span className="font-bold">{formatCurrency(pedido.subtotal)}</span>
-                  </div>
-                  {pedido.costo_envio > 0 && (
-                    <div className="flex justify-between">
-                      <span className="text-slate-600">Flete / Envío:</span>
-                      <span className="font-bold">{formatCurrency(pedido.costo_envio)}</span>
+                {/* Bloque Derecho (5 cols): Resumen Financiero */}
+                <div className="sm:col-span-5 p-3 bg-white rounded-xl border border-slate-200 flex flex-col justify-between space-y-2">
+                  <div className="space-y-1">
+                    <div className="text-[9px] font-black uppercase text-chocolate-700 border-b border-slate-200 pb-1 mb-1">
+                      Balance de Cuenta
                     </div>
-                  )}
-                  <div className="flex justify-between font-black text-sm pt-1 border-t border-slate-300 text-chocolate-800">
-                    <span>TOTAL:</span>
-                    <span>{formatCurrency(pedido.total)}</span>
+                    <div className="flex justify-between text-[11px]">
+                      <span className="text-slate-600">Subtotal:</span>
+                      <span className="font-bold">{formatCurrency(pedido.subtotal)}</span>
+                    </div>
+                    {pedido.costo_envio > 0 && (
+                      <div className="flex justify-between text-[11px]">
+                        <span className="text-slate-600">Envío / Flete:</span>
+                        <span className="font-bold">{formatCurrency(pedido.costo_envio)}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between font-black text-xs pt-1 border-t border-slate-200 text-chocolate-800">
+                      <span>TOTAL PEDIDO:</span>
+                      <span>{formatCurrency(pedido.total)}</span>
+                    </div>
+                    <div className="flex justify-between text-emerald-800 font-bold text-[10.5px]">
+                      <span>Anticipo Cobrado:</span>
+                      <span>{formatCurrency(pedido.anticipo_pagado)}</span>
+                    </div>
                   </div>
-                  <div className="flex justify-between text-emerald-800 font-bold text-[11px]">
-                    <span>Anticipo Pagado:</span>
-                    <span>{formatCurrency(pedido.anticipo_pagado)}</span>
-                  </div>
-                  <div className="flex justify-between text-rose-800 font-black bg-rose-50 p-1.5 rounded-lg border border-rose-200 mt-1">
-                    <span>SALDO PENDIENTE:</span>
+
+                  {/* Saldo Pendiente Compacto y Elegante */}
+                  <div className="flex justify-between items-center text-rose-800 font-black bg-rose-50 px-2.5 py-1.5 rounded-lg border border-rose-200 text-xs">
+                    <span className="text-[10px]">SALDO PENDIENTE:</span>
                     <span>{formatCurrency(pedido.saldo_pendiente)}</span>
                   </div>
                 </div>
               </div>
 
-              {/* Firmas de Control de Calidad */}
-              <div className="grid grid-cols-3 gap-3 pt-3 border-t border-slate-200 text-center text-[9px] font-bold text-slate-500 uppercase">
-                <div className="border-t border-dashed border-slate-400 pt-1">Pastelero Taller</div>
-                <div className="border-t border-dashed border-slate-400 pt-1">Control de Calidad</div>
-                <div className="border-t border-dashed border-slate-400 pt-1">Recibido Conforme</div>
+              {/* Pie Discreto */}
+              <div className="pt-2 border-t border-slate-200 text-center text-[8.5px] text-slate-500">
+                Popular: 812-345678-9 • Banreservas: 960-123456-7 • BHD: 023-456789-0 • <strong>¡Gracias por preferir a Delicias del Valle!</strong>
               </div>
             </div>
           ) : (
@@ -906,9 +946,7 @@ export const PrintTicketModal: React.FC<PrintTicketModalProps> = ({
                 <div>Tipo: {pedido.tipo_entrega === 'domicilio' ? '🛵 A DOMICILIO' : '🏪 RETIRO EN TALLER'}</div>
                 <div className="pt-1 font-bold">CLIENTE: {pedido.cliente_nombre}</div>
                 <div>Tel: {pedido.cliente_telefono}</div>
-                {pedido.direccion_entrega && (
-                  <div className="text-[10px]">Dir: {pedido.direccion_entrega}</div>
-                )}
+                ${pedido.direccion_entrega ? `<div>Dir: ${pedido.direccion_entrega}</div>` : ''}
               </div>
 
               {/* Desglose de Productos */}
