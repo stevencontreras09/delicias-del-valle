@@ -18,6 +18,8 @@ import {
   Send,
   ShieldCheck,
   Navigation,
+  Edit2,
+  Lock,
 } from 'lucide-react';
 import { Badge } from '../ui/Badge';
 import { generarPdfPedido } from '../../utils/pdfGenerator';
@@ -31,6 +33,7 @@ interface OrderDetailModalProps {
   onClose: () => void;
   pedido: Pedido | null;
   onChangeStatus: (pedidoId: number, nuevoEstado: EstadoPedido) => void;
+  onEditPedido?: (pedido: Pedido) => void;
   onRequestPrintTicket?: (pedido: Pedido) => void;
   onRequestCancel?: (pedido: Pedido) => void;
   onRequestDelete?: (pedido: Pedido) => void;
@@ -57,6 +60,7 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({
   onClose,
   pedido,
   onChangeStatus,
+  onEditPedido,
   onRequestPrintTicket,
   onRequestCancel,
   onRequestDelete,
@@ -147,6 +151,31 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
+            {onEditPedido && pedido.estado === 'confirmado' && (
+              <button
+                type="button"
+                onClick={() => {
+                  onEditPedido(pedido);
+                  onClose();
+                }}
+                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold transition-all shadow-sm"
+                title="Editar cliente, fecha, flete o productos antes de producción"
+              >
+                <Edit2 className="w-4 h-4" />
+                <span>Editar Pedido</span>
+              </button>
+            )}
+
+            {onEditPedido && pedido.estado !== 'confirmado' && (
+              <div
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-stone-100 text-stone-400 border border-stone-200 text-xs font-medium cursor-not-allowed select-none"
+                title={`Edición bloqueada: El pedido ya se encuentra en estado "${pedido.estado}"`}
+              >
+                <Lock className="w-3.5 h-3.5" />
+                <span>Edición Bloqueada</span>
+              </div>
+            )}
+
             <button
               onClick={() => generarPdfPedido(pedido)}
               className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white border border-trigo-300 hover:bg-gray-50 text-chocolate-700 text-xs font-bold transition-all shadow-sm"

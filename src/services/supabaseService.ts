@@ -480,7 +480,7 @@ export async function syncPedidoToSupabase(pedido: Pedido): Promise<boolean> {
   if (!client) return false;
 
   try {
-    const { data: pedDb, error: pedErr } = await client.from('pedidos').upsert({
+    const payload: any = {
       id: pedido.id,
       cotizacion_id: pedido.cotizacion_id || null,
       cliente_id: pedido.cliente_id || null,
@@ -508,7 +508,17 @@ export async function syncPedidoToSupabase(pedido: Pedido): Promise<boolean> {
       repartidor_telefono: pedido.repartidor_telefono || '',
       cobro_delivery_al_recibir: Boolean(pedido.cobro_delivery_al_recibir),
       updated_at: new Date().toISOString(),
-    }).select().single();
+    };
+    if (pedido.maps_url) payload.maps_url = pedido.maps_url;
+
+    let { data: pedDb, error: pedErr } = await client.from('pedidos').upsert(payload).select().single();
+
+    if (pedErr && (pedErr.message?.includes('maps_url') || pedErr.code === 'PGRST204')) {
+      delete payload.maps_url;
+      const retry = await client.from('pedidos').upsert(payload).select().single();
+      pedDb = retry.data;
+      pedErr = retry.error;
+    }
 
     if (pedErr) return false;
 

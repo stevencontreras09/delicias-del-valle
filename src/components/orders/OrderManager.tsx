@@ -15,10 +15,12 @@ import {
   Truck,
   Send,
   ShieldCheck,
+  Edit2,
 } from 'lucide-react';
 import { formatCurrency, formatDate } from '../../utils/formatters';
 import { Badge } from '../ui/Badge';
 import { OrderDetailModal } from './OrderDetailModal';
+import { OrderEditModal } from './OrderEditModal';
 import { PaymentRecordModal } from './PaymentRecordModal';
 import { PrintTicketModal } from './PrintTicketModal';
 import { OrderCancellationDialog } from './OrderCancellationDialog';
@@ -43,6 +45,7 @@ export const OrderManager: React.FC = () => {
 
   // Modales
   const [selectedPedido, setSelectedPedido] = useState<Pedido | null>(null);
+  const [editingPedido, setEditingPedido] = useState<Pedido | null>(null);
   const [paymentPedido, setPaymentPedido] = useState<Pedido | null>(null);
   const [printTicketPedido, setPrintTicketPedido] = useState<Pedido | null>(null);
   const [cancelPedido, setCancelPedido] = useState<Pedido | null>(null);
@@ -257,6 +260,18 @@ export const OrderManager: React.FC = () => {
                             )}
                           </div>
 
+                          {/* Botón de Edición Exclusivo para Confirmados */}
+                          {pedido.estado === 'confirmado' && (
+                            <button
+                              type="button"
+                              onClick={() => setEditingPedido(pedido)}
+                              className="w-full py-1.5 px-2 rounded-lg bg-amber-500 hover:bg-amber-600 text-white text-[11px] font-bold text-center transition-colors flex items-center justify-center gap-1.5 shadow-xs"
+                            >
+                              <Edit2 className="w-3.5 h-3.5" />
+                              <span>Editar Pedido</span>
+                            </button>
+                          )}
+
                           {/* Acciones Rápidas de Logística (Para Delivery) */}
                           {isDelivery && (
                             <div className="p-2 rounded-xl bg-amber-50/80 border border-amber-200 space-y-1.5">
@@ -446,6 +461,17 @@ export const OrderManager: React.FC = () => {
                           Ver
                         </button>
 
+                        {p.estado === 'confirmado' && (
+                          <button
+                            onClick={() => setEditingPedido(p)}
+                            title="Editar pedido antes de producción"
+                            className="px-2.5 py-1 rounded-lg bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs flex items-center gap-1 shadow-xs"
+                          >
+                            <Edit2 className="w-3.5 h-3.5" />
+                            <span>Editar</span>
+                          </button>
+                        )}
+
                         {(p.tipo_despacho === 'delivery' || p.tipo_entrega === 'domicilio') && (
                           <>
                             <a
@@ -527,10 +553,22 @@ export const OrderManager: React.FC = () => {
           onClose={() => setSelectedPedido(null)}
           pedido={selectedPedido}
           onChangeStatus={pedidos.cambiarEstadoPedido}
+          onEditPedido={(p) => {
+            setSelectedPedido(null);
+            setEditingPedido(p);
+          }}
           onRequestPrintTicket={setPrintTicketPedido}
           onRequestCancel={setCancelPedido}
           onRequestDelete={setDeletePedido}
           onSavePayment={pedidos.registrarPago}
+        />
+      )}
+
+      {editingPedido && (
+        <OrderEditModal
+          isOpen={!!editingPedido}
+          onClose={() => setEditingPedido(null)}
+          pedido={editingPedido}
         />
       )}
 

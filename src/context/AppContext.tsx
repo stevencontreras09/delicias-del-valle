@@ -1714,6 +1714,54 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const updatePedido = (id: number, data: Partial<Pedido>) => {
+    const pedidoActual = pedidos.find((p) => p.id === id);
+    if (!pedidoActual) return;
+
+    // Si se modificaron los items y el inventario ya había sido descontado, recalcular la diferencia
+    if (data.items && pedidoActual.inventario_descontado) {
+      setInsumos((prevInsumos) => {
+        const updated = [...prevInsumos];
+        // 1. Revertir inventario de items anteriores
+        pedidoActual.items.forEach((item) => {
+          if (!item.receta_id) return;
+          const receta = recetas.find((r) => r.id === item.receta_id);
+          if (!receta) return;
+          const factor = (item.factor_receta || 1) * item.cantidad;
+          receta.ingredientes.forEach((ing) => {
+            const idx = updated.findIndex((i) => i.id === ing.insumo_id);
+            if (idx !== -1) {
+              updated[idx] = {
+                ...updated[idx],
+                stock_actual: updated[idx].stock_actual + ing.cantidad * factor,
+              };
+            }
+          });
+        });
+
+        // 2. Descontar inventario de items nuevos
+        data.items!.forEach((item) => {
+          if (!item.receta_id) return;
+          const receta = recetas.find((r) => r.id === item.receta_id);
+          if (!receta) return;
+          const factor = (item.factor_receta || 1) * item.cantidad;
+          receta.ingredientes.forEach((ing) => {
+            const idx = updated.findIndex((i) => i.id === ing.insumo_id);
+            if (idx !== -1) {
+              updated[idx] = {
+                ...updated[idx],
+                stock_actual: Math.max(0, updated[idx].stock_actual - ing.cantidad * factor),
+              };
+              if (isSupabaseConfigured()) {
+                syncInsumoToSupabase(updated[idx]);
+              }
+            }
+          });
+        });
+
+        return updated;
+      });
+    }
+
     let pedFactura = '';
     setPedidos((prev) =>
       prev.map((p) => {
