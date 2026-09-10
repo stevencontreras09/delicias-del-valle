@@ -125,6 +125,7 @@ export interface CotizacionExtra {
   nombre: string;
   precio: number;
   categoria?: CategoriaExtra;
+  cantidad?: number;
 }
 
 export interface CotizacionItem {
@@ -319,6 +320,9 @@ export interface Cliente {
   telefono: string;
   email?: string;
   direccion?: string;
+  punto_referencia?: string;
+  maps_url?: string;
+  zona_delivery_id?: number | null;
   alergias_preferencias?: string;
   fecha_cumpleanos?: string;
   cumpleanos_familiar?: string;

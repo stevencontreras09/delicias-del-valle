@@ -1334,8 +1334,71 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   // ==========================================
-  // COTIZACIONES
+  // COTIZACIONES & AUTO-REGISTRO DE CLIENTES CRM
   // ==========================================
+  const upsertClienteFromOrderOrQuote = (data: {
+    nombre: string;
+    telefono?: string;
+    email?: string;
+    direccion?: string;
+    punto_referencia?: string;
+    maps_url?: string;
+    zona_delivery_id?: number | null;
+  }) => {
+    if (!data.nombre || !data.nombre.trim()) return;
+    const cleanNombre = data.nombre.trim();
+    const cleanTel = data.telefono && data.telefono !== 'N/A' ? data.telefono.trim() : '';
+    const digitsTel = cleanTel.replace(/\D/g, '');
+
+    setClientes((prev) => {
+      const existingIndex = prev.findIndex((c) => {
+        const cDigits = (c.telefono || '').replace(/\D/g, '');
+        const sameName = c.nombre.trim().toLowerCase() === cleanNombre.toLowerCase();
+        const samePhone = digitsTel.length >= 7 && cDigits.length >= 7 && cDigits === digitsTel;
+        return sameName || samePhone;
+      });
+
+      if (existingIndex !== -1) {
+        const existing = prev[existingIndex];
+        const updated: Cliente = {
+          ...existing,
+          nombre: cleanNombre || existing.nombre,
+          telefono: cleanTel || existing.telefono,
+          email: data.email?.trim() || existing.email,
+          direccion: data.direccion?.trim() || existing.direccion,
+          punto_referencia: data.punto_referencia?.trim() || existing.punto_referencia,
+          maps_url: data.maps_url?.trim() || existing.maps_url,
+          zona_delivery_id: data.zona_delivery_id !== undefined ? data.zona_delivery_id : existing.zona_delivery_id,
+          updated_at: new Date().toISOString(),
+        };
+        if (isSupabaseConfigured()) {
+          syncClienteToSupabase(updated);
+        }
+        const newList = [...prev];
+        newList[existingIndex] = updated;
+        return newList;
+      } else {
+        const newId = prev.length > 0 ? Math.max(...prev.map((c) => c.id)) + 1 : 1;
+        const nuevo: Cliente = {
+          id: newId,
+          nombre: cleanNombre,
+          telefono: cleanTel || 'N/A',
+          email: data.email?.trim() || undefined,
+          direccion: data.direccion?.trim() || undefined,
+          punto_referencia: data.punto_referencia?.trim() || undefined,
+          maps_url: data.maps_url?.trim() || undefined,
+          zona_delivery_id: data.zona_delivery_id || null,
+          total_pedidos: 0,
+          created_at: new Date().toISOString(),
+        };
+        if (isSupabaseConfigured()) {
+          syncClienteToSupabase(nuevo);
+        }
+        return [nuevo, ...prev];
+      }
+    });
+  };
+
   const addCotizacion = async (
     data: Omit<Cotizacion, 'id' | 'codigo' | 'created_at'>
   ): Promise<Cotizacion | null> => {
@@ -1353,6 +1416,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       notas: data.notas ? sanitizeInput(data.notas) : undefined,
       created_at: new Date().toISOString(),
     };
+
+    // Auto-registrar o actualizar cliente con su dirección y contacto en el Mini CRM
+    upsertClienteFromOrderOrQuote({
+      nombre: newCotizacion.cliente_nombre,
+      telefono: newCotizacion.cliente_telefono,
+      email: newCotizacion.cliente_email,
+      direccion: newCotizacion.direccion_entrega,
+      punto_referencia: newCotizacion.punto_referencia,
+      maps_url: newCotizacion.maps_url,
+      zona_delivery_id: newCotizacion.zona_delivery_id,
+    });
 
     // 1. Si Supabase está configurado, sincronizar PRIMERO y capturar errores de INSERT
     if (isSupabaseConfigured()) {
@@ -1380,6 +1454,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const existing = cotizaciones.find((c) => c.id === id);
     if (!existing) return false;
     const updated: Cotizacion = { ...existing, ...data };
+
+    // Auto-actualizar cliente en el Mini CRM
+    upsertClienteFromOrderOrQuote({
+      nombre: updated.cliente_nombre,
+      telefono: updated.cliente_telefono,
+      email: updated.cliente_email,
+      direccion: updated.direccion_entrega,
+      punto_referencia: updated.punto_referencia,
+      maps_url: updated.maps_url,
+      zona_delivery_id: updated.zona_delivery_id,
+    });
 
     if (isSupabaseConfigured()) {
       const res = await syncCotizacionToSupabase(updated);
@@ -1587,6 +1672,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       newPedido.inventario_descontado = true;
     }
 
+    // Auto-registrar o actualizar cliente con su dirección y contacto en el Mini CRM
+    upsertClienteFromOrderOrQuote({
+      nombre: newPedido.cliente_nombre,
+      telefono: newPedido.cliente_telefono,
+      email: newPedido.cliente_email,
+      direccion: newPedido.direccion_entrega,
+      punto_referencia: newPedido.punto_referencia,
+      maps_url: newPedido.maps_url,
+      zona_delivery_id: newPedido.zona_delivery_id,
+    });
+
     setPedidos((prev) => [newPedido, ...prev]);
     showToast(
       'success',
@@ -1639,7 +1735,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       dedicatoria: item.dedicatoria,
       extras_texto: [
         item.variables_receta && item.variables_receta.length > 0 ? `Variables: ${item.variables_receta.join(', ')}` : '',
-        item.extras?.map((e) => `${e.nombre}`).join(', ') || ''
+        item.extras?.map((e) => e.cantidad && e.cantidad > 1 ? `${e.nombre} (x${e.cantidad})` : `${e.nombre}`).join(', ') || ''
       ].filter(Boolean).join(' | '),
       cantidad: item.cantidad,
       precio_unitario: item.precio_unitario,
@@ -1667,6 +1763,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       repartidor_nombre: despachoData?.repartidor_nombre ? sanitizeInput(despachoData.repartidor_nombre) : (cot.repartidor_nombre ? sanitizeInput(cot.repartidor_nombre) : undefined),
       repartidor_telefono: despachoData?.repartidor_telefono ? sanitizeInput(despachoData.repartidor_telefono) : (cot.repartidor_telefono ? sanitizeInput(cot.repartidor_telefono) : undefined),
       cobro_delivery_al_recibir: despachoData?.cobro_delivery_al_recibir ?? false,
+      maps_url: cot.maps_url ? sanitizeInput(cot.maps_url) : undefined,
       items: pedidoItems,
       subtotal: cot.subtotal,
       costo_envio: cot.costo_envio,
@@ -1692,15 +1789,29 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     descontarInventarioPorPedido(nuevoPedido);
     nuevoPedido.inventario_descontado = true;
 
+    // Guardar / actualizar datos del cliente con su dirección en el CRM
+    upsertClienteFromOrderOrQuote({
+      nombre: nuevoPedido.cliente_nombre,
+      telefono: nuevoPedido.cliente_telefono,
+      email: nuevoPedido.cliente_email,
+      direccion: nuevoPedido.direccion_entrega,
+      punto_referencia: nuevoPedido.punto_referencia,
+      maps_url: nuevoPedido.maps_url,
+      zona_delivery_id: nuevoPedido.zona_delivery_id,
+    });
+
     setPedidos((prev) => [nuevoPedido, ...prev]);
-    setCotizaciones((prev) =>
-      prev.map((c) => (c.id === cotizacionId ? { ...c, estado: 'convertida' } : c))
-    );
+
+    // Eliminar la cotización de cotizaciones una vez que pasa a ser un pedido confirmado
+    setCotizaciones((prev) => prev.filter((c) => c.id !== cotizacionId));
+    if (isSupabaseConfigured()) {
+      deleteCotizacionFromSupabase(cotizacionId);
+    }
 
     showToast(
       'success',
       '¡Cotización Convertida a Pedido!',
-      `Se generó la factura ${numero_factura} con 50% de anticipo y se descontó la materia prima del stock.`
+      `Se generó la factura ${numero_factura}. La cotización fue transferida a Pedidos Confirmados y removida de cotizaciones.`
     );
     playSuccessChime();
     confetti({ particleCount: 70, spread: 60, origin: { y: 0.6 } });

@@ -64,7 +64,7 @@ export function generarMensajeCotizacionWhatsApp(cotizacion: Cotizacion): { mens
     }
     if (item.dedicatoria) texto += `   • Dedicatoria: "${item.dedicatoria}"\n`;
     if (item.extras && item.extras.length > 0) {
-      texto += `   • Extras: ${item.extras.map((e) => `${e.nombre} (${formatCurrency(e.precio)})`).join(', ')}\n`;
+      texto += `   • Extras: ${item.extras.map((e) => `${e.nombre}${e.cantidad && e.cantidad > 1 ? ` (x${e.cantidad})` : ''} (${formatCurrency(e.precio * (e.cantidad || 1))})`).join(', ')}\n`;
     }
     texto += `   • Cantidad: ${item.cantidad} | Subtotal: *${formatCurrency(item.subtotal)}*\n`;
   });

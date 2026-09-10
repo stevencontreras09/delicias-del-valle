@@ -1009,7 +1009,7 @@ export const QuoteDetailModal: React.FC<QuoteDetailModalProps> = ({
                     )}
                     {item.extras && item.extras.length > 0 && (
                       <p className="text-[11px] text-trigo-700 font-semibold mt-1">
-                        + Extras: {item.extras.map((e) => `${e.nombre} (${formatCurrency(e.precio)})`).join(', ')}
+                        + Extras: {item.extras.map((e) => `${e.nombre}${e.cantidad && e.cantidad > 1 ? ` (x${e.cantidad})` : ''} (${formatCurrency(e.precio * (e.cantidad || 1))})`).join(', ')}
                       </p>
                     )}
                   </td>

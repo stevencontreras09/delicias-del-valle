@@ -178,7 +178,7 @@ export function generarPdfCotizacion(cotizacion: Cotizacion): void {
     }
     if (item.dedicatoria) descripcion += `\n• Dedicatoria: "${item.dedicatoria}"`;
     if (item.extras && item.extras.length > 0) {
-      descripcion += `\n• Extras: ${item.extras.map(e => e.nombre).join(', ')}`;
+      descripcion += `\n• Extras: ${item.extras.map(e => e.cantidad && e.cantidad > 1 ? `${e.nombre} (x${e.cantidad})` : e.nombre).join(', ')}`;
     }
 
     return [

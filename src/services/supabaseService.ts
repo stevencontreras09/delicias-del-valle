@@ -930,6 +930,9 @@ export async function syncClienteToSupabase(cliente: Cliente): Promise<boolean> 
       telefono: cliente.telefono,
       email: cliente.email || null,
       direccion: cliente.direccion || null,
+      punto_referencia: cliente.punto_referencia || null,
+      maps_url: cliente.maps_url || null,
+      zona_delivery_id: cliente.zona_delivery_id || null,
       alergias_preferencias: cliente.alergias_preferencias || null,
       cumpleanos_familiar: cliente.cumpleanos_familiar || null,
       fecha_cumpleanos: cliente.fecha_cumpleanos || null,
@@ -939,7 +942,17 @@ export async function syncClienteToSupabase(cliente: Cliente): Promise<boolean> 
       updated_at: new Date().toISOString(),
     };
 
-    const { error } = await client.from('clientes').upsert(payload);
+    let { error } = await client.from('clientes').upsert(payload);
+
+    // Si falla por columna no existente en schema de Supabase (PGRST204), reintentar con payload base
+    if (error && (error as any).code === 'PGRST204') {
+      delete payload.punto_referencia;
+      delete payload.maps_url;
+      delete payload.zona_delivery_id;
+      const retry = await client.from('clientes').upsert(payload);
+      error = retry.error;
+    }
+
     return !error;
   } catch {
     return false;

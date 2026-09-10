@@ -263,9 +263,12 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
 
   const matchingClientes = useMemo(() => {
     const q = clienteNombre.trim().toLowerCase();
-    if (q.length < 2) return [];
+    if (!q) return clientes.slice(0, 8); // Mostrar clientes guardados recientes
     return clientes.filter(
-      (c) => c.nombre.toLowerCase().includes(q) || c.telefono.includes(q)
+      (c) =>
+        c.nombre.toLowerCase().includes(q) ||
+        (c.telefono && c.telefono.includes(q)) ||
+        (c.direccion && c.direccion.toLowerCase().includes(q))
     );
   }, [clientes, clienteNombre]);
 
@@ -466,6 +469,7 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
   const [decoracion, setDecoracion] = useState(OPCIONES_DECORACION_DETALLADAS[0].nombre);
   const [dedicatoria, setDedicatoria] = useState('');
   const [selectedExtras, setSelectedExtras] = useState<string[]>([]);
+  const [extraQuantities, setExtraQuantities] = useState<Record<string, number>>({});
   const dedicatoriaInputRef = useRef<HTMLInputElement>(null);
 
   const isTarjetaSelected = useMemo(() => {
@@ -748,10 +752,11 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
 
   const costoPersonalizaciones = costoMasa + costoRelleno + costoDecoracion;
 
-  // Extras adicionales por unidad
+  // Extras adicionales por unidad considerando la cantidad configurada
   const totalExtrasUnitario = selectedExtras.reduce((sum, extId) => {
     const ext = extrasOpciones.find((e) => e.id === extId);
-    return sum + (ext ? ext.precio : 0);
+    const qty = extraQuantities[extId] || 1;
+    return sum + (ext ? ext.precio * qty : 0);
   }, 0);
 
   // Precios Sugeridos Totales del Producto (Receta + Masa + Relleno + Decoración)
@@ -777,7 +782,14 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
     if (!currentReceta) return;
 
     const extrasObj: CotizacionExtra[] = selectedExtras
-      .map((id) => extrasOpciones.find((e) => e.id === id))
+      .map((id) => {
+        const ext = extrasOpciones.find((e) => e.id === id);
+        if (!ext) return null;
+        return {
+          ...ext,
+          cantidad: extraQuantities[id] || 1,
+        };
+      })
       .filter(Boolean) as CotizacionExtra[];
 
     const variablesRecetaNombres: string[] = currentReceta.ingredientes
@@ -814,6 +826,7 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
     // Limpiar dedicatoria, extras y variables para el siguiente item
     setDedicatoria('');
     setSelectedExtras([]);
+    setExtraQuantities({});
     setActiveRecipeVariableIds(new Set());
     setCantidad(1);
     setPrecioBaseManual('');
@@ -955,6 +968,17 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
                         setClienteNombre(c.nombre);
                         setClienteTelefono(c.telefono);
                         if (c.email) setClienteEmail(c.email);
+                        if (c.direccion) {
+                          setDireccionEntrega(c.direccion);
+                          setTipoDespacho('delivery');
+                        }
+                        if (c.punto_referencia) setPuntoReferencia(c.punto_referencia);
+                        if (c.maps_url) setDetectedMapsLink(c.maps_url);
+                        if (c.zona_delivery_id) {
+                          setZonaDeliveryId(c.zona_delivery_id);
+                          const z = zonasDelivery.find((zd) => zd.id === c.zona_delivery_id);
+                          if (z) setCostoEnvio(z.tarifa);
+                        }
                         setSelectedClienteCrm(c);
                         setIsClientSuggestionsOpen(false);
                       }}
@@ -964,6 +988,13 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
                         <span className="font-bold text-chocolate-900 text-xs">{c.nombre}</span>
                         <span className="text-[10px] font-mono text-emerald-700 font-semibold">{c.telefono}</span>
                       </div>
+                      {c.direccion && (
+                        <p className="text-[10px] text-amber-900 font-medium truncate mt-0.5 flex items-center gap-1">
+                          <span className="text-rose-500">📍</span>
+                          <span className="truncate">{c.direccion}</span>
+                          {c.punto_referencia && <span className="text-stone-400">({c.punto_referencia})</span>}
+                        </p>
+                      )}
                       {c.alergias_preferencias && (
                         <p className="text-[10px] text-amber-800 truncate mt-0.5">
                           ⚠️ {c.alergias_preferencias}
@@ -976,6 +1007,26 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
                       )}
                     </div>
                   ))}
+                </div>
+              )}
+
+              {selectedClienteCrm && (
+                <div className="mt-1 flex items-center justify-between text-[11px] bg-emerald-50 text-emerald-800 border border-emerald-200 px-2.5 py-1 rounded-xl">
+                  <span className="flex items-center gap-1 truncate">
+                    <UserCheck className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                    <span>Perfil CRM: <b>{selectedClienteCrm.nombre}</b></span>
+                    {selectedClienteCrm.direccion && (
+                      <span className="text-emerald-700 font-medium truncate">• 📍 {selectedClienteCrm.direccion}</span>
+                    )}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedClienteCrm(null)}
+                    className="text-emerald-600 hover:text-emerald-900 font-bold ml-1.5 shrink-0"
+                    title="Desvincular"
+                  >
+                    ✕
+                  </button>
                 </div>
               )}
             </div>
@@ -1876,7 +1927,10 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
                   {selectedExtras.length > 0 && (
                     <button
                       type="button"
-                      onClick={() => setSelectedExtras([])}
+                      onClick={() => {
+                        setSelectedExtras([]);
+                        setExtraQuantities({});
+                      }}
                       className="text-[11px] text-gray-500 hover:text-chocolate-800 font-semibold underline"
                     >
                       Deseleccionar Todos
@@ -1988,6 +2042,8 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
                 ) : (
                   filteredExtrasList.map((extra) => {
                     const isChecked = selectedExtras.includes(extra.id);
+                    const qty = extraQuantities[extra.id] || 1;
+                    const extraPrecioTotal = extra.precio * qty;
                     const cat = getExtraCategory(extra);
                     
                     const catBadgeStyle: Record<CategoriaExtra, string> = {
@@ -2007,41 +2063,121 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
                     };
 
                     return (
-                      <label
+                      <div
                         key={extra.id}
-                        className={`flex items-center gap-2 p-2 rounded-xl border text-xs cursor-pointer select-none transition-all ${
+                        onClick={() => {
+                          if (!isChecked) {
+                            setSelectedExtras((prev) => [...prev, extra.id]);
+                            setExtraQuantities((prev) => ({ ...prev, [extra.id]: 1 }));
+                            if (cat === 'tarjeta' && !dedicatoria.trim()) {
+                              setTimeout(() => {
+                                dedicatoriaInputRef.current?.focus();
+                              }, 100);
+                            }
+                          }
+                        }}
+                        className={`p-2 rounded-xl border text-xs select-none transition-all flex flex-col justify-between gap-1.5 ${
                           isChecked
                             ? 'bg-frambuesa-50 border-frambuesa-400 text-frambuesa-900 font-bold shadow-sm ring-1 ring-frambuesa-300'
-                            : 'bg-white border-trigo-200 text-chocolate-700 hover:bg-crema/40'
+                            : 'bg-white border-trigo-200 text-chocolate-700 hover:bg-crema/40 cursor-pointer'
                         }`}
                       >
-                        <input
-                          type="checkbox"
-                          checked={isChecked}
-                          onChange={() => {
-                            if (isChecked) {
-                              setSelectedExtras((prev) => prev.filter((id) => id !== extra.id));
-                            } else {
-                              setSelectedExtras((prev) => [...prev, extra.id]);
-                              if (cat === 'tarjeta' && !dedicatoria.trim()) {
-                                setTimeout(() => {
-                                  dedicatoriaInputRef.current?.focus();
-                                }, 100);
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="checkbox"
+                            checked={isChecked}
+                            onChange={(e) => {
+                              e.stopPropagation();
+                              if (isChecked) {
+                                setSelectedExtras((prev) => prev.filter((id) => id !== extra.id));
+                                setExtraQuantities((prev) => {
+                                  const next = { ...prev };
+                                  delete next[extra.id];
+                                  return next;
+                                });
+                              } else {
+                                setSelectedExtras((prev) => [...prev, extra.id]);
+                                setExtraQuantities((prev) => ({ ...prev, [extra.id]: 1 }));
+                                if (cat === 'tarjeta' && !dedicatoria.trim()) {
+                                  setTimeout(() => {
+                                    dedicatoriaInputRef.current?.focus();
+                                  }, 100);
+                                }
                               }
-                            }
-                          }}
-                          className="w-4 h-4 rounded text-frambuesa-600 focus:ring-frambuesa-400 cursor-pointer shrink-0"
-                        />
-                        <div className="flex-1 min-w-0">
-                          <span className="block truncate text-[11px] leading-snug">{extra.nombre}</span>
-                          <span className={`text-[8px] font-bold px-1.5 py-0.2 rounded inline-block mt-0.5 border ${catBadgeStyle[cat]}`}>
-                            {catLabel[cat]}
-                          </span>
+                            }}
+                            className="w-4 h-4 rounded text-frambuesa-600 focus:ring-frambuesa-400 cursor-pointer shrink-0"
+                          />
+                          <div className="flex-1 min-w-0">
+                            <span className="block truncate text-[11px] leading-snug">{extra.nombre}</span>
+                            <span className={`text-[8px] font-bold px-1.5 py-0.2 rounded inline-block mt-0.5 border ${catBadgeStyle[cat]}`}>
+                              {catLabel[cat]}
+                            </span>
+                          </div>
+                          <div className="text-right shrink-0">
+                            <span className="text-frambuesa-700 whitespace-nowrap font-extrabold text-xs block">
+                              +{formatCurrency(extraPrecioTotal)}
+                            </span>
+                            {isChecked && qty > 1 && (
+                              <span className="text-[9px] text-gray-500 font-semibold block">
+                                {qty}x {formatCurrency(extra.precio)}
+                              </span>
+                            )}
+                          </div>
                         </div>
-                        <span className="text-frambuesa-700 whitespace-nowrap font-extrabold text-xs shrink-0">
-                          +{formatCurrency(extra.precio)}
-                        </span>
-                      </label>
+
+                        {/* Control manual de cantidades */}
+                        {isChecked && (
+                          <div
+                            className="flex items-center justify-between gap-1 pt-1.5 border-t border-frambuesa-200/80 mt-0.5 bg-white/80 px-2 py-1 rounded-lg"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <span className="text-[10px] text-chocolate-700 font-bold">Cantidad:</span>
+                            <div className="flex items-center gap-1">
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setExtraQuantities((prev) => {
+                                    const current = prev[extra.id] || 1;
+                                    if (current <= 1) return prev;
+                                    return { ...prev, [extra.id]: current - 1 };
+                                  });
+                                }}
+                                className="w-5 h-5 rounded-md bg-stone-200 hover:bg-stone-300 text-stone-900 font-black text-xs flex items-center justify-center transition"
+                                title="Restar 1"
+                              >
+                                -
+                              </button>
+                              <input
+                                type="number"
+                                min="1"
+                                value={qty}
+                                onChange={(e) => {
+                                  e.stopPropagation();
+                                  const val = Math.max(1, parseInt(e.target.value) || 1);
+                                  setExtraQuantities((prev) => ({ ...prev, [extra.id]: val }));
+                                }}
+                                onClick={(e) => e.stopPropagation()}
+                                className="w-8 h-5 text-center text-[11px] font-black border border-frambuesa-300 rounded bg-white text-chocolate-900"
+                              />
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setExtraQuantities((prev) => ({
+                                    ...prev,
+                                    [extra.id]: (prev[extra.id] || 1) + 1,
+                                  }));
+                                }}
+                                className="w-5 h-5 rounded-md bg-stone-200 hover:bg-stone-300 text-stone-900 font-black text-xs flex items-center justify-center transition"
+                                title="Sumar 1"
+                              >
+                                +
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     );
                   })
                 )}
@@ -2246,7 +2382,7 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
                         )}
                         {item.extras.length > 0 && (
                           <p className="text-[10px] text-trigo-700 font-medium mt-0.5">
-                            + Extras: {item.extras.map((e) => e.nombre).join(', ')}
+                            + Extras: {item.extras.map((e) => e.cantidad && e.cantidad > 1 ? `${e.nombre} (x${e.cantidad})` : e.nombre).join(', ')}
                           </p>
                         )}
                       </td>
