@@ -127,3 +127,32 @@
     size: auto;
   }
 }
+
+/* ===================================================
+   COMPATIBILIDAD LEAFLET + TAILWIND CSS (TESELAS DEL MAPA)
+   =================================================== */
+.leaflet-container {
+  width: 100% !important;
+  height: 100% !important;
+  font-family: inherit;
+  z-index: 1;
+  background-color: #f4efe9 !important;
+}
+
+.leaflet-container img {
+  max-width: none !important;
+  max-height: none !important;
+}
+
+.leaflet-tile {
+  visibility: inherit !important;
+}
+
+.leaflet-pane {
+  z-index: 10 !important;
+}
+
+.leaflet-top,
+.leaflet-bottom {
+  z-index: 20 !important;
+}

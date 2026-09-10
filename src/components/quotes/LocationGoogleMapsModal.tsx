@@ -14,9 +14,10 @@ import {
   Compass,
   AlertCircle,
   HelpCircle,
+  Mountain,
+  Globe,
 } from 'lucide-react';
 import { Modal } from '../ui/Modal';
-import { getGoogleMapsUrl, getWazeUrl } from '../../utils/deliveryHelper';
 
 interface LocationGoogleMapsModalProps {
   isOpen: boolean;
@@ -37,6 +38,55 @@ interface LocationGoogleMapsModalProps {
 const DEFAULT_LAT = 18.4861;
 const DEFAULT_LNG = -69.9312;
 
+// Capas de mapas soportadas (priorizando Google Maps oficial)
+type MapLayerType = 'google-callejero' | 'google-satelite' | 'google-terreno' | 'osm';
+
+const MAP_LAYERS: Record<
+  MapLayerType,
+  { name: string; url: string; options: L.TileLayerOptions; isGoogle: boolean }
+> = {
+  'google-callejero': {
+    name: 'Google Callejero',
+    url: 'https://mt{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}',
+    options: {
+      subdomains: ['0', '1', '2', '3'],
+      maxZoom: 20,
+      attribution: '&copy; Google Maps',
+    },
+    isGoogle: true,
+  },
+  'google-satelite': {
+    name: 'Google Satélite HD',
+    url: 'https://mt{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}',
+    options: {
+      subdomains: ['0', '1', '2', '3'],
+      maxZoom: 20,
+      attribution: '&copy; Google Maps Satélite (Híbrido)',
+    },
+    isGoogle: true,
+  },
+  'google-terreno': {
+    name: 'Google Terreno',
+    url: 'https://mt{s}.google.com/vt/lyrs=p&x={x}&y={y}&z={z}',
+    options: {
+      subdomains: ['0', '1', '2', '3'],
+      maxZoom: 20,
+      attribution: '&copy; Google Maps Terreno',
+    },
+    isGoogle: true,
+  },
+  osm: {
+    name: 'OpenStreetMap',
+    url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+    options: {
+      subdomains: ['a', 'b', 'c'],
+      maxZoom: 19,
+      attribution: '&copy; OpenStreetMap contributors',
+    },
+    isGoogle: false,
+  },
+};
+
 // Chips rápidos de municipios y sectores frecuentes en República Dominicana
 const RD_QUICK_TAGS = [
   'Jarabacoa',
@@ -56,35 +106,41 @@ const createPinIcon = () =>
   L.divIcon({
     className: 'custom-delicias-pin',
     html: `
-      <div style="position: relative; width: 40px; height: 40px; display: flex; flex-direction: column; align-items: center; justify-content: center; transform: translate(-50%, -100%);">
+      <div style="position: relative; width: 42px; height: 42px; display: flex; flex-direction: column; align-items: center; justify-content: center; transform: translate(-50%, -100%); filter: drop-shadow(0 6px 12px rgba(0,0,0,0.35)); cursor: grab;">
         <div style="
-          background: linear-gradient(135deg, #E91E63, #C2185B);
+          background: linear-gradient(135deg, #E91E63, #9C27B0);
           color: white;
-          width: 38px;
-          height: 38px;
+          width: 40px;
+          height: 40px;
           border-radius: 50% 50% 50% 0;
           transform: rotate(-45deg);
           display: flex;
           align-items: center;
           justify-content: center;
-          box-shadow: 0 4px 12px rgba(233,30,99,0.5);
           border: 2.5px solid #FFFFFF;
+          box-shadow: 0 4px 10px rgba(233,30,99,0.45);
         ">
-          <span style="transform: rotate(45deg); font-size: 18px; line-height: 1;">🎂</span>
+          <span style="transform: rotate(45deg); font-size: 20px; line-height: 1; user-select: none;">🎂</span>
         </div>
         <div style="
-          width: 12px;
-          height: 4px;
-          background: rgba(0,0,0,0.3);
+          width: 14px;
+          height: 5px;
+          background: rgba(0,0,0,0.35);
           border-radius: 50%;
-          margin-top: 2px;
-          filter: blur(0.5px);
+          margin-top: 3px;
+          filter: blur(0.8px);
         "></div>
       </div>
     `,
     iconSize: [0, 0],
     iconAnchor: [0, 0],
   });
+
+interface SearchSuggestion {
+  name: string;
+  lat: number;
+  lng: number;
+}
 
 export const LocationGoogleMapsModal: React.FC<LocationGoogleMapsModalProps> = ({
   isOpen,
@@ -100,7 +156,7 @@ export const LocationGoogleMapsModal: React.FC<LocationGoogleMapsModalProps> = (
   const [inputPuntoRef, setInputPuntoRef] = useState('');
   const [inputMapsUrl, setInputMapsUrl] = useState('');
   const [searchBox, setSearchBox] = useState('');
-  const [mapType, setMapType] = useState<'callejero' | 'satelite'>('callejero');
+  const [mapType, setMapType] = useState<MapLayerType>('google-callejero');
   const [coords, setCoords] = useState<{ lat: number; lng: number }>({
     lat: DEFAULT_LAT,
     lng: DEFAULT_LNG,
@@ -109,6 +165,7 @@ export const LocationGoogleMapsModal: React.FC<LocationGoogleMapsModalProps> = (
   const [copiedLink, setCopiedLink] = useState(false);
   const [geoLocating, setGeoLocating] = useState(false);
   const [searchStatus, setSearchStatus] = useState<string | null>(null);
+  const [searchSuggestions, setSearchSuggestions] = useState<SearchSuggestion[]>([]);
 
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
@@ -133,39 +190,24 @@ export const LocationGoogleMapsModal: React.FC<LocationGoogleMapsModalProps> = (
     return null;
   };
 
-  // Actualizar la capa de mosaicos (Callejero OSM vs Satélite Esri)
-  const updateTileLayer = useCallback((map: L.Map, type: 'callejero' | 'satelite') => {
+  // Actualizar la capa de mosaicos del mapa
+  const updateTileLayer = useCallback((map: L.Map, type: MapLayerType) => {
     if (tileLayerRef.current) {
       map.removeLayer(tileLayerRef.current);
     }
-    if (type === 'satelite') {
-      tileLayerRef.current = L.tileLayer(
-        'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-        {
-          maxZoom: 19,
-          attribution: 'Esri World Imagery',
-        }
-      ).addTo(map);
-    } else {
-      tileLayerRef.current = L.tileLayer(
-        'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-        {
-          maxZoom: 19,
-          attribution: '&copy; OpenStreetMap contributors',
-        }
-      ).addTo(map);
-    }
+    const layerConfig = MAP_LAYERS[type] || MAP_LAYERS['google-callejero'];
+    tileLayerRef.current = L.tileLayer(layerConfig.url, layerConfig.options).addTo(map);
   }, []);
 
   // Función para mover el marcador y centrar mapa
   const setMarkerPosition = useCallback((lat: number, lng: number, zoom?: number) => {
     setCoords({ lat, lng });
-    const generatedGoogleUrl = `https://www.google.com/maps?q=${lat},${lng}`;
+    const generatedGoogleUrl = `https://www.google.com/maps?q=${lat.toFixed(6)},${lng.toFixed(6)}`;
     setInputMapsUrl(generatedGoogleUrl);
 
     if (mapInstanceRef.current) {
       if (zoom) {
-        mapInstanceRef.current.setView([lat, lng], zoom, { animate: true });
+        mapInstanceRef.current.flyTo([lat, lng], zoom, { duration: 1.0 });
       } else {
         mapInstanceRef.current.panTo([lat, lng], { animate: true });
       }
@@ -182,6 +224,7 @@ export const LocationGoogleMapsModal: React.FC<LocationGoogleMapsModalProps> = (
           const pos = marker.getLatLng();
           setCoords({ lat: pos.lat, lng: pos.lng });
           setInputMapsUrl(`https://www.google.com/maps?q=${pos.lat.toFixed(6)},${pos.lng.toFixed(6)}`);
+          setSearchStatus(`Pin ajustado: ${pos.lat.toFixed(5)}, ${pos.lng.toFixed(5)}`);
         });
 
         markerRef.current = marker;
@@ -189,66 +232,85 @@ export const LocationGoogleMapsModal: React.FC<LocationGoogleMapsModalProps> = (
     }
   }, []);
 
-  // Geocodificar texto mediante Nominatim
-  const geocodeAddress = useCallback(async (query: string) => {
-    if (!query || !query.trim()) return;
-    setIsSearching(true);
-    setSearchStatus('Buscando en mapa...');
+  // Geocodificar texto mediante Photon (CORS habilitado, sin bloqueo 403, con sesgo hacia Rep. Dom.)
+  const geocodeAddress = useCallback(
+    async (query: string) => {
+      if (!query || !query.trim()) return;
+      setIsSearching(true);
+      setSearchStatus('Buscando en Google Maps...');
+      setSearchSuggestions([]);
 
-    try {
-      // Si la búsqueda son coordenadas directas
-      const parsed = extractCoordsFromText(query);
-      if (parsed) {
-        setMarkerPosition(parsed.lat, parsed.lng, 17);
-        setSearchStatus('Punto fijado por coordenadas');
-        setIsSearching(false);
-        return;
-      }
-
-      const qClean = query.trim();
-      const hasDR = qClean.toLowerCase().includes('rep') || qClean.toLowerCase().includes('dominic');
-      const finalQ = hasDR ? qClean : `${qClean}, República Dominicana`;
-
-      const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
-        finalQ
-      )}&countrycodes=do&limit=1`;
-
-      const resp = await fetch(url, {
-        headers: {
-          'Accept-Language': 'es',
-        },
-      });
-      const results = await resp.json();
-
-      if (results && results.length > 0) {
-        const item = results[0];
-        const lat = parseFloat(item.lat);
-        const lng = parseFloat(item.lon);
-        setMarkerPosition(lat, lng, 16);
-        setSearchStatus(`Encontrado: ${item.display_name.split(',')[0]}`);
-      } else {
-        // Segundo intento con búsqueda abierta
-        const fallbackUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
-          finalQ
-        )}&limit=1`;
-        const fbResp = await fetch(fallbackUrl, {
-          headers: { 'Accept-Language': 'es' },
-        });
-        const fbResults = await fbResp.json();
-        if (fbResults && fbResults.length > 0) {
-          const item = fbResults[0];
-          setMarkerPosition(parseFloat(item.lat), parseFloat(item.lon), 16);
-          setSearchStatus(`Encontrado: ${item.display_name.split(',')[0]}`);
-        } else {
-          setSearchStatus('No se encontró exacto. Puedes hacer clic en el mapa para colocar el pin.');
+      try {
+        // Si la búsqueda son coordenadas directas o enlace
+        const parsed = extractCoordsFromText(query);
+        if (parsed) {
+          setMarkerPosition(parsed.lat, parsed.lng, 17);
+          setSearchStatus(`Punto fijado por coordenadas (${parsed.lat.toFixed(5)}, ${parsed.lng.toFixed(5)})`);
+          setIsSearching(false);
+          return;
         }
+
+        const qClean = query.trim();
+        const hasDR =
+          qClean.toLowerCase().includes('rep') ||
+          qClean.toLowerCase().includes('dominic') ||
+          qClean.toLowerCase().includes('santo domingo') ||
+          qClean.toLowerCase().includes('jarabacoa') ||
+          qClean.toLowerCase().includes('santiago') ||
+          qClean.toLowerCase().includes('la vega');
+
+        const finalQ = hasDR ? qClean : `${qClean}, Republica Dominicana`;
+
+        // Llamar a Photon con sesgo geográfico en República Dominicana (lat 18.73, lon -70.16)
+        const url = `https://photon.komoot.io/api/?q=${encodeURIComponent(
+          finalQ
+        )}&lat=18.7357&lon=-70.1627&limit=5`;
+
+        const resp = await fetch(url);
+        if (!resp.ok) {
+          throw new Error(`HTTP ${resp.status}`);
+        }
+
+        const data = await resp.json();
+
+        if (data?.features && data.features.length > 0) {
+          const best = data.features[0];
+          const [lng, lat] = best.geometry.coordinates;
+          setMarkerPosition(lat, lng, 17);
+
+          const mainName = [
+            best.properties.name,
+            best.properties.street,
+            best.properties.locality || best.properties.city,
+            best.properties.state,
+          ]
+            .filter(Boolean)
+            .join(', ');
+
+          setSearchStatus(`Encontrado: ${mainName || 'Punto identificado'}`);
+
+          // Si hay más opciones, preparar sugerencias para elegir
+          if (data.features.length > 1) {
+            const suggestions: SearchSuggestion[] = data.features.slice(0, 4).map((f: any) => ({
+              name: [f.properties.name, f.properties.street, f.properties.locality || f.properties.city]
+                .filter(Boolean)
+                .join(', '),
+              lat: f.geometry.coordinates[1],
+              lng: f.geometry.coordinates[0],
+            }));
+            setSearchSuggestions(suggestions);
+          }
+        } else {
+          setSearchStatus('No se encontró dirección exacta. Haz clic o arrastra el pin 🎂 en el mapa.');
+        }
+      } catch (e) {
+        setSearchStatus('Ubicación manual: arrastra el pin 🎂 o haz clic en cualquier calle del mapa.');
+      } finally {
+        setIsSearching(false);
       }
-    } catch (e) {
-      setSearchStatus('Error en la búsqueda. Puedes arrastrar o hacer clic en el mapa.');
-    } finally {
-      setIsSearching(false);
-    }
-  }, [setMarkerPosition]);
+    },
+    [setMarkerPosition]
+  );
 
   // Inicializar Leaflet cuando el modal se abre
   useEffect(() => {
@@ -267,6 +329,7 @@ export const LocationGoogleMapsModal: React.FC<LocationGoogleMapsModalProps> = (
     setInputMapsUrl(mapsUrl || '');
     setSearchBox(direccion || '');
     setSearchStatus(null);
+    setSearchSuggestions([]);
     setCopiedLink(false);
 
     // Intentar extraer coordenadas iniciales de mapsUrl o dirección
@@ -298,9 +361,10 @@ export const LocationGoogleMapsModal: React.FC<LocationGoogleMapsModalProps> = (
           center: [initialLat, initialLng],
           zoom: hasExplicitCoords ? 17 : 14,
           zoomControl: false,
+          attributionControl: true,
         });
 
-        // Capa de mosaicos
+        // Capa de mosaicos inicial (Google Maps Callejero por defecto)
         updateTileLayer(map, mapType);
 
         // Control de zoom en la esquina superior derecha
@@ -329,7 +393,7 @@ export const LocationGoogleMapsModal: React.FC<LocationGoogleMapsModalProps> = (
         mapInstanceRef.current = map;
         markerRef.current = marker;
 
-        // Invalidate size para asegurar renderizado correcto al 100%
+        // Invalidate size inmediato
         map.invalidateSize();
 
         // Si hay una dirección escrita y no había coordenadas fijas, geocodificarla automáticamente
@@ -337,18 +401,44 @@ export const LocationGoogleMapsModal: React.FC<LocationGoogleMapsModalProps> = (
           geocodeAddress(direccion);
         }
       }
-    }, 150);
+    }, 120);
 
     return () => {
       clearTimeout(timer);
     };
   }, [isOpen, direccion, puntoReferencia, mapsUrl, geocodeAddress, mapType, updateTileLayer, setMarkerPosition]);
 
-  // Cambiar entre Callejero y Satélite
-  const handleToggleMapType = (type: 'callejero' | 'satelite') => {
+  // Observador de Redimensionamiento (Garantiza que las teselas de Google Maps carguen siempre en el modal)
+  useEffect(() => {
+    if (!isOpen || !mapContainerRef.current) return;
+
+    const observer = new ResizeObserver(() => {
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.invalidateSize();
+      }
+    });
+
+    observer.observe(mapContainerRef.current);
+
+    // Varios ticks de invalidación para asegurar el cálculo post-animación CSS del modal
+    const t1 = setTimeout(() => mapInstanceRef.current?.invalidateSize(), 150);
+    const t2 = setTimeout(() => mapInstanceRef.current?.invalidateSize(), 350);
+    const t3 = setTimeout(() => mapInstanceRef.current?.invalidateSize(), 650);
+
+    return () => {
+      observer.disconnect();
+      clearTimeout(t1);
+      clearTimeout(t2);
+      clearTimeout(t3);
+    };
+  }, [isOpen]);
+
+  // Cambiar entre modos de Google Maps
+  const handleToggleMapType = (type: MapLayerType) => {
     setMapType(type);
     if (mapInstanceRef.current) {
       updateTileLayer(mapInstanceRef.current, type);
+      mapInstanceRef.current.invalidateSize();
     }
   };
 
@@ -420,15 +510,16 @@ export const LocationGoogleMapsModal: React.FC<LocationGoogleMapsModalProps> = (
 
   // Copiar enlace al portapapeles
   const handleCopyLink = () => {
-    const url = inputMapsUrl || `https://www.google.com/maps?q=${coords.lat},${coords.lng}`;
+    const url = inputMapsUrl || `https://www.google.com/maps?q=${coords.lat.toFixed(6)},${coords.lng.toFixed(6)}`;
     navigator.clipboard.writeText(url);
     setCopiedLink(true);
     setTimeout(() => setCopiedLink(false), 2500);
   };
 
   // URLs oficiales para Google Maps y Waze
-  const googleMapsSearchUrl = inputMapsUrl || `https://www.google.com/maps?q=${coords.lat},${coords.lng}`;
-  const wazeSearchUrl = `https://waze.com/ul?ll=${coords.lat},${coords.lng}&navigate=yes`;
+  const googleMapsSearchUrl =
+    inputMapsUrl || `https://www.google.com/maps?q=${coords.lat.toFixed(6)},${coords.lng.toFixed(6)}`;
+  const wazeSearchUrl = `https://waze.com/ul?ll=${coords.lat.toFixed(6)},${coords.lng.toFixed(6)}&navigate=yes`;
 
   // Guardar y aplicar ubicación
   const handleApply = () => {
@@ -455,7 +546,7 @@ export const LocationGoogleMapsModal: React.FC<LocationGoogleMapsModalProps> = (
       isOpen={isOpen}
       onClose={onClose}
       title="Vista Previa y Corrección de Ubicación con Google Maps"
-      subtitle="Mapa interactivo en tiempo real: arrastra el pin o haz clic en cualquier calle para marcar el destino exacto."
+      subtitle="Mapa interactivo oficial en tiempo real: arrastra el pin 🎂 o haz clic en cualquier calle para ubicar la entrega."
       maxWidth="4xl"
     >
       <div className="space-y-4">
@@ -480,7 +571,7 @@ export const LocationGoogleMapsModal: React.FC<LocationGoogleMapsModalProps> = (
               type="button"
               onClick={handleGetCurrentLocation}
               disabled={geoLocating}
-              className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-white hover:bg-emerald-50 text-emerald-800 border border-emerald-300 text-xs font-bold transition shadow-2xs cursor-pointer"
+              className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-white hover:bg-emerald-50 text-emerald-800 border border-emerald-300 text-xs font-bold transition shadow-2xs cursor-pointer active:scale-95"
               title="Obtener coordenadas GPS de este dispositivo"
             >
               <Compass className={`w-3.5 h-3.5 text-emerald-600 ${geoLocating ? 'animate-spin' : ''}`} />
@@ -498,7 +589,7 @@ export const LocationGoogleMapsModal: React.FC<LocationGoogleMapsModalProps> = (
             <div className="relative flex-1">
               <input
                 type="text"
-                placeholder="Ej: 'Hodelpa zona colonial', 'Calle Duarte #10 Jarabacoa', o '18.473, -69.885'"
+                placeholder="Ej: 'C. Max Henriquez Ureña 108, Santo Domingo', 'Hodelpa zona colonial', o '18.486, -69.931'"
                 value={searchBox}
                 onChange={(e) => setSearchBox(e.target.value)}
                 className="w-full pl-9 pr-3 py-2 rounded-xl border border-trigo-300 focus:ring-2 focus:ring-frambuesa-400 bg-white text-xs text-chocolate-900 font-medium"
@@ -508,12 +599,37 @@ export const LocationGoogleMapsModal: React.FC<LocationGoogleMapsModalProps> = (
             <button
               type="submit"
               disabled={isSearching}
-              className="px-4 py-2 rounded-xl bg-chocolate-700 hover:bg-chocolate-800 text-white text-xs font-bold shadow-sm transition shrink-0 flex items-center gap-1 cursor-pointer disabled:opacity-50"
+              className="px-4 py-2 rounded-xl bg-chocolate-700 hover:bg-chocolate-800 text-white text-xs font-bold shadow-sm transition shrink-0 flex items-center gap-1.5 cursor-pointer disabled:opacity-50 active:scale-95"
             >
               <Search className={`w-3.5 h-3.5 ${isSearching ? 'animate-spin' : ''}`} />
               <span>{isSearching ? 'Buscando...' : 'Ubicar en Mapa'}</span>
             </button>
           </div>
+
+          {/* Sugerencias encontradas para elegir */}
+          {searchSuggestions.length > 0 && (
+            <div className="p-2 bg-amber-50/90 border border-amber-200 rounded-xl space-y-1">
+              <span className="text-[10px] font-bold text-amber-800 block">
+                Lugares sugeridos (haz clic para centrar en el mapa):
+              </span>
+              <div className="flex flex-wrap gap-1.5">
+                {searchSuggestions.map((sug, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => {
+                      setMarkerPosition(sug.lat, sug.lng, 17);
+                      setSearchStatus(`Ubicación seleccionada: ${sug.name}`);
+                      setSearchSuggestions([]);
+                    }}
+                    className="px-2 py-1 rounded-lg bg-white hover:bg-amber-100 text-chocolate-800 border border-amber-300 text-[11px] font-medium transition cursor-pointer text-left truncate max-w-full"
+                  >
+                    📍 {sug.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </form>
 
         {/* Chips de Sectores Frecuentes en RD */}
@@ -527,45 +643,76 @@ export const LocationGoogleMapsModal: React.FC<LocationGoogleMapsModalProps> = (
               key={tag}
               type="button"
               onClick={() => handleAddQuickTag(tag)}
-              className="px-2 py-0.5 rounded-lg bg-crema hover:bg-amber-100 text-chocolate-800 border border-trigo-200 text-[10px] font-semibold transition shadow-2xs cursor-pointer"
+              className="px-2 py-0.5 rounded-lg bg-crema hover:bg-amber-100 text-chocolate-800 border border-trigo-200 text-[10px] font-semibold transition shadow-2xs cursor-pointer active:scale-95"
             >
               +{tag}
             </button>
           ))}
         </div>
 
-        {/* VISOR INTERACTIVO LEAFLET MAP */}
+        {/* VISOR INTERACTIVO CON MOTOR OFICIAL DE GOOGLE MAPS */}
         <div className="relative rounded-2xl overflow-hidden border-2 border-trigo-300 shadow-md bg-stone-100">
-          {/* Controles Flotantes Superiores en el Mapa */}
-          <div className="absolute top-3 left-3 z-[400] flex items-center gap-1.5 bg-white/95 backdrop-blur-sm p-1 rounded-xl shadow-md border border-stone-200 text-[11px] font-bold">
+          {/* Selector de Modo Google Maps (Callejero, Satélite HD, Terreno, OSM) */}
+          <div className="absolute top-3 left-3 z-[400] flex items-center gap-1 bg-white/95 backdrop-blur-md p-1 rounded-xl shadow-lg border border-stone-200 text-[11px] font-bold max-w-[calc(100%-80px)] overflow-x-auto scrollbar-none">
             <button
               type="button"
-              onClick={() => handleToggleMapType('callejero')}
-              className={`px-2.5 py-1 rounded-lg transition flex items-center gap-1 cursor-pointer ${
-                mapType === 'callejero'
+              onClick={() => handleToggleMapType('google-callejero')}
+              className={`px-2.5 py-1 rounded-lg transition flex items-center gap-1 cursor-pointer shrink-0 ${
+                mapType === 'google-callejero'
                   ? 'bg-chocolate-700 text-white shadow-2xs'
                   : 'text-stone-700 hover:bg-stone-100'
               }`}
+              title="Google Maps Estándar / Callejero"
             >
               <Navigation className="w-3 h-3" />
-              <span>Callejero</span>
+              <span>Google Callejero</span>
             </button>
+
             <button
               type="button"
-              onClick={() => handleToggleMapType('satelite')}
-              className={`px-2.5 py-1 rounded-lg transition flex items-center gap-1 cursor-pointer ${
-                mapType === 'satelite'
+              onClick={() => handleToggleMapType('google-satelite')}
+              className={`px-2.5 py-1 rounded-lg transition flex items-center gap-1 cursor-pointer shrink-0 ${
+                mapType === 'google-satelite'
                   ? 'bg-chocolate-700 text-white shadow-2xs'
                   : 'text-stone-700 hover:bg-stone-100'
               }`}
+              title="Google Maps Satélite con calles y nombres oficiales"
             >
               <Layers className="w-3 h-3" />
-              <span>Satélite</span>
+              <span>Google Satélite HD</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => handleToggleMapType('google-terreno')}
+              className={`px-2.5 py-1 rounded-lg transition flex items-center gap-1 cursor-pointer shrink-0 ${
+                mapType === 'google-terreno'
+                  ? 'bg-chocolate-700 text-white shadow-2xs'
+                  : 'text-stone-700 hover:bg-stone-100'
+              }`}
+              title="Google Maps Relieve y Terreno"
+            >
+              <Mountain className="w-3 h-3" />
+              <span>Terreno</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => handleToggleMapType('osm')}
+              className={`px-2 py-1 rounded-lg transition flex items-center gap-1 cursor-pointer shrink-0 ${
+                mapType === 'osm'
+                  ? 'bg-stone-700 text-white shadow-2xs'
+                  : 'text-stone-500 hover:bg-stone-100'
+              }`}
+              title="Mapa alternativo OpenStreetMap"
+            >
+              <Globe className="w-3 h-3" />
+              <span className="hidden md:inline">OSM</span>
             </button>
           </div>
 
-          {/* Botón Flotante de Centrar / Recargar */}
-          <div className="absolute top-3 right-14 z-[400] bg-white/95 backdrop-blur-sm p-1 rounded-xl shadow-md border border-stone-200">
+          {/* Botón Flotante de Centrar / Recargar Pin */}
+          <div className="absolute top-3 right-14 z-[400] bg-white/95 backdrop-blur-md p-1 rounded-xl shadow-lg border border-stone-200">
             <button
               type="button"
               onClick={() => {
@@ -574,22 +721,22 @@ export const LocationGoogleMapsModal: React.FC<LocationGoogleMapsModalProps> = (
                   mapInstanceRef.current.invalidateSize();
                 }
               }}
-              className="p-1.5 text-stone-600 hover:text-chocolate-800 hover:bg-stone-100 rounded-lg cursor-pointer flex items-center gap-1 text-[10px] font-bold"
-              title="Centrar mapa en el pin"
+              className="p-1.5 text-stone-700 hover:text-chocolate-800 hover:bg-stone-100 rounded-lg cursor-pointer flex items-center gap-1 text-[10px] font-bold active:scale-95"
+              title="Centrar mapa en el pin 🎂"
             >
-              <RotateCcw className="w-3 h-3" />
+              <RotateCcw className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">Centrar Pin</span>
             </button>
           </div>
 
-          {/* Contenedor del Mapa */}
+          {/* Contenedor del Mapa con soporte de altura fija responsiva */}
           <div
             ref={mapContainerRef}
-            className="w-full h-72 sm:h-96 z-0"
-            style={{ minHeight: '280px' }}
+            className="w-full h-80 sm:h-[400px] z-0"
+            style={{ minHeight: '320px' }}
           />
 
-          {/* Barra Inferior del Visor */}
+          {/* Barra Inferior del Visor: Coordenadas y Enlaces Directos */}
           <div className="bg-slate-900 text-slate-200 px-3 py-2 flex flex-wrap items-center justify-between gap-2 text-xs border-t border-slate-800">
             <div className="flex items-center gap-1.5 min-w-0">
               <MapPin className="w-3.5 h-3.5 text-rose-400 shrink-0" />
@@ -610,7 +757,7 @@ export const LocationGoogleMapsModal: React.FC<LocationGoogleMapsModalProps> = (
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-1 text-[11px] font-bold text-sky-400 hover:text-sky-300 underline"
-                title="Abrir este punto exacto en Google Maps Oficial"
+                title="Abrir este punto exacto en la app oficial de Google Maps"
               >
                 <span>↗️ Abrir en Google Maps</span>
                 <ExternalLink className="w-3 h-3" />
@@ -621,7 +768,7 @@ export const LocationGoogleMapsModal: React.FC<LocationGoogleMapsModalProps> = (
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-1 text-[11px] font-bold text-cyan-400 hover:text-cyan-300 underline"
-                title="Probar ruta en Waze"
+                title="Probar ruta de entrega en Waze"
               >
                 <span>🚙 Probar en Waze</span>
               </a>
@@ -694,7 +841,7 @@ export const LocationGoogleMapsModal: React.FC<LocationGoogleMapsModalProps> = (
               <button
                 type="button"
                 onClick={handleCopyLink}
-                className="px-3 py-2 rounded-xl border border-trigo-300 hover:bg-crema text-chocolate-700 font-bold transition shrink-0 flex items-center gap-1.5 cursor-pointer"
+                className="px-3 py-2 rounded-xl border border-trigo-300 hover:bg-crema text-chocolate-700 font-bold transition shrink-0 flex items-center gap-1.5 cursor-pointer active:scale-95"
                 title="Copiar enlace directo de Google Maps"
               >
                 {copiedLink ? (
@@ -724,7 +871,7 @@ export const LocationGoogleMapsModal: React.FC<LocationGoogleMapsModalProps> = (
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2.5 rounded-xl border border-trigo-300 hover:bg-gray-100 text-chocolate-700 font-bold text-xs transition cursor-pointer"
+              className="px-4 py-2.5 rounded-xl border border-trigo-300 hover:bg-gray-100 text-chocolate-700 font-bold text-xs transition cursor-pointer active:scale-95"
             >
               Cancelar
             </button>
