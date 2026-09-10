@@ -1810,8 +1810,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     showToast(
       'success',
-      '¡Cotización Convertida a Pedido!',
-      `Se generó la factura ${numero_factura}. La cotización fue transferida a Pedidos Confirmados y removida de cotizaciones.`
+      '¡Pedido Confirmado & Facturado!',
+      `Se generó la factura ${numero_factura} y se descargó el comprobante PDF oficial. Transferido a la pantalla de pedidos.`
     );
     playSuccessChime();
     confetti({ particleCount: 70, spread: 60, origin: { y: 0.6 } });

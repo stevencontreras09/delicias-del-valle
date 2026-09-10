@@ -16,7 +16,7 @@ import { formatCurrency, formatDate, formatDisplayTamano } from '../../utils/for
 import { Badge } from '../ui/Badge';
 import { QuoteBuilderModal } from './QuoteBuilderModal';
 import { QuoteDetailModal } from './QuoteDetailModal';
-import { generarPdfCotizacion } from '../../utils/pdfGenerator';
+import { generarPdfCotizacion, generarPdfPedido } from '../../utils/pdfGenerator';
 import { generarMensajeCotizacionWhatsApp } from '../../utils/whatsappShare';
 
 export const QuoteManager: React.FC = () => {
@@ -311,7 +311,14 @@ export const QuoteManager: React.FC = () => {
           onClose={() => setSelectedCotizacion(null)}
           cotizacion={selectedCotizacion}
           onConvertToOrder={(cotId, anticipo, fecha, hora, tipo, dir, despachoData) => {
-            convertirCotizacionAPedido(cotId, anticipo, fecha, hora, tipo, dir, despachoData);
+            const nuevoPedido = convertirCotizacionAPedido(cotId, anticipo, fecha, hora, tipo, dir, despachoData);
+            if (nuevoPedido) {
+              try {
+                generarPdfPedido(nuevoPedido);
+              } catch (err) {
+                console.error('Error al generar PDF de factura al confirmar pedido:', err);
+              }
+            }
           }}
           onEdit={(c) => {
             setEditingCotizacion(c);

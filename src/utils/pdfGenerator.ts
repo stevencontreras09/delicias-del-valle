@@ -381,6 +381,7 @@ export function generarPdfPedido(pedido: Pedido): void {
   const frambuesaColor: [number, number, number] = [233, 30, 99];
   const trigoColor: [number, number, number] = [197, 160, 118];
   const cremaColor: [number, number, number] = [253, 244, 224];
+  const verdeColor: [number, number, number] = [16, 122, 64];
 
   // Barra superior
   doc.setFillColor(...chocolateColor);
@@ -417,57 +418,160 @@ export function generarPdfPedido(pedido: Pedido): void {
 
   doc.setTextColor(...frambuesaColor);
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(12);
-  doc.text('ORDEN / FACTURA', 135, 22);
+  doc.setFontSize(12.5);
+  doc.text('ORDEN / FACTURA', 135, 21.5);
 
   doc.setTextColor(...chocolateColor);
   doc.setFontSize(10);
-  doc.text(`N° ${pedido.numero_factura}`, 135, 28);
+  doc.text(`N° ${pedido.numero_factura}`, 135, 27.5);
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(9);
-  doc.text(`Fecha Pedido: ${formatDate(pedido.fecha_pedido)}`, 135, 34);
-  doc.text(`Estado: ${pedido.estado.toUpperCase()}`, 135, 39);
+  doc.setFontSize(8.5);
+  doc.text(`Fecha Pedido: ${formatDate(pedido.fecha_pedido)}`, 135, 33);
 
-  // Datos de Entrega
+  // Badge de Estado
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(8.5);
+  if (pedido.estado === 'entregado') {
+    doc.setTextColor(...frambuesaColor);
+  } else if (pedido.estado === 'listo') {
+    doc.setTextColor(...verdeColor);
+  } else if (pedido.estado === 'en_produccion') {
+    doc.setTextColor(2, 132, 199);
+  } else {
+    doc.setTextColor(217, 119, 6);
+  }
+  doc.text(`Estado: ${pedido.estado.toUpperCase()}`, 135, 38.5);
+
+  // Línea divisoria
   doc.setDrawColor(...trigoColor);
+  doc.setLineWidth(0.5);
   doc.line(14, 46, 196, 46);
 
+  // Datos del Cliente (Columna Izquierda)
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(10);
   doc.setTextColor(...chocolateColor);
-  doc.text('DETALLES DE CLIENTE Y ENTREGA', 14, 53);
+  doc.text('CLIENTE & CONTACTO', 14, 52);
 
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(8.5);
   doc.setTextColor(60, 60, 60);
-  doc.text(`Cliente: ${pedido.cliente_nombre}`, 14, 59);
-  doc.text(`Teléfono: ${pedido.cliente_telefono}`, 14, 64);
-  doc.text(`Fecha Entrega: ${formatDate(pedido.fecha_entrega)} - Hora: ${pedido.hora_entrega}`, 120, 59);
-  doc.text('Tipo Entrega:', 120, 64);
-  const esPedDelivery = pedido.tipo_entrega === 'domicilio' || pedido.tipo_despacho === 'delivery';
-  try {
-    doc.addImage(esPedDelivery ? ICON_DELIVERY_PNG : ICON_STORE_PNG, 'PNG', 140, 60.2, 4.5, 4.5);
-  } catch (e) {
-    console.error('Error insertando icono pedido:', e);
+  doc.text(`Cliente: ${pedido.cliente_nombre}`, 14, 57);
+  doc.text(`Teléfono: ${pedido.cliente_telefono}`, 14, 62);
+  if (pedido.cliente_email) {
+    doc.text(`Email: ${pedido.cliente_email}`, 14, 67);
   }
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(...(esPedDelivery ? frambuesaColor : chocolateColor));
-  doc.text(esPedDelivery ? 'Envío a Domicilio' : 'Recogida en Taller', 146, 64);
-  doc.setFont('helvetica', 'normal');
-  doc.setTextColor(60, 60, 60);
 
-  // Tabla
-  const tableData = pedido.items.map((item, index) => [
-    (index + 1).toString(),
-    `${item.receta_nombre} (${formatDisplayTamano(item.tamano_porciones)})${item.dedicatoria ? `\nDedicatoria: "${item.dedicatoria}"` : ''}`,
-    item.cantidad.toString(),
-    formatCurrency(item.precio_unitario),
-    formatCurrency(item.subtotal),
-  ]);
+  // Datos de Logística & Entrega (Columna Derecha)
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(10);
+  doc.setTextColor(...chocolateColor);
+  doc.text('LOGÍSTICA & ENTREGA', 110, 52);
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(8.5);
+  doc.setTextColor(60, 60, 60);
+  doc.text(`Fecha Entrega: ${formatDate(pedido.fecha_entrega)} - ${pedido.hora_entrega}`, 110, 57);
+
+  const esDelivery =
+    pedido.tipo_entrega === 'domicilio' ||
+    pedido.tipo_despacho === 'delivery' ||
+    Boolean(pedido.direccion_entrega && pedido.direccion_entrega.trim().length > 3);
+
+  let tableStartY = 74;
+
+  if (esDelivery) {
+    doc.text('Modalidad:', 110, 62);
+    try {
+      doc.addImage(ICON_DELIVERY_PNG, 'PNG', 127, 58.2, 4.5, 4.5);
+    } catch (e) {
+      console.error('Error insertando icono delivery en pedido:', e);
+    }
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(...frambuesaColor);
+    doc.text('Envío a Domicilio', 133, 62);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(60, 60, 60);
+
+    const dir = pedido.direccion_entrega || 'Dirección acordada';
+    const dirCorta = dir.length > 44 ? dir.substring(0, 42) + '...' : dir;
+    doc.text(`Dirección: ${dirCorta}`, 110, 67);
+
+    if (pedido.punto_referencia) {
+      const refCorta =
+        pedido.punto_referencia.length > 44
+          ? pedido.punto_referencia.substring(0, 42) + '...'
+          : pedido.punto_referencia;
+      doc.text(`Ref: ${refCorta}`, 110, 72);
+      tableStartY = 78;
+    }
+    if (pedido.repartidor_nombre) {
+      const telRep = pedido.repartidor_telefono ? ` (${pedido.repartidor_telefono})` : '';
+      const repY = pedido.punto_referencia ? 77 : 72;
+      doc.text(`Repartidor: ${pedido.repartidor_nombre}${telRep}`, 110, repY);
+      tableStartY = repY + 6;
+    }
+  } else {
+    doc.text('Modalidad:', 110, 62);
+    try {
+      doc.addImage(ICON_STORE_PNG, 'PNG', 127, 58.2, 4.5, 4.5);
+    } catch (e) {
+      console.error('Error insertando icono taller en pedido:', e);
+    }
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(...chocolateColor);
+    doc.text('Retiro en Taller', 133, 62);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(60, 60, 60);
+    doc.text('Ubicación: Taller Central Delicias del Valle', 110, 67);
+    tableStartY = 74;
+  }
+
+  if (pedido.cliente_email && tableStartY < 74) {
+    tableStartY = 74;
+  }
+
+  // Tabla de Productos con Especificaciones Completas
+  const tableData = pedido.items.map((item, index) => {
+    let descripcion = `${item.receta_nombre}\n• Tamaño: ${formatDisplayTamano(item.tamano_porciones)}`;
+    if (
+      item.masa_base &&
+      !item.masa_base.toLowerCase().startsWith('ningun') &&
+      !item.masa_base.toLowerCase().startsWith('no aplica')
+    ) {
+      descripcion += ` | Masa: ${item.masa_base}`;
+    }
+    if (
+      item.relleno &&
+      !item.relleno.toLowerCase().startsWith('ningun') &&
+      !item.relleno.toLowerCase().startsWith('no aplica')
+    ) {
+      descripcion += ` | Relleno: ${item.relleno}`;
+    }
+    if (
+      item.decoracion &&
+      !item.decoracion.toLowerCase().startsWith('ningun') &&
+      !item.decoracion.toLowerCase().startsWith('no aplica')
+    ) {
+      descripcion += `\n• Decoración: ${item.decoracion}`;
+    }
+    if (item.dedicatoria) descripcion += `\n• Dedicatoria: "${item.dedicatoria}"`;
+    if (item.extras_texto) {
+      descripcion += `\n• Extras: ${item.extras_texto}`;
+    }
+
+    return [
+      (index + 1).toString(),
+      descripcion,
+      item.cantidad.toString(),
+      formatCurrency(item.precio_unitario),
+      formatCurrency(item.subtotal),
+    ];
+  });
 
   doc.autoTable({
-    startY: 70,
-    head: [['#', 'Producto / Detalles', 'Cant.', 'Precio Unit.', 'Total']],
+    startY: tableStartY,
+    head: [['#', 'Producto / Especificaciones', 'Cant.', 'Precio Unit.', 'Subtotal']],
     body: tableData,
     theme: 'grid',
     headStyles: {
@@ -475,44 +579,124 @@ export function generarPdfPedido(pedido: Pedido): void {
       textColor: [255, 255, 255],
       fontStyle: 'bold',
       fontSize: 9,
+      halign: 'center',
     },
     bodyStyles: {
       fontSize: 8.5,
       textColor: [50, 50, 50],
       cellPadding: 3,
     },
+    columnStyles: {
+      0: { halign: 'center', cellWidth: 10 },
+      1: { cellWidth: 105 },
+      2: { halign: 'center', cellWidth: 15 },
+      3: { halign: 'right', cellWidth: 26 },
+      4: { halign: 'right', cellWidth: 26 },
+    },
+    alternateRowStyles: {
+      fillColor: [253, 251, 247],
+    },
   });
 
   const finalY = (doc as any).lastAutoTable.finalY + 8;
 
-  // Estado de Pagos
+  // Resumen de Totales (Lado Derecho)
+  const rightX = 135;
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9);
+  doc.setTextColor(80, 80, 80);
+
+  doc.text('Subtotal:', rightX, finalY);
+  doc.text(formatCurrency(pedido.subtotal), 196, finalY, { align: 'right' });
+
+  let offset = 6;
+  const costoDelivery = Number(pedido.costo_delivery || pedido.costo_envio || 0);
+
+  if (costoDelivery > 0) {
+    if (pedido.cobro_delivery_al_recibir) {
+      doc.text('Delivery (a chofer):', rightX, finalY + offset);
+      doc.text(formatCurrency(costoDelivery), 196, finalY + offset, { align: 'right' });
+      offset += 6;
+    } else {
+      doc.text('Delivery / Envío:', rightX, finalY + offset);
+      doc.text(formatCurrency(costoDelivery), 196, finalY + offset, { align: 'right' });
+      offset += 6;
+    }
+  }
+
+  // Total Destacado en tarjeta frambuesa
+  doc.setFillColor(...frambuesaColor);
+  doc.roundedRect(rightX - 3, finalY + offset - 4, 64, 10, 2, 2, 'F');
+  doc.setTextColor(255, 255, 255);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(10);
+  doc.text('TOTAL FACTURA:', rightX, finalY + offset + 2.5);
+  doc.text(formatCurrency(pedido.total), 194, finalY + offset + 2.5, { align: 'right' });
+
+  // Estado de Pagos y Saldo (Lado Izquierdo)
   doc.setFillColor(...cremaColor);
-  doc.roundedRect(14, finalY, 110, 32, 2, 2, 'F');
+  doc.roundedRect(14, finalY - 2, 105, 34, 2, 2, 'F');
+  doc.setDrawColor(...trigoColor);
+  doc.roundedRect(14, finalY - 2, 105, 34, 2, 2, 'D');
+
   doc.setTextColor(...chocolateColor);
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(9.5);
-  doc.text('REGISTRO DE PAGOS Y SALDO:', 18, finalY + 6);
+  doc.setFontSize(9);
+  doc.text('REGISTRO DE PAGOS Y BALANCE:', 18, finalY + 3.5);
 
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(8.5);
-  doc.text(`• Total Pedido: ${formatCurrency(pedido.total)}`, 18, finalY + 13);
-  doc.text(`• Anticipo Recibido: ${formatCurrency(pedido.anticipo_pagado)}`, 18, finalY + 19);
+  doc.setTextColor(60, 60, 60);
+  doc.text(`• Total Facturado: ${formatCurrency(pedido.total)}`, 18, finalY + 9);
+  doc.text(`• Anticipo Recibido: ${formatCurrency(pedido.anticipo_pagado)}`, 18, finalY + 14.5);
 
   doc.setFont('helvetica', 'bold');
   if (pedido.saldo_pendiente > 0) {
     doc.setTextColor(...frambuesaColor);
-    doc.text(`• SALDO PENDIENTE: ${formatCurrency(pedido.saldo_pendiente)}`, 18, finalY + 26);
+    doc.text(`• SALDO PENDIENTE: ${formatCurrency(pedido.saldo_pendiente)}`, 18, finalY + 20.5);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.setTextColor(60, 60, 60);
+    if (pedido.cobro_delivery_al_recibir && costoDelivery > 0) {
+      doc.text(
+        `• Chofer debe cobrar flete (${formatCurrency(costoDelivery)}) en efectivo al entregar.`,
+        18,
+        finalY + 26
+      );
+    } else {
+      doc.text('• Saldo a liquidar contra entrega al momento de recibir.', 18, finalY + 26);
+    }
+    doc.text('• Conservar el pastel en refrigeración hasta el consumo.', 18, finalY + 30.5);
   } else {
-    doc.setTextColor(34, 139, 34);
-    doc.text('• ESTADO: ¡PAGADO TOTALMENTE!', 18, finalY + 26);
+    doc.setTextColor(...verdeColor);
+    doc.text('• ESTADO: ¡PAGADO TOTALMENTE 100%! ✓', 18, finalY + 20.5);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.setTextColor(60, 60, 60);
+    if (pedido.cobro_delivery_al_recibir && costoDelivery > 0) {
+      doc.text(
+        `• Chofer debe cobrar flete (${formatCurrency(costoDelivery)}) en efectivo al entregar.`,
+        18,
+        finalY + 26
+      );
+    } else {
+      doc.text('• Factura saldada en su totalidad.', 18, finalY + 26);
+    }
+    doc.text('• Conservar el pastel en refrigeración hasta el consumo.', 18, finalY + 30.5);
   }
 
   // Footer
   doc.setFillColor(...chocolateColor);
   doc.rect(0, 287, 210, 10, 'F');
   doc.setTextColor(255, 255, 255);
+  doc.setFont('helvetica', 'normal');
   doc.setFontSize(8);
-  doc.text('Delicias del Valle | Calidad Artesanal en Cada Bocado', 105, 293, { align: 'center' });
+  doc.text(
+    'Delicias del Valle | Calidad Artesanal en Cada Bocado • Comprobante Oficial de Pedido',
+    105,
+    293,
+    { align: 'center' }
+  );
 
   doc.save(`Factura_${pedido.numero_factura}_Delicias_del_Valle.pdf`);
 }
