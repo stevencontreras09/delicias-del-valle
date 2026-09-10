@@ -1878,7 +1878,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setPedidos((prev) =>
       prev.map((p) => {
         if (p.id !== id) return p;
-        const updated = { ...p, ...data };
+        const updated = {
+          ...p,
+          ...data,
+          fecha_entregado:
+            data.fecha_entregado ||
+            p.fecha_entregado ||
+            (data.estado === 'entregado' ? new Date().toISOString() : p.fecha_entregado),
+        };
         pedFactura = updated.numero_factura;
         updatedPedidoObj = updated;
         if (isSupabaseConfigured()) {
@@ -1923,7 +1930,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setPedidos((prev) =>
       prev.map((p) => {
         if (p.id !== id) return p;
-        const updated = { ...p, estado: nuevoEstado, inventario_descontado: pedido.inventario_descontado };
+        const updated = {
+          ...p,
+          estado: nuevoEstado,
+          inventario_descontado: pedido.inventario_descontado,
+          fecha_entregado:
+            nuevoEstado === 'entregado'
+              ? p.fecha_entregado || new Date().toISOString()
+              : p.fecha_entregado,
+        };
         if (isSupabaseConfigured()) {
           syncPedidoToSupabase(updated);
         }

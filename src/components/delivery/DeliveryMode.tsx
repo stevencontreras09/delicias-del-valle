@@ -26,6 +26,7 @@ import { formatCurrency, formatDate, formatDisplayTamano } from '../../utils/for
 import { getGoogleMapsUrl, getWazeUrl, generateClientDeliveryNotificationUrl } from '../../utils/deliveryHelper';
 import { CakeCareCard } from './CakeCareCard';
 import { LocationGoogleMapsModal } from '../quotes/LocationGoogleMapsModal';
+import { isPedidoSemanaActual } from '../../utils/orderHelper';
 import confetti from 'canvas-confetti';
 
 type FilterType = 'pendientes' | 'en_camino' | 'entregados' | 'todos';
@@ -36,6 +37,7 @@ export const DeliveryMode: React.FC = () => {
   const [filter, setFilter] = useState<FilterType>('pendientes');
   const [onlyMine, setOnlyMine] = useState<boolean>(true);
   const [searchTerm, setSearchTerm] = useState<string>('');
+  const [mostrarHistoricoEntregas, setMostrarHistoricoEntregas] = useState<boolean>(false);
   const [careModalPedido, setCareModalPedido] = useState<Pedido | null>(null);
   const [cobroModalPedido, setCobroModalPedido] = useState<Pedido | null>(null);
   const [mapModalPedido, setMapModalPedido] = useState<Pedido | null>(null);
@@ -102,6 +104,13 @@ export const DeliveryMode: React.FC = () => {
       );
     }
 
+    // Limpieza semanal automática de pedidos entregados:
+    // Ocultar pedidos entregados de semanas anteriores (> 7 días) salvo si se busca o se habilita ver historial
+    const isSearchActive = searchTerm.trim().length > 0;
+    if (!mostrarHistoricoEntregas && !isSearchActive) {
+      list = list.filter((p) => isPedidoSemanaActual(p));
+    }
+
     // Filtro por estado
     switch (filter) {
       case 'pendientes':
@@ -114,15 +123,25 @@ export const DeliveryMode: React.FC = () => {
       default:
         return list;
     }
-  }, [deliveryPedidos, onlyMine, currentUser, searchTerm, filter, enRutaIds]);
+  }, [deliveryPedidos, onlyMine, currentUser, searchTerm, filter, enRutaIds, mostrarHistoricoEntregas]);
+
+  // Conteo de pedidos entregados archivados (> 7 días)
+  const historicosEntregasCount = useMemo(() => {
+    return deliveryPedidos.filter((p) => p.estado === 'entregado' && !isPedidoSemanaActual(p)).length;
+  }, [deliveryPedidos]);
 
   // Contadores para chips superiores
   const counts = useMemo(() => {
     const pendientes = deliveryPedidos.filter((p) => p.estado !== 'entregado' && !enRutaIds.includes(p.id)).length;
     const enCamino = deliveryPedidos.filter((p) => p.estado !== 'entregado' && enRutaIds.includes(p.id)).length;
-    const entregados = deliveryPedidos.filter((p) => p.estado === 'entregado').length;
-    return { pendientes, enCamino, entregados, total: deliveryPedidos.length };
-  }, [deliveryPedidos, enRutaIds]);
+    const entregados = deliveryPedidos.filter(
+      (p) => p.estado === 'entregado' && (mostrarHistoricoEntregas || isPedidoSemanaActual(p))
+    ).length;
+    const total = deliveryPedidos.filter(
+      (p) => mostrarHistoricoEntregas || isPedidoSemanaActual(p)
+    ).length;
+    return { pendientes, enCamino, entregados, historicos: historicosEntregasCount, total };
+  }, [deliveryPedidos, enRutaIds, mostrarHistoricoEntregas, historicosEntregasCount]);
 
   // Manejador para marcar "Salir a Entregar"
   const handleIniciarRuta = (pedido: Pedido) => {
@@ -349,6 +368,30 @@ export const DeliveryMode: React.FC = () => {
           <span className="text-[11px] font-bold uppercase tracking-wider">Todos</span>
         </button>
       </div>
+
+      {/* Banner de Limpieza Semanal de Entregas */}
+      {historicosEntregasCount > 0 && (filter === 'entregados' || filter === 'todos') && !searchTerm && (
+        <div className="bg-emerald-50/90 border border-emerald-200 rounded-2xl p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 text-xs text-emerald-950">
+          <div className="flex items-center gap-2">
+            <div className="p-1.5 rounded-xl bg-emerald-100 text-emerald-800 shrink-0">
+              <Sparkles className="w-4 h-4" />
+            </div>
+            <p className="text-[11px] sm:text-xs">
+              <strong>Limpieza semanal activa:</strong>{' '}
+              {mostrarHistoricoEntregas
+                ? `Mostrando todo el historial de entregas (${historicosEntregasCount} anteriores incluidas).`
+                : `Mostrando entregas de los últimos 7 días. Se ocultan ${historicosEntregasCount} entregas de semanas anteriores para despejar tu pantalla.`}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setMostrarHistoricoEntregas(!mostrarHistoricoEntregas)}
+            className="self-end sm:self-auto px-3 py-1.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-[11px] transition shadow-xs shrink-0 cursor-pointer"
+          >
+            {mostrarHistoricoEntregas ? 'Ocultar Anteriores' : `Ver Anteriores (${historicosEntregasCount})`}
+          </button>
+        </div>
+      )}
 
       {/* 3. Lista de Tarjetas de Entrega (Mobile-First) */}
       <div className="space-y-3.5">

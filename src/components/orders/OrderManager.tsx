@@ -16,6 +16,9 @@ import {
   Send,
   ShieldCheck,
   Edit2,
+  Calendar,
+  Sparkles,
+  Clock,
 } from 'lucide-react';
 import { formatCurrency, formatDate } from '../../utils/formatters';
 import { Badge } from '../ui/Badge';
@@ -29,6 +32,11 @@ import { generarPdfPedido } from '../../utils/pdfGenerator';
 import { generateOrderWhatsAppUrl } from '../../utils/whatsappHelper';
 import { getGoogleMapsUrl, generateDriverWhatsAppMessage } from '../../utils/deliveryHelper';
 import { CakeCareCard } from '../delivery/CakeCareCard';
+import {
+  isPedidoSemanaActual,
+  contarEntregadosHistoricos,
+  DIAS_LIMPIEZA_SEMANAL,
+} from '../../utils/orderHelper';
 
 const COLUMNAS_KANBAN: { id: EstadoPedido; label: string; badgeVariant: 'warning' | 'info' | 'success' | 'frambuesa' }[] = [
   { id: 'confirmado', label: '1. Confirmados', badgeVariant: 'warning' },
@@ -42,6 +50,7 @@ export const OrderManager: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter] = useState<'all' | EstadoPedido>('all');
   const [viewMode, setViewMode] = useState<'kanban' | 'table'>('kanban');
+  const [mostrarHistoricoEntregados, setMostrarHistoricoEntregados] = useState(false);
 
   // Modales
   const [selectedPedido, setSelectedPedido] = useState<Pedido | null>(null);
@@ -51,6 +60,11 @@ export const OrderManager: React.FC = () => {
   const [cancelPedido, setCancelPedido] = useState<Pedido | null>(null);
   const [deletePedido, setDeletePedido] = useState<Pedido | null>(null);
   const [careCardPedido, setCareCardPedido] = useState<Pedido | null>(null);
+
+  // Conteo de pedidos entregados de semanas anteriores (> 7 días)
+  const historicosCount = useMemo(() => {
+    return contarEntregadosHistoricos(pedidos.list);
+  }, [pedidos.list]);
 
   const filteredPedidos = useMemo(() => {
     return pedidos.list.filter((p) => {
@@ -62,9 +76,15 @@ export const OrderManager: React.FC = () => {
 
       const matchesStatus = statusFilter === 'all' || p.estado === statusFilter;
 
-      return matchesSearch && matchesStatus;
+      // Limpieza semanal automática:
+      // Ocultar entregados mayores a 7 días salvo si se busca activamente o se habilita el historial
+      const isSearchActive = searchTerm.trim().length > 0;
+      const matchesWeekly =
+        mostrarHistoricoEntregados || isSearchActive || isPedidoSemanaActual(p);
+
+      return matchesSearch && matchesStatus && matchesWeekly;
     });
-  }, [pedidos.list, searchTerm, statusFilter]);
+  }, [pedidos.list, searchTerm, statusFilter, mostrarHistoricoEntregados]);
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -76,8 +96,16 @@ export const OrderManager: React.FC = () => {
               Facturación & Control de Pedidos
             </h1>
             <span className="bg-crema text-chocolate-800 text-xs font-bold px-3 py-1 rounded-full border border-trigo-300">
-              {pedidos.list.length} Pedidos
+              {filteredPedidos.length} Activos
             </span>
+            {historicosCount > 0 && !mostrarHistoricoEntregados && (
+              <span
+                className="bg-stone-100 text-stone-600 text-xs font-semibold px-2.5 py-1 rounded-full border border-stone-200 hidden sm:inline-block"
+                title={`${historicosCount} pedidos entregados archivados de semanas anteriores`}
+              >
+                📦 {historicosCount} archivados
+              </span>
+            )}
           </div>
           <p className="text-xs text-chocolate-500 mt-1">
             Gestión de estados de producción, deducción inmediata de stock, anticipo 50/50 y recibos WhatsApp.
@@ -120,18 +148,57 @@ export const OrderManager: React.FC = () => {
         </div>
       </div>
 
-      {/* Buscador */}
-      <div className="bg-white rounded-3xl p-4 sm:p-5 border border-trigo-200 shadow-warm">
-        <div className="relative w-full">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-          <input
-            type="text"
-            placeholder="Buscar pedido por número de factura (FAC-...), cliente o producto..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-trigo-200 focus:outline-none focus:ring-2 focus:ring-frambuesa-400 text-xs text-panadero bg-canvas/40"
-          />
+      {/* Buscador & Conmutador de Limpieza Semanal */}
+      <div className="bg-white rounded-3xl p-4 sm:p-5 border border-trigo-200 shadow-warm space-y-3">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+          <div className="relative flex-1">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Buscar pedido por número de factura (FAC-...), cliente o producto..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-trigo-200 focus:outline-none focus:ring-2 focus:ring-frambuesa-400 text-xs text-panadero bg-canvas/40"
+            />
+          </div>
+
+          {historicosCount > 0 && (
+            <button
+              type="button"
+              onClick={() => setMostrarHistoricoEntregados(!mostrarHistoricoEntregados)}
+              className={`flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all border shrink-0 ${
+                mostrarHistoricoEntregados
+                  ? 'bg-amber-100/90 text-amber-900 border-amber-300 shadow-xs'
+                  : 'bg-crema text-chocolate-700 border-trigo-300 hover:bg-stone-100'
+              }`}
+            >
+              <Calendar className="w-3.5 h-3.5 text-chocolate-600" />
+              <span>
+                {mostrarHistoricoEntregados
+                  ? 'Ocultar Anteriores'
+                  : `Ver Anteriores (${historicosCount})`}
+              </span>
+            </button>
+          )}
         </div>
+
+        {historicosCount > 0 && !mostrarHistoricoEntregados && !searchTerm && (
+          <div className="flex items-center justify-between bg-amber-50/80 border border-amber-200/80 rounded-xl px-3 py-1.5 text-[11px] text-amber-900">
+            <span className="flex items-center gap-1.5">
+              <Sparkles className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+              <span>
+                <strong>Limpieza semanal activa:</strong> Pantalla limpia con entregas de los últimos 7 días. Se ocultan {historicosCount} pedidos anteriores para mantener el foco en la semana.
+              </span>
+            </span>
+            <button
+              type="button"
+              onClick={() => setMostrarHistoricoEntregados(true)}
+              className="text-amber-800 hover:text-amber-950 font-bold underline ml-2 shrink-0 cursor-pointer"
+            >
+              Ver anteriores
+            </button>
+          </div>
+        )}
       </div>
 
       {/* VISTA KANBAN PIPELINE */}
@@ -151,11 +218,38 @@ export const OrderManager: React.FC = () => {
                     <Badge variant={col.badgeVariant} size="sm">
                       {col.label}
                     </Badge>
+                    {col.id === 'entregado' && (
+                      <span
+                        className="text-[10px] font-bold text-chocolate-500 bg-white px-1.5 py-0.5 rounded border border-trigo-200"
+                        title="Entregas de los últimos 7 días"
+                      >
+                        7 días
+                      </span>
+                    )}
                   </div>
                   <span className="text-xs font-extrabold text-chocolate-700 bg-white px-2 py-0.5 rounded-full border border-trigo-300">
                     {columnOrders.length}
                   </span>
                 </div>
+
+                {/* Aviso y toggle en Columna Entregados */}
+                {col.id === 'entregado' && historicosCount > 0 && !searchTerm && (
+                  <div className="mb-3 p-2.5 rounded-2xl bg-white border border-trigo-200 text-center shadow-xs">
+                    <p className="text-[11px] text-chocolate-600 font-medium mb-1.5">
+                      {mostrarHistoricoEntregados
+                        ? `Mostrando todo el historial (${columnOrders.length} entregas)`
+                        : `🧹 ${historicosCount} entregas pasadas ocultas`}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setMostrarHistoricoEntregados(!mostrarHistoricoEntregados)}
+                      className="w-full py-1.5 px-2 rounded-xl bg-chocolate-700 hover:bg-chocolate-800 text-white text-[11px] font-bold transition shadow-xs flex items-center justify-center gap-1.5"
+                    >
+                      <Clock className="w-3.5 h-3.5" />
+                      <span>{mostrarHistoricoEntregados ? 'Ocultar Anteriores' : `Ver Anteriores (${historicosCount})`}</span>
+                    </button>
+                  </div>
+                )}
 
                 {/* Tarjetas de Pedidos en la Columna */}
                 <div className="space-y-3 flex-1 overflow-y-auto">

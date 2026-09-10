@@ -266,6 +266,7 @@ export interface Pedido {
   repartidor_telefono?: string;
   cobro_delivery_al_recibir?: boolean;
   maps_url?: string;
+  fecha_entregado?: string;
   created_at: string;
 }
 
