@@ -25,18 +25,20 @@ import {
 import { formatCurrency, formatDate, formatDisplayTamano } from '../../utils/formatters';
 import { getGoogleMapsUrl, getWazeUrl, generateClientDeliveryNotificationUrl } from '../../utils/deliveryHelper';
 import { CakeCareCard } from './CakeCareCard';
+import { LocationGoogleMapsModal } from '../quotes/LocationGoogleMapsModal';
 import confetti from 'canvas-confetti';
 
 type FilterType = 'pendientes' | 'en_camino' | 'entregados' | 'todos';
 
 export const DeliveryMode: React.FC = () => {
-  const { pedidos, zonasDelivery, currentUser, showToast } = useApp();
+  const { pedidos, zonasDelivery, currentUser, showToast, syncFromSupabase, isSyncing } = useApp();
 
   const [filter, setFilter] = useState<FilterType>('pendientes');
   const [onlyMine, setOnlyMine] = useState<boolean>(true);
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [careModalPedido, setCareModalPedido] = useState<Pedido | null>(null);
   const [cobroModalPedido, setCobroModalPedido] = useState<Pedido | null>(null);
+  const [mapModalPedido, setMapModalPedido] = useState<Pedido | null>(null);
 
   // Registro local de pedidos que el chofer marcó como "En camino"
   const [enRutaIds, setEnRutaIds] = useState<number[]>(() => {
@@ -228,6 +230,19 @@ export const DeliveryMode: React.FC = () => {
             >
               Todos ({counts.total})
             </button>
+            <button
+              type="button"
+              onClick={() => {
+                syncFromSupabase(false);
+                showToast('info', 'Sincronizando', 'Actualizando entregas desde la nube...');
+              }}
+              disabled={isSyncing}
+              className="p-1.5 rounded-xl border border-trigo-200 hover:bg-stone-100 text-chocolate-700 transition flex items-center gap-1 cursor-pointer disabled:opacity-50"
+              title="Refrescar y sincronizar entregas"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 text-chocolate-600 ${isSyncing ? 'animate-spin' : ''}`} />
+              <span className="hidden md:inline text-[11px] font-bold">Refrescar</span>
+            </button>
           </div>
         </div>
 
@@ -372,8 +387,20 @@ export const DeliveryMode: React.FC = () => {
             const fleteAlRecibir = Boolean(p.cobro_delivery_al_recibir);
             const totalACobrar = saldo + (fleteAlRecibir ? flete : 0);
 
-            const mapsUrl = getGoogleMapsUrl(p.direccion_entrega || '', p.punto_referencia);
-            const wazeUrl = getWazeUrl(p.direccion_entrega || '');
+            const mapsUrl =
+              p.maps_url && (p.maps_url.startsWith('http://') || p.maps_url.startsWith('https://'))
+                ? p.maps_url
+                : getGoogleMapsUrl(p.direccion_entrega || '', p.punto_referencia, p.maps_url);
+
+            let wazeUrl = getWazeUrl(p.direccion_entrega || '');
+            if (p.maps_url) {
+              const coordsMatch =
+                p.maps_url.match(/q=(-?\d+\.\d+),(-?\d+\.\d+)/) ||
+                p.maps_url.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
+              if (coordsMatch) {
+                wazeUrl = `https://waze.com/ul?ll=${coordsMatch[1]},${coordsMatch[2]}&navigate=yes`;
+              }
+            }
             const clientNotifyWaUrl = generateClientDeliveryNotificationUrl(p);
 
             return (
@@ -460,16 +487,29 @@ export const DeliveryMode: React.FC = () => {
 
                   {/* Cuadro de Dirección & Referencia (Alta Visibilidad Nocturna y Diurna) */}
                   <div className="bg-slate-900 text-slate-100 p-4 rounded-2xl space-y-2.5 shadow-inner">
-                    <div className="flex items-start gap-2.5">
-                      <MapPin className="w-5 h-5 text-rose-400 shrink-0 mt-0.5" />
-                      <div className="flex-1">
-                        <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider block">
-                          Dirección de Entrega
-                        </span>
-                        <p className="text-sm sm:text-base font-bold text-white leading-snug">
-                          {p.direccion_entrega || 'Dirección acordada por teléfono'}
-                        </p>
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-start gap-2.5 flex-1 min-w-0">
+                        <MapPin className="w-5 h-5 text-rose-400 shrink-0 mt-0.5" />
+                        <div className="flex-1 min-w-0">
+                          <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider block">
+                            Dirección de Entrega
+                          </span>
+                          <p className="text-sm sm:text-base font-bold text-white leading-snug break-words">
+                            {p.direccion_entrega || 'Dirección acordada por teléfono'}
+                          </p>
+                        </div>
                       </div>
+
+                      {/* Botón para ver/ajustar mapa interactivo directamente */}
+                      <button
+                        type="button"
+                        onClick={() => setMapModalPedido(p)}
+                        className="px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-sky-400 hover:text-sky-300 border border-slate-700 text-[11px] font-bold transition flex items-center gap-1 shrink-0 cursor-pointer active:scale-95"
+                        title="Ver mapa interactivo o ajustar ubicación de entrega"
+                      >
+                        <Navigation className="w-3.5 h-3.5" />
+                        <span>Ver Mapa</span>
+                      </button>
                     </div>
 
                     {p.punto_referencia && (
@@ -478,6 +518,15 @@ export const DeliveryMode: React.FC = () => {
                         <p className="text-xs sm:text-sm font-bold text-amber-300">
                           {p.punto_referencia}
                         </p>
+                      </div>
+                    )}
+
+                    {p.zona_delivery_id && (
+                      <div className="pt-1 text-[11px] text-slate-400 flex items-center gap-1">
+                        <span>Zona:</span>
+                        <span className="text-slate-200 font-semibold">
+                          {zonasDelivery.find((z) => z.id === p.zona_delivery_id)?.nombre || 'Zona asignada'}
+                        </span>
                       </div>
                     )}
                   </div>
@@ -703,6 +752,28 @@ export const DeliveryMode: React.FC = () => {
             />
           </div>
         </div>
+      )}
+
+      {/* MODAL: Vista Previa y Corrección de Ubicación en Tiempo Real */}
+      {mapModalPedido && (
+        <LocationGoogleMapsModal
+          isOpen={Boolean(mapModalPedido)}
+          onClose={() => setMapModalPedido(null)}
+          direccion={mapModalPedido.direccion_entrega || ''}
+          puntoReferencia={mapModalPedido.punto_referencia}
+          mapsUrl={mapModalPedido.maps_url}
+          zonaNombre={zonasDelivery.find((z) => z.id === mapModalPedido.zona_delivery_id)?.nombre}
+          clienteNombre={mapModalPedido.cliente_nombre}
+          onSave={(data) => {
+            pedidos.updatePedido(mapModalPedido.id, {
+              direccion_entrega: data.direccion,
+              punto_referencia: data.punto_referencia,
+              maps_url: data.mapsUrl,
+            });
+            setMapModalPedido(null);
+            showToast('success', 'Ubicación Actualizada', 'La ubicación del pedido fue actualizada y guardada con éxito.');
+          }}
+        />
       )}
     </div>
   );

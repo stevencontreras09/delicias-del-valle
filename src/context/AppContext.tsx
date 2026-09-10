@@ -1874,20 +1874,37 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
 
     let pedFactura = '';
+    let updatedPedidoObj: Pedido | null = null;
     setPedidos((prev) =>
       prev.map((p) => {
         if (p.id !== id) return p;
         const updated = { ...p, ...data };
         pedFactura = updated.numero_factura;
+        updatedPedidoObj = updated;
         if (isSupabaseConfigured()) {
           syncPedidoToSupabase(updated);
         }
         return updated;
       })
     );
-    showToast('info', 'Pedido Actualizado', 'Los cambios en la orden fueron registrados.');
+
+    // Actualizar cliente en CRM si hay datos de contacto o logística
+    if (updatedPedidoObj) {
+      const pObj = updatedPedidoObj as Pedido;
+      upsertClienteFromOrderOrQuote({
+        nombre: pObj.cliente_nombre,
+        telefono: pObj.cliente_telefono,
+        email: pObj.cliente_email,
+        direccion: pObj.direccion_entrega,
+        punto_referencia: pObj.punto_referencia,
+        maps_url: pObj.maps_url,
+        zona_delivery_id: pObj.zona_delivery_id,
+      });
+    }
+
+    showToast('info', 'Pedido Actualizado', 'Los cambios en la orden fueron registrados y sincronizados con Delivery.');
     if (isSupabaseConfigured() && pedFactura) {
-      broadcastChange('modificó', 'el pedido', pedFactura, id);
+      broadcastChange('modificó la información del pedido', 'el pedido', pedFactura, id);
     }
   };
 
