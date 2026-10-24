@@ -116,6 +116,8 @@ export interface RecetaCostosCalculados {
   precio_sugerido_venta?: number;
   ganancia_estimada: number;
   ganancia_estimada_raw?: number;
+  costo_elaboracion_tiempo?: number;
+  tiempo_total_min?: number;
 }
 
 export type CategoriaExtra = 'empaque' | 'topper' | 'sticker' | 'tarjeta' | 'otro';
@@ -147,6 +149,13 @@ export interface CotizacionItem {
   tipo_precio_aplicado?: 'redondeado' | 'real' | 'personalizado';
   precio_real_base?: number;
   precio_redondeado_base?: number;
+  costo_materia_prima?: number;
+  costo_elaboracion?: number;
+  costo_total_unitario?: number;
+  tiempo_elaboracion_min?: number;
+  es_extra?: boolean;
+  categoria_extra?: CategoriaExtra;
+  extra_id?: string;
 }
 
 export type EstadoCotizacion = 'pendiente' | 'enviada' | 'aprobada' | 'rechazada' | 'convertida';
@@ -231,6 +240,13 @@ export interface PedidoItem {
   precio_unitario: number;
   subtotal: number;
   factor_receta: number;
+  costo_materia_prima?: number;
+  costo_elaboracion?: number;
+  costo_total_unitario?: number;
+  tiempo_elaboracion_min?: number;
+  es_extra?: boolean;
+  categoria_extra?: CategoriaExtra;
+  extra_id?: string;
 }
 
 export interface Pedido {

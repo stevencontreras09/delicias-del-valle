@@ -30,6 +30,84 @@ export function calcularCostoIngrediente(
 }
 
 /**
+ * Tarifa base de taller por hora en RD$ (DOP) para mano de obra y elaboración.
+ * Default: RD$ 300 / hora (RD$ 5.00 / minuto).
+ */
+export const TARIFA_HORA_TALLER_DEFAULT = 300;
+
+export interface CostoElaboracionDesglose {
+  tiempoPreparacionMin: number;
+  tiempoHorneadoMin: number;
+  tiempoTotalMin: number;
+  costoManoObraPreparacion: number;
+  costoOperativoHorno: number;
+  costoElaboracionDecorado: number;
+  costoElaboracionTotal: number;
+  tarifaHoraTaller: number;
+}
+
+/**
+ * Calcula el Costo Real de Elaboración de un producto combinando:
+ * 1. Tiempo de preparación y batido (escalado por el factor de receta) × Tarifa de taller/min
+ * 2. Tiempo de horneado (gas y energía del horno) × Tarifa de operación/min
+ * 3. Complejidad y mano de obra del decorado seleccionado
+ */
+export function calcularCostoElaboracionProducto(
+  receta: Receta | undefined,
+  factorEscalado: number = 1,
+  costoDecoracion: number = 0,
+  tarifaHoraTaller: number = TARIFA_HORA_TALLER_DEFAULT
+): CostoElaboracionDesglose {
+  if (!receta) {
+    return {
+      tiempoPreparacionMin: 0,
+      tiempoHorneadoMin: 0,
+      tiempoTotalMin: 0,
+      costoManoObraPreparacion: 0,
+      costoOperativoHorno: 0,
+      costoElaboracionDecorado: costoDecoracion,
+      costoElaboracionTotal: costoDecoracion,
+      tarifaHoraTaller,
+    };
+  }
+
+  // 1. Minutos de preparación de masa/batido escalados según formato/tamaño
+  const factorTiempoPrep = factorEscalado < 1 ? Math.max(0.6, factorEscalado) : Math.min(2.5, factorEscalado);
+  const tiempoPrep = Math.round((receta.tiempo_preparacion_min || 45) * factorTiempoPrep);
+
+  // 2. Minutos de horneado (aumenta moderadamente para tamaños grandes)
+  const factorTiempoHorno = factorEscalado >= 1.5 ? 1.2 : 1.0;
+  const tiempoHorno = Math.round((receta.tiempo_horneado_min || 40) * factorTiempoHorno);
+
+  const tiempoTotal = tiempoPrep + tiempoHorno;
+
+  // 3. Tarifa por minuto de taller (ej. RD$ 300 / 60 = RD$ 5.00 / min)
+  const tarifaMinuto = (tarifaHoraTaller || TARIFA_HORA_TALLER_DEFAULT) / 60;
+
+  // Costo de mano de obra directa del pastelero
+  const costoManoObraPrep = Number((tiempoPrep * tarifaMinuto).toFixed(2));
+
+  // Costo operativo de horneado (energía/gas por tiempo de cocción en horno)
+  const costoOperativoHorno = Number((tiempoHorno * (tarifaMinuto * 0.75)).toFixed(2));
+
+  // Costo de elaboración del decorado manual
+  const costoDeco = Number((costoDecoracion || 0).toFixed(2));
+
+  const costoTotal = Number((costoManoObraPrep + costoOperativoHorno + costoDeco).toFixed(2));
+
+  return {
+    tiempoPreparacionMin: tiempoPrep,
+    tiempoHorneadoMin: tiempoHorno,
+    tiempoTotalMin: tiempoTotal,
+    costoManoObraPreparacion: costoManoObraPrep,
+    costoOperativoHorno: costoOperativoHorno,
+    costoElaboracionDecorado: costoDeco,
+    costoElaboracionTotal: costoTotal,
+    tarifaHoraTaller,
+  };
+}
+
+/**
  * Calcula el desglose completo de costos de una receta (BOM) con porcentajes en cascada,
  * incluyendo el 3% de merma técnica operativa y precios sugeridos redondeados hacia arriba a 0.
  */
@@ -116,6 +194,9 @@ export function calcularCostosReceta(
   const gananciaEstimada = precioSugeridoMargenVenta - costoTotalProduccion;
   const gananciaEstimadaRaw = precioSugeridoMargenVentaRaw - costoTotalProduccion;
 
+  const tiempoTotalMin = Math.round(((receta.tiempo_preparacion_min || 45) * factorEscalado) + (receta.tiempo_horneado_min || 40));
+  const costoElaboracionTiempo = Number((costoManoObra + costoOperativo).toFixed(2));
+
   return {
     costo_ingredientes_fijos: costoFijos,
     costo_ingredientes_variables: costoVariablesTotal,
@@ -135,6 +216,8 @@ export function calcularCostosReceta(
     precio_sugerido_venta: precioSugeridoMargenVenta,
     ganancia_estimada: gananciaEstimada,
     ganancia_estimada_raw: gananciaEstimadaRaw,
+    costo_elaboracion_tiempo: costoElaboracionTiempo,
+    tiempo_total_min: tiempoTotalMin,
   };
 }
 

@@ -51,22 +51,31 @@ export function generarMensajeCotizacionWhatsApp(cotizacion: Cotizacion): { mens
 
   texto += `✨ *DETALLE DEL PEDIDO:* ✨\n`;
   cotizacion.items.forEach((item, index) => {
-    texto += `\n*${index + 1}. ${item.receta_nombre}*\n`;
-    texto += `   • Tamaño / Porciones: ${formatDisplayTamano(item.tamano_porciones)}\n`;
-    if (item.masa_base && !item.masa_base.toLowerCase().startsWith('ningun') && !item.masa_base.toLowerCase().startsWith('no aplica')) {
-      texto += `   • Masa Base: ${item.masa_base}\n`;
+    const isExtra = item.es_extra || (!item.receta_id && Boolean(item.tamano_porciones?.toLowerCase().includes('extra')));
+    if (isExtra) {
+      texto += `\n*${index + 1}. [EXTRA DE LA ORDEN] ${item.receta_nombre}*\n`;
+      if (item.dedicatoria) {
+        texto += `   • Detalle / Dedicatoria: "${item.dedicatoria}"\n`;
+      }
+      texto += `   • Cantidad: ${item.cantidad} | Subtotal: *${formatCurrency(item.subtotal)}*\n`;
+    } else {
+      texto += `\n*${index + 1}. ${item.receta_nombre}*\n`;
+      texto += `   • Tamaño / Porciones: ${formatDisplayTamano(item.tamano_porciones)}\n`;
+      if (item.masa_base && !item.masa_base.toLowerCase().startsWith('ningun') && !item.masa_base.toLowerCase().startsWith('no aplica')) {
+        texto += `   • Masa Base: ${item.masa_base}\n`;
+      }
+      if (item.relleno && !item.relleno.toLowerCase().startsWith('ningun') && !item.relleno.toLowerCase().startsWith('no aplica')) {
+        texto += `   • Relleno: ${item.relleno}\n`;
+      }
+      if (item.decoracion && !item.decoracion.toLowerCase().startsWith('ningun') && !item.decoracion.toLowerCase().startsWith('no aplica')) {
+        texto += `   • Decoración: ${item.decoracion}\n`;
+      }
+      if (item.dedicatoria) texto += `   • Dedicatoria: "${item.dedicatoria}"\n`;
+      if (item.extras && item.extras.length > 0) {
+        texto += `   • Extras: ${item.extras.map((e) => `${e.nombre}${e.cantidad && e.cantidad > 1 ? ` (x${e.cantidad})` : ''} (${formatCurrency(e.precio * (e.cantidad || 1))})`).join(', ')}\n`;
+      }
+      texto += `   • Cantidad: ${item.cantidad} | Subtotal: *${formatCurrency(item.subtotal)}*\n`;
     }
-    if (item.relleno && !item.relleno.toLowerCase().startsWith('ningun') && !item.relleno.toLowerCase().startsWith('no aplica')) {
-      texto += `   • Relleno: ${item.relleno}\n`;
-    }
-    if (item.decoracion && !item.decoracion.toLowerCase().startsWith('ningun') && !item.decoracion.toLowerCase().startsWith('no aplica')) {
-      texto += `   • Decoración: ${item.decoracion}\n`;
-    }
-    if (item.dedicatoria) texto += `   • Dedicatoria: "${item.dedicatoria}"\n`;
-    if (item.extras && item.extras.length > 0) {
-      texto += `   • Extras: ${item.extras.map((e) => `${e.nombre}${e.cantidad && e.cantidad > 1 ? ` (x${e.cantidad})` : ''} (${formatCurrency(e.precio * (e.cantidad || 1))})`).join(', ')}\n`;
-    }
-    texto += `   • Cantidad: ${item.cantidad} | Subtotal: *${formatCurrency(item.subtotal)}*\n`;
   });
 
   texto += `\n--------------------------------\n`;

@@ -1733,14 +1733,23 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       relleno: item.relleno,
       decoracion: item.decoracion,
       dedicatoria: item.dedicatoria,
-      extras_texto: [
-        item.variables_receta && item.variables_receta.length > 0 ? `Variables: ${item.variables_receta.join(', ')}` : '',
-        item.extras?.map((e) => e.cantidad && e.cantidad > 1 ? `${e.nombre} (x${e.cantidad})` : `${e.nombre}`).join(', ') || ''
-      ].filter(Boolean).join(' | '),
+      extras_texto: item.es_extra
+        ? 'Extra de la orden'
+        : [
+            item.variables_receta && item.variables_receta.length > 0 ? `Variables: ${item.variables_receta.join(', ')}` : '',
+            item.extras?.map((e) => e.cantidad && e.cantidad > 1 ? `${e.nombre} (x${e.cantidad})` : `${e.nombre}`).join(', ') || ''
+          ].filter(Boolean).join(' | '),
       cantidad: item.cantidad,
       precio_unitario: item.precio_unitario,
       subtotal: item.subtotal,
       factor_receta: item.factor_receta,
+      es_extra: item.es_extra,
+      categoria_extra: item.categoria_extra,
+      extra_id: item.extra_id,
+      costo_materia_prima: item.costo_materia_prima,
+      costo_elaboracion: item.costo_elaboracion,
+      costo_total_unitario: item.costo_total_unitario,
+      tiempo_elaboracion_min: item.tiempo_elaboracion_min,
     }));
 
     const nuevoPedido: Pedido = {

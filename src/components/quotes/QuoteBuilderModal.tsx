@@ -18,6 +18,8 @@ import { formatCurrency, formatUnit, formatDisplayTamano } from '../../utils/for
 import {
   calcularCostosReceta,
   calcularCostoIngrediente,
+  calcularCostoElaboracionProducto,
+  TARIFA_HORA_TALLER_DEFAULT,
   getRecipePortionsCount,
   getPorcionOpciones,
   redondearPrecioHaciaArribaCero,
@@ -43,6 +45,10 @@ import {
   MessageSquare,
   MapPin,
   Map,
+  Clock,
+  Flame,
+  ChefHat,
+  TrendingUp,
 } from 'lucide-react';
 import { OptionsManagerModal, CategoriaOpcion } from './OptionsManagerModal';
 import { LocationGoogleMapsModal } from './LocationGoogleMapsModal';
@@ -472,12 +478,95 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
   const [extraQuantities, setExtraQuantities] = useState<Record<string, number>>({});
   const dedicatoriaInputRef = useRef<HTMLInputElement>(null);
 
+  // Modo de configuración: Producto / Receta vs Extras de la Orden
+  const [itemBuilderTab, setItemBuilderTab] = useState<'producto' | 'extra'>('producto');
+
+  // Estados para el configurador de extras independientes para toda la orden
+  const [standaloneExtraSearch, setStandaloneExtraSearch] = useState('');
+  const [standaloneExtraCategory, setStandaloneExtraCategory] = useState<
+    'all' | 'empaques' | 'toppers' | 'stickers' | 'tarjetas' | 'otros'
+  >('all');
+  const [standaloneExtraQuantities, setStandaloneExtraQuantities] = useState<Record<string, number>>({});
+  const [standaloneExtraPrices, setStandaloneExtraPrices] = useState<Record<string, number | ''>>({});
+  const [standaloneExtraNotes, setStandaloneExtraNotes] = useState<Record<string, string>>({});
+  const [standaloneAddedFeedback, setStandaloneAddedFeedback] = useState<string | null>(null);
+
+  // Tarifa por hora del taller de repostería (mano de obra y tiempo de horno)
+  const [tarifaHoraTaller, setTarifaHoraTaller] = useState<number>(() => {
+    try {
+      const saved = localStorage.getItem('delicias_tarifa_taller');
+      if (saved) {
+        const val = Number(saved);
+        if (!isNaN(val) && val > 0) return val;
+      }
+    } catch {}
+    return TARIFA_HORA_TALLER_DEFAULT;
+  });
+
+  const handleUpdateTarifaTaller = (newTarifa: number) => {
+    const val = Math.max(1, isNaN(newTarifa) ? TARIFA_HORA_TALLER_DEFAULT : newTarifa);
+    setTarifaHoraTaller(val);
+    try {
+      localStorage.setItem('delicias_tarifa_taller', String(val));
+    } catch {}
+  };
+
   const isTarjetaSelected = useMemo(() => {
     return selectedExtras.some((id) => {
       const extra = extrasOpciones.find((e) => e.id === id);
       return extra ? getExtraCategory(extra) === 'tarjeta' : false;
     });
   }, [selectedExtras, extrasOpciones]);
+
+  const filteredStandaloneExtrasList = useMemo(() => {
+    return extrasOpciones.filter((extra) => {
+      const matchesSearch = extra.nombre.toLowerCase().includes(standaloneExtraSearch.toLowerCase());
+      const cat = getExtraCategory(extra);
+      let matchesCategory = true;
+      if (standaloneExtraCategory === 'empaques') {
+        matchesCategory = cat === 'empaque';
+      } else if (standaloneExtraCategory === 'toppers') {
+        matchesCategory = cat === 'topper';
+      } else if (standaloneExtraCategory === 'stickers') {
+        matchesCategory = cat === 'sticker';
+      } else if (standaloneExtraCategory === 'tarjetas') {
+        matchesCategory = cat === 'tarjeta';
+      } else if (standaloneExtraCategory === 'otros') {
+        matchesCategory = cat === 'otro';
+      }
+      return matchesSearch && matchesCategory;
+    });
+  }, [extrasOpciones, standaloneExtraSearch, standaloneExtraCategory]);
+
+  const getExtraBadgeStyle = (cat?: CategoriaExtra) => {
+    switch (cat) {
+      case 'empaque':
+        return 'bg-purple-100 text-purple-800 border-purple-200';
+      case 'topper':
+        return 'bg-pink-100 text-pink-800 border-pink-200';
+      case 'sticker':
+        return 'bg-amber-100 text-amber-800 border-amber-200';
+      case 'tarjeta':
+        return 'bg-emerald-100 text-emerald-800 border-emerald-200';
+      default:
+        return 'bg-chocolate-100 text-chocolate-800 border-chocolate-200';
+    }
+  };
+
+  const getExtraBadgeLabel = (cat?: CategoriaExtra) => {
+    switch (cat) {
+      case 'empaque':
+        return '📦 Empaque';
+      case 'topper':
+        return '🎂 Topper';
+      case 'sticker':
+        return '🏷️ Sticker';
+      case 'tarjeta':
+        return '💌 Tarjeta';
+      default:
+        return '✨ Detalle';
+    }
+  };
   const [cantidad, setCantidad] = useState<number>(1);
   const [precioBaseManual, setPrecioBaseManual] = useState<number | ''>('');
   const [tipoPrecioSeleccionado, setTipoPrecioSeleccionado] = useState<'redondeado' | 'real' | 'personalizado'>('redondeado');
@@ -752,16 +841,51 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
 
   const costoPersonalizaciones = costoMasa + costoRelleno + costoDecoracion;
 
+  // =========================================================================
+  // CÁLCULO DE COSTO DE ELABORACIÓN (TALLER, HORNO, MANO DE OBRA Y MARGEN)
+  // =========================================================================
+  // 1. Materia prima directa (fijos + variables de receta + insumos de masa/relleno)
+  const costoMateriaPrima = Number(
+    ((calcReceta?.costo_directo_materia_prima || 0) + (costoMasa * 0.45) + (costoRelleno * 0.45)).toFixed(2)
+  );
+
+  // 2. Costo de Elaboración dinámico (tiempo de batido/preparación + tiempo de horneado + acabado/decoración)
+  const costoElaboracionInfo = useMemo(() => {
+    return calcularCostoElaboracionProducto(
+      currentReceta,
+      factorReceta,
+      costoDecoracion,
+      tarifaHoraTaller
+    );
+  }, [currentReceta, factorReceta, costoDecoracion, tarifaHoraTaller]);
+
+  // 3. Costo Total Unitario de Producción (CTP)
+  // Incluye: Materia prima + Merma técnica (3%) + Costos indirectos y reposición + Costo de Elaboración del Taller
+  const costoIndirectosYMerma =
+    (calcReceta?.costo_merma || 0) +
+    (calcReceta?.costo_materiales_indirectos || 0) +
+    (calcReceta?.costo_reposicion_equipos || 0);
+
+  const costoTotalUnitario = Number(
+    (costoMateriaPrima + costoIndirectosYMerma + costoElaboracionInfo.costoElaboracionTotal).toFixed(2)
+  );
+
+  // 4. Margen comercial y Precio Sugerido
+  // Garantiza que el precio cubra tanto la receta base como el costo completo de horas de taller y horneado
+  const margenPct = currentReceta?.margen_beneficio_pct ?? 50;
+  const divisor = Math.max(0.01, 1 - (margenPct / 100));
+  const precioMinimoPorElaboracion = costoTotalUnitario / divisor;
+
+  const precioSugeridoBase = precioBaseRecetaReal + costoPersonalizaciones;
+  const precioSugeridoReal = Number(Math.max(precioSugeridoBase, precioMinimoPorElaboracion).toFixed(2));
+  const precioSugeridoRedondeado = redondearPrecioHaciaArribaCero(precioSugeridoReal);
+
   // Extras adicionales por unidad considerando la cantidad configurada
   const totalExtrasUnitario = selectedExtras.reduce((sum, extId) => {
     const ext = extrasOpciones.find((e) => e.id === extId);
     const qty = extraQuantities[extId] || 1;
     return sum + (ext ? ext.precio * qty : 0);
   }, 0);
-
-  // Precios Sugeridos Totales del Producto (Receta + Masa + Relleno + Decoración)
-  const precioSugeridoRedondeado = redondearPrecioHaciaArribaCero(precioBaseRecetaCalculado + costoPersonalizaciones);
-  const precioSugeridoReal = Number((precioBaseRecetaReal + costoPersonalizaciones).toFixed(2));
 
   // Precio Unitario Final (manual o según modo seleccionado)
   const precioUnitarioFinal =
@@ -819,6 +943,10 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
       tipo_precio_aplicado: tipoPrecioSeleccionado,
       precio_real_base: precioSugeridoReal,
       precio_redondeado_base: precioSugeridoRedondeado,
+      costo_materia_prima: costoMateriaPrima,
+      costo_elaboracion: costoElaboracionInfo.costoElaboracionTotal,
+      costo_total_unitario: costoTotalUnitario,
+      tiempo_elaboracion_min: costoElaboracionInfo.tiempoTotalMin,
     };
 
     setItems((prev) => [...prev, newItem]);
@@ -848,6 +976,108 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
     );
   };
 
+  const handleUpdateItemQuantity = (id: string, deltaOrValue: number, isDirectValue: boolean = false) => {
+    setItems((prev) =>
+      prev.map((i) => {
+        if (i.id !== id) return i;
+        const newQty = isDirectValue ? Math.max(1, deltaOrValue) : Math.max(1, i.cantidad + deltaOrValue);
+        return {
+          ...i,
+          cantidad: newQty,
+          subtotal: Number((i.precio_unitario * newQty).toFixed(2)),
+        };
+      })
+    );
+  };
+
+  const handleAddStandaloneExtra = (
+    extra: CotizacionExtra,
+    qtyOverride?: number,
+    priceOverride?: number,
+    noteOverride?: string
+  ) => {
+    const qty = qtyOverride !== undefined ? qtyOverride : (standaloneExtraQuantities[extra.id] || 1);
+    const customPriceInput = standaloneExtraPrices[extra.id];
+    const price = priceOverride !== undefined
+      ? priceOverride
+      : (customPriceInput !== undefined && customPriceInput !== '' ? Number(customPriceInput) : extra.precio);
+    const note = noteOverride !== undefined ? noteOverride : (standaloneExtraNotes[extra.id] || '');
+
+    const newItem: CotizacionItem = {
+      id: `item-extra-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+      receta_id: undefined,
+      receta_nombre: extra.nombre,
+      tamano_porciones: 'Extra de la orden',
+      masa_base: 'No aplica',
+      relleno: 'No aplica',
+      decoracion: 'No aplica',
+      dedicatoria: note.trim() || undefined,
+      extras: [],
+      cantidad: qty,
+      precio_unitario: price,
+      subtotal: Number((price * qty).toFixed(2)),
+      factor_receta: 1,
+      es_extra: true,
+      categoria_extra: getExtraCategory(extra),
+      extra_id: extra.id,
+      tipo_precio_aplicado: 'personalizado',
+      costo_materia_prima: Number((price * 0.4).toFixed(2)),
+      costo_elaboracion: 0,
+      costo_total_unitario: Number((price * 0.4).toFixed(2)),
+      tiempo_elaboracion_min: 0,
+    };
+
+    setItems((prev) => [...prev, newItem]);
+    setStandaloneAddedFeedback(extra.id);
+    setTimeout(() => {
+      setStandaloneAddedFeedback(null);
+    }, 1500);
+
+    setStandaloneExtraNotes((prev) => {
+      const next = { ...prev };
+      delete next[extra.id];
+      return next;
+    });
+  };
+
+  const handleAddSelectedExtrasToOrder = () => {
+    if (selectedExtras.length === 0) return;
+
+    const newItems: CotizacionItem[] = [];
+    selectedExtras.forEach((id) => {
+      const ext = extrasOpciones.find((e) => e.id === id);
+      if (!ext) return;
+      const qty = extraQuantities[id] || 1;
+      const price = ext.precio;
+      const cat = getExtraCategory(ext);
+      const note = cat === 'tarjeta' && dedicatoria.trim() ? dedicatoria.trim() : undefined;
+
+      newItems.push({
+        id: `item-extra-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+        receta_id: undefined,
+        receta_nombre: ext.nombre,
+        tamano_porciones: 'Extra de la orden',
+        masa_base: 'No aplica',
+        relleno: 'No aplica',
+        decoracion: 'No aplica',
+        dedicatoria: note,
+        extras: [],
+        cantidad: qty,
+        precio_unitario: price,
+        subtotal: Number((price * qty).toFixed(2)),
+        factor_receta: 1,
+        es_extra: true,
+        categoria_extra: cat,
+        extra_id: ext.id,
+        tipo_precio_aplicado: 'personalizado',
+      });
+    });
+
+    setItems((prev) => [...prev, ...newItems]);
+    setSelectedExtras([]);
+    setExtraQuantities({});
+  };
+
   const handleRemoveItem = (id: string) => {
     setItems((prev) => prev.filter((i) => i.id !== id));
   };
@@ -860,7 +1090,7 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!clienteNombre.trim() || items.length === 0) {
-      alert('Por favor completa el nombre del cliente y agrega al menos un producto a la cotización.');
+      alert('Por favor completa el nombre del cliente y agrega al menos un producto o extra a la cotización.');
       return;
     }
 
@@ -1418,19 +1648,51 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
           )}
         </div>
 
-        {/* 3. Configurador Interactivo de Producto */}
+        {/* 3. Configurador Interactivo de Productos & Extras de la Orden */}
         <div className="bg-white p-5 rounded-2xl border-2 border-trigo-300 shadow-warm space-y-4">
-          <div className="flex items-center justify-between border-b border-trigo-100 pb-3">
-            <h3 className="text-sm font-bold text-chocolate-800 uppercase tracking-wider flex items-center gap-2">
-              <Cake className="w-4 h-4 text-frambuesa-500" />
-              <span>2. Personalizar Producto Gastronómico</span>
-            </h3>
-            <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
-              ⚡ Precios y Costos Actualizados en Vivo
-            </span>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-trigo-100 pb-3">
+            <div>
+              <h3 className="text-sm font-bold text-chocolate-800 uppercase tracking-wider flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-frambuesa-500" />
+                <span>3. Personalizar Productos & Extras de la Orden</span>
+              </h3>
+              <p className="text-[11px] text-chocolate-500 mt-0.5">
+                Configura productos con masa, relleno y decorado, o agrega extras independientes para toda la orden.
+              </p>
+            </div>
+
+            {/* Pestañas: Configurar Pastel vs Extras de la Orden */}
+            <div className="flex items-center gap-1.5 p-1 bg-crema/80 rounded-2xl border border-trigo-300 self-start sm:self-auto">
+              <button
+                type="button"
+                onClick={() => setItemBuilderTab('producto')}
+                className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all min-h-[36px] ${
+                  itemBuilderTab === 'producto'
+                    ? 'bg-chocolate-700 text-white shadow-sm ring-2 ring-chocolate-700/20'
+                    : 'text-chocolate-700 hover:bg-white/80'
+                }`}
+              >
+                <Cake className="w-3.5 h-3.5" />
+                <span>🎂 Pastel / Receta</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setItemBuilderTab('extra')}
+                className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all min-h-[36px] ${
+                  itemBuilderTab === 'extra'
+                    ? 'bg-frambuesa-600 text-white shadow-sm ring-2 ring-frambuesa-600/20'
+                    : 'text-chocolate-700 hover:bg-white/80'
+                }`}
+              >
+                <Gift className="w-3.5 h-3.5" />
+                <span>🎁 Extras de la Orden</span>
+              </button>
+            </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 text-xs">
+          {itemBuilderTab === 'producto' && (
+            <div className="space-y-4 animate-fade-in">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 text-xs">
             {/* Buscador & Selector de Producto / Receta */}
             <div className="sm:col-span-2 md:col-span-3 relative" ref={productDropdownRef}>
               <label className="block font-bold text-chocolate-700 mb-1">
@@ -1923,7 +2185,18 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
                   )}
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
+                  {selectedExtras.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={handleAddSelectedExtrasToOrder}
+                      className="text-[11px] bg-frambuesa-600 hover:bg-frambuesa-700 text-white font-bold px-2.5 py-1 rounded-lg shadow-xs transition flex items-center gap-1"
+                      title="Agrega los extras seleccionados a la orden entera sin vincularlos a este pastel"
+                    >
+                      <Plus className="w-3 h-3" />
+                      <span>Pasar {selectedExtras.length} a Extra(s) de la Orden</span>
+                    </button>
+                  )}
                   {selectedExtras.length > 0 && (
                     <button
                       type="button"
@@ -2177,10 +2450,120 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
                             </div>
                           </div>
                         )}
+
+                        {/* Botón para añadir directamente a la orden sin asociar al pastel */}
+                        <div className="pt-1.5 mt-0.5 border-t border-trigo-100 flex items-center justify-between">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleAddStandaloneExtra(extra, qty);
+                            }}
+                            className="text-[10px] text-frambuesa-700 hover:text-frambuesa-900 font-bold flex items-center gap-1 hover:underline"
+                            title="Añade este extra para toda la orden directamente"
+                          >
+                            <Plus className="w-3 h-3" />
+                            <span>Añadir a la orden</span>
+                          </button>
+                          {standaloneAddedFeedback === extra.id && (
+                            <span className="text-[9px] text-emerald-700 font-bold flex items-center gap-0.5">
+                              <Check className="w-2.5 h-2.5" />
+                              <span>¡Añadido!</span>
+                            </span>
+                          )}
+                        </div>
                       </div>
                     );
                   })
                 )}
+              </div>
+            </div>
+          </div>
+
+          {/* Panel de Costos de Elaboración & Taller (Insumos + Tiempo de Horno y Preparación) */}
+          <div className="bg-gradient-to-r from-amber-50/80 via-crema to-orange-50/60 p-4 rounded-2xl border border-amber-200/90 shadow-2xs space-y-3">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-amber-200/60 pb-2">
+              <div className="flex items-center gap-2">
+                <div className="p-1.5 bg-amber-500 text-white rounded-lg shadow-xs shrink-0">
+                  <Clock className="w-4 h-4" />
+                </div>
+                <div>
+                  <h4 className="text-xs font-black text-chocolate-900 uppercase tracking-wider flex items-center gap-1.5 flex-wrap">
+                    <span>Costos de Elaboración & Taller</span>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-300 font-mono">
+                      ⏱️ {costoElaboracionInfo.tiempoTotalMin} min totales
+                    </span>
+                  </h4>
+                  <p className="text-[11px] text-chocolate-600">
+                    Cálculo de mano de obra de preparación, tiempo de horneado y decoración artesanal.
+                  </p>
+                </div>
+              </div>
+
+              {/* Ajuste editable de Tarifa Taller */}
+              <div className="flex items-center gap-1.5 bg-white/95 px-2.5 py-1 rounded-xl border border-amber-200 text-xs shadow-2xs self-start sm:self-auto">
+                <span className="text-[11px] font-bold text-chocolate-800">Tarifa Taller:</span>
+                <div className="flex items-center gap-1">
+                  <span className="text-[11px] font-bold text-gray-500">RD$</span>
+                  <input
+                    type="number"
+                    min="50"
+                    step="25"
+                    value={tarifaHoraTaller}
+                    onChange={(e) => handleUpdateTarifaTaller(Number(e.target.value))}
+                    className="w-16 px-1.5 py-0.5 text-xs font-mono font-bold text-chocolate-900 border border-amber-300 rounded-lg text-center bg-white"
+                    title="Tarifa por hora del taller de repostería (RD$)"
+                  />
+                  <span className="text-[10px] text-chocolate-600 font-semibold">/h</span>
+                  <span className="text-[9px] text-gray-400 font-mono">({formatCurrency(tarifaHoraTaller / 60)}/min)</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Tarjetas métricas de costos */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+              <div className="bg-white/90 p-2.5 rounded-xl border border-amber-100/80 shadow-2xs">
+                <span className="text-[10px] font-bold text-gray-500 uppercase flex items-center gap-1">
+                  🌾 Insumos (MPD)
+                </span>
+                <p className="text-sm font-black text-chocolate-900 font-mono mt-0.5">
+                  {formatCurrency(costoMateriaPrima)}
+                </p>
+                <span className="text-[10px] text-gray-400">Materia prima directa</span>
+              </div>
+
+              <div className="bg-white/90 p-2.5 rounded-xl border border-amber-300 shadow-2xs ring-1 ring-amber-300/60 bg-amber-50/30">
+                <span className="text-[10px] font-bold text-amber-800 uppercase flex items-center gap-1">
+                  ⏱️ Elaboración Taller
+                </span>
+                <p className="text-sm font-black text-amber-900 font-mono mt-0.5">
+                  {formatCurrency(costoElaboracionInfo.costoElaboracionTotal)}
+                </p>
+                <span className="text-[10px] text-amber-700 font-medium">
+                  {costoElaboracionInfo.tiempoPreparacionMin}m prep + {costoElaboracionInfo.tiempoHorneadoMin}m horno
+                </span>
+              </div>
+
+              <div className="bg-white/90 p-2.5 rounded-xl border border-amber-100/80 shadow-2xs">
+                <span className="text-[10px] font-bold text-gray-500 uppercase flex items-center gap-1">
+                  📦 Costo Total (CTP)
+                </span>
+                <p className="text-sm font-black text-chocolate-900 font-mono mt-0.5">
+                  {formatCurrency(costoTotalUnitario)}
+                </p>
+                <span className="text-[10px] text-gray-400">MPD + Elaboración + Merma</span>
+              </div>
+
+              <div className="bg-white/90 p-2.5 rounded-xl border border-emerald-200 shadow-2xs bg-emerald-50/40">
+                <span className="text-[10px] font-bold text-emerald-800 uppercase flex items-center gap-1">
+                  📈 Margen / Retorno
+                </span>
+                <p className="text-sm font-black text-emerald-700 font-mono mt-0.5">
+                  {formatCurrency(precioUnitarioFinal - costoTotalUnitario)}
+                </p>
+                <span className="text-[10px] text-emerald-700 font-bold">
+                  {precioUnitarioFinal > 0 ? Math.round(((precioUnitarioFinal - costoTotalUnitario) / precioUnitarioFinal) * 100) : 0}% sobre venta
+                </span>
               </div>
             </div>
           </div>
@@ -2312,6 +2695,11 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
                 {costoMasa > 0 && <span className="text-amber-800 font-mono">+ Masa: <b>+{formatCurrency(costoMasa)}</b></span>}
                 {costoRelleno > 0 && <span className="text-indigo-800 font-mono">+ Relleno: <b>+{formatCurrency(costoRelleno)}</b></span>}
                 {costoDecoracion > 0 && <span className="text-purple-800 font-mono">+ Deco: <b>+{formatCurrency(costoDecoracion)}</b></span>}
+                {costoElaboracionInfo.costoElaboracionTotal > 0 && (
+                  <span className="text-amber-900 font-mono bg-amber-100/70 px-1.5 py-0.5 rounded border border-amber-300">
+                    ⏱️ Taller ({costoElaboracionInfo.tiempoTotalMin}m): <b>+{formatCurrency(costoElaboracionInfo.costoElaboracionTotal)}</b>
+                  </span>
+                )}
                 {totalExtrasUnitario > 0 && <span className="text-emerald-800 font-mono">+ Extras: <b>+{formatCurrency(totalExtrasUnitario)}</b></span>}
               </div>
               <div className="text-sm font-extrabold text-frambuesa-600 flex items-center gap-2">
@@ -2331,25 +2719,304 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
               <span>Añadir Producto a Cotización</span>
             </button>
           </div>
+            </div>
+          )}
+
+          {itemBuilderTab === 'extra' && (
+            <div className="space-y-4 animate-fade-in">
+              <div className="bg-gradient-to-r from-frambuesa-50 to-pink-50/60 p-4 rounded-2xl border border-frambuesa-200/80 space-y-2">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <div className="p-2 bg-frambuesa-500 text-white rounded-xl shadow-xs shrink-0">
+                      <Gift className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h4 className="text-xs sm:text-sm font-extrabold text-chocolate-900 uppercase tracking-wide">
+                        Extras y Adicionales para Toda la Orden
+                      </h4>
+                      <p className="text-[11px] text-chocolate-600">
+                        Agrega empaques, toppers, velas, tarjetas caligrafiadas o stickers para toda la orden. No están enlazados a ningún pastel y no se multiplican por la cantidad de la receta.
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => openOptionsManager('extras')}
+                    className="text-xs text-frambuesa-700 hover:text-frambuesa-900 bg-white border border-frambuesa-300 font-bold px-3 py-1.5 rounded-xl shadow-xs transition flex items-center gap-1.5 self-start sm:self-auto shrink-0"
+                  >
+                    <Settings className="w-3.5 h-3.5" />
+                    <span>Gestionar Catálogo / Precios</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Buscador y Filtros de Categoría */}
+              <div className="space-y-2">
+                <div className="relative w-full">
+                  <Search className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    placeholder="Buscar extra por nombre (ej. Topper, Caja, Vela, Macarons, Tarjeta, Bolsa, Domo)..."
+                    value={standaloneExtraSearch}
+                    onChange={(e) => setStandaloneExtraSearch(e.target.value)}
+                    className="w-full pl-10 pr-4 py-2 rounded-xl border border-trigo-300 text-xs bg-white text-chocolate-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-frambuesa-400"
+                  />
+                </div>
+
+                <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs scrollbar-none">
+                  <button
+                    type="button"
+                    onClick={() => setStandaloneExtraCategory('all')}
+                    className={`px-3 py-1.5 rounded-xl font-bold transition-all whitespace-nowrap shrink-0 ${
+                      standaloneExtraCategory === 'all'
+                        ? 'bg-chocolate-700 text-white shadow-sm'
+                        : 'bg-white text-chocolate-600 border border-trigo-200 hover:bg-crema'
+                    }`}
+                  >
+                    Todos ({extrasOpciones.length})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setStandaloneExtraCategory('empaques')}
+                    className={`px-3 py-1.5 rounded-xl font-bold transition-all whitespace-nowrap shrink-0 flex items-center gap-1 ${
+                      standaloneExtraCategory === 'empaques'
+                        ? 'bg-purple-600 text-white shadow-sm'
+                        : 'bg-purple-50 text-purple-700 border border-purple-200 hover:bg-purple-100'
+                    }`}
+                  >
+                    <span>📦</span> Empaques ({empaquesCount})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setStandaloneExtraCategory('toppers')}
+                    className={`px-3 py-1.5 rounded-xl font-bold transition-all whitespace-nowrap shrink-0 flex items-center gap-1 ${
+                      standaloneExtraCategory === 'toppers'
+                        ? 'bg-pink-600 text-white shadow-sm'
+                        : 'bg-pink-50 text-pink-700 border border-pink-200 hover:bg-pink-100'
+                    }`}
+                  >
+                    <span>🎂</span> Toppers ({toppersCount})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setStandaloneExtraCategory('stickers')}
+                    className={`px-3 py-1.5 rounded-xl font-bold transition-all whitespace-nowrap shrink-0 flex items-center gap-1 ${
+                      standaloneExtraCategory === 'stickers'
+                        ? 'bg-amber-600 text-white shadow-sm'
+                        : 'bg-amber-50 text-amber-800 border border-amber-200 hover:bg-amber-100'
+                    }`}
+                  >
+                    <span>🏷️</span> Stickers ({stickersCount})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setStandaloneExtraCategory('tarjetas')}
+                    className={`px-3 py-1.5 rounded-xl font-bold transition-all whitespace-nowrap shrink-0 flex items-center gap-1 ${
+                      standaloneExtraCategory === 'tarjetas'
+                        ? 'bg-emerald-600 text-white shadow-sm'
+                        : 'bg-emerald-50 text-emerald-800 border border-emerald-200 hover:bg-emerald-100'
+                    }`}
+                  >
+                    <span>💌</span> Tarjetas con Mensaje ({tarjetasCount})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setStandaloneExtraCategory('otros')}
+                    className={`px-3 py-1.5 rounded-xl font-bold transition-all whitespace-nowrap shrink-0 flex items-center gap-1 ${
+                      standaloneExtraCategory === 'otros'
+                        ? 'bg-chocolate-600 text-white shadow-sm'
+                        : 'bg-crema text-chocolate-700 border border-trigo-200 hover:bg-trigo-100'
+                    }`}
+                  >
+                    <span>✨</span> Otros ({otrosCount})
+                  </button>
+                </div>
+              </div>
+
+              {/* Grid de Extras Disponibles */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-96 overflow-y-auto p-1 border border-trigo-200 rounded-2xl bg-canvas/40">
+                {filteredStandaloneExtrasList.length === 0 ? (
+                  <div className="col-span-full text-center py-8 text-xs text-chocolate-400">
+                    No se encontraron extras en esta búsqueda o categoría.
+                  </div>
+                ) : (
+                  filteredStandaloneExtrasList.map((extra) => {
+                    const cat = getExtraCategory(extra);
+                    const currentQty = standaloneExtraQuantities[extra.id] || 1;
+                    const customPrice = standaloneExtraPrices[extra.id];
+                    const activePrice = customPrice !== undefined && customPrice !== '' ? Number(customPrice) : extra.precio;
+                    const currentNote = standaloneExtraNotes[extra.id] || '';
+                    const isJustAdded = standaloneAddedFeedback === extra.id;
+
+                    return (
+                      <div
+                        key={extra.id}
+                        className={`bg-white rounded-2xl border p-3.5 flex flex-col justify-between gap-2.5 shadow-xs transition-all ${
+                          isJustAdded ? 'border-emerald-500 ring-2 ring-emerald-300 bg-emerald-50/50' : 'border-trigo-200 hover:border-trigo-300'
+                        }`}
+                      >
+                        <div>
+                          <div className="flex items-start justify-between gap-2 mb-1">
+                            <span className={`text-[9px] font-extrabold px-2 py-0.5 rounded-md border ${getExtraBadgeStyle(cat)}`}>
+                              {getExtraBadgeLabel(cat)}
+                            </span>
+                            <span className="text-xs font-black text-chocolate-900 font-mono">
+                              {formatCurrency(activePrice * currentQty)}
+                            </span>
+                          </div>
+                          <h5 className="font-bold text-chocolate-900 text-xs leading-snug">
+                            {extra.nombre}
+                          </h5>
+                        </div>
+
+                        {/* Campos de configuración: Cantidad & Precio Unitario */}
+                        <div className="space-y-2 pt-2 border-t border-trigo-100">
+                          <div className="grid grid-cols-2 gap-2 text-xs">
+                            <div>
+                              <label className="block text-[10px] font-bold text-chocolate-700 uppercase mb-1">
+                                Cantidad
+                              </label>
+                              <div className="flex items-center gap-1">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setStandaloneExtraQuantities((prev) => ({
+                                      ...prev,
+                                      [extra.id]: Math.max(1, (prev[extra.id] || 1) - 1),
+                                    }));
+                                  }}
+                                  className="w-6 h-6 rounded-lg bg-stone-100 hover:bg-stone-200 text-stone-800 font-black text-xs flex items-center justify-center transition"
+                                >
+                                  -
+                                </button>
+                                <input
+                                  type="number"
+                                  min="1"
+                                  value={currentQty}
+                                  onChange={(e) => {
+                                    const val = Math.max(1, parseInt(e.target.value) || 1);
+                                    setStandaloneExtraQuantities((prev) => ({
+                                      ...prev,
+                                      [extra.id]: val,
+                                    }));
+                                  }}
+                                  className="w-10 h-6 text-center text-xs font-bold text-chocolate-900 border border-trigo-300 rounded-lg bg-white"
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setStandaloneExtraQuantities((prev) => ({
+                                      ...prev,
+                                      [extra.id]: (prev[extra.id] || 1) + 1,
+                                    }));
+                                  }}
+                                  className="w-6 h-6 rounded-lg bg-stone-100 hover:bg-stone-200 text-stone-800 font-black text-xs flex items-center justify-center transition"
+                                >
+                                  +
+                                </button>
+                              </div>
+                            </div>
+
+                            <div>
+                              <label className="block text-[10px] font-bold text-chocolate-700 uppercase mb-1">
+                                Precio Unit. (RD$)
+                              </label>
+                              <input
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                value={customPrice !== undefined ? customPrice : extra.precio}
+                                onChange={(e) => {
+                                  const val = e.target.value === '' ? '' : parseFloat(e.target.value);
+                                  setStandaloneExtraPrices((prev) => ({
+                                    ...prev,
+                                    [extra.id]: val,
+                                  }));
+                                }}
+                                className="w-full px-2 py-1 text-xs font-mono font-bold text-chocolate-900 border border-trigo-300 rounded-lg bg-white focus:ring-1 focus:ring-frambuesa-400"
+                              />
+                            </div>
+                          </div>
+
+                          {/* Nota o Dedicatoria para tarjeta o topper */}
+                          <div>
+                            <input
+                              type="text"
+                              placeholder={
+                                cat === 'tarjeta'
+                                  ? 'Texto / Dedicatoria para la tarjeta...'
+                                  : cat === 'topper'
+                                  ? 'Nombre / Edad para el topper...'
+                                  : 'Nota o detalle especial (opcional)...'
+                              }
+                              value={currentNote}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                setStandaloneExtraNotes((prev) => ({
+                                  ...prev,
+                                  [extra.id]: val,
+                                }));
+                              }}
+                              className="w-full px-2.5 py-1 text-[11px] rounded-lg border border-trigo-200 bg-white placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-frambuesa-400"
+                            />
+                          </div>
+
+                          {/* Botón Añadir a la orden */}
+                          <button
+                            type="button"
+                            onClick={() => handleAddStandaloneExtra(extra)}
+                            className={`w-full py-1.5 px-3 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 shadow-xs transition-all active:scale-95 ${
+                              isJustAdded
+                                ? 'bg-emerald-600 text-white'
+                                : 'bg-chocolate-700 hover:bg-chocolate-800 text-white'
+                            }`}
+                          >
+                            {isJustAdded ? (
+                              <>
+                                <Check className="w-3.5 h-3.5" />
+                                <span>¡Añadido a la Cotización!</span>
+                              </>
+                            ) : (
+                              <>
+                                <Plus className="w-3.5 h-3.5" />
+                                <span>Añadir Extra a la Orden</span>
+                              </>
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </div>
+          )}
         </div>
 
-        {/* 3. Items Añadidos a la Cotización */}
+        {/* 4. Items Añadidos a la Cotización */}
         <div className="space-y-3">
-          <h3 className="text-xs font-bold text-chocolate-800 uppercase tracking-wider">
-            3. Resumen de Productos en esta Cotización ({items.length})
-          </h3>
+          <div className="flex items-center justify-between">
+            <h3 className="text-xs font-bold text-chocolate-800 uppercase tracking-wider">
+              4. Resumen de Productos & Extras en esta Cotización ({items.length})
+            </h3>
+            {items.length > 0 && (
+              <span className="text-[11px] text-chocolate-600 font-medium">
+                {items.filter(i => !i.es_extra).length} producto(s) • {items.filter(i => i.es_extra).length} extra(s) de la orden
+              </span>
+            )}
+          </div>
 
           {items.length === 0 ? (
             <div className="bg-canvas border-2 border-dashed border-trigo-300 rounded-2xl p-6 text-center text-xs text-chocolate-500">
-              Aún no has añadido ningún producto. Configura uno arriba y presiona "Añadir Producto a Cotización".
+              Aún no has añadido ningún producto o extra. Configura uno arriba y presiona "Añadir a la Cotización".
             </div>
           ) : (
             <div className="border border-trigo-200 rounded-2xl overflow-hidden shadow-sm">
               <table className="w-full text-left text-xs">
                 <thead className="bg-crema text-chocolate-800 font-bold uppercase tracking-wider border-b border-trigo-200">
                   <tr>
-                    <th className="py-2.5 px-3">Producto & Especificaciones</th>
-                    <th className="py-2.5 px-3 text-center">Cant.</th>
+                    <th className="py-2.5 px-3">Producto / Extra & Especificaciones</th>
+                    <th className="py-2.5 px-3 text-center w-28">Cant.</th>
                     <th className="py-2.5 px-3 text-right">Precio Unit.</th>
                     <th className="py-2.5 px-3 text-right">Subtotal</th>
                     <th className="py-2.5 px-2 text-center w-12">Acción</th>
@@ -2359,35 +3026,92 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
                   {items.map((item) => (
                     <tr key={item.id} className="hover:bg-crema/20">
                       <td className="py-3 px-3">
-                        <p className="font-bold text-chocolate-900">{item.receta_nombre}</p>
-                        <p className="text-[11px] text-chocolate-600">
-                          {item.tamano_porciones}
-                          {item.masa_base && !item.masa_base.toLowerCase().startsWith('ningun') && ` • Masa: ${item.masa_base}`}
-                          {item.relleno && !item.relleno.toLowerCase().startsWith('ningun') && ` • Relleno: ${item.relleno}`}
-                        </p>
-                        {item.decoracion && !item.decoracion.toLowerCase().startsWith('ningun') && (
-                          <p className="text-[11px] text-gray-500">
-                            Decoración: {item.decoracion}
-                          </p>
-                        )}
-                        {item.variables_receta && item.variables_receta.length > 0 && (
-                          <p className="text-[10px] text-emerald-700 font-semibold mt-0.5">
-                            🎨 Variables: {item.variables_receta.join(', ')}
-                          </p>
-                        )}
-                        {item.dedicatoria && (
-                          <p className="text-[11px] text-frambuesa-700 italic">
-                            Dedicatoria: "{item.dedicatoria}"
-                          </p>
-                        )}
-                        {item.extras.length > 0 && (
-                          <p className="text-[10px] text-trigo-700 font-medium mt-0.5">
-                            + Extras: {item.extras.map((e) => e.cantidad && e.cantidad > 1 ? `${e.nombre} (x${e.cantidad})` : e.nombre).join(', ')}
-                          </p>
+                        {item.es_extra ? (
+                          <div>
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className="font-bold text-chocolate-900 text-xs">{item.receta_nombre}</span>
+                              <span className={`text-[9px] font-extrabold px-2 py-0.5 rounded-full border ${getExtraBadgeStyle(item.categoria_extra)}`}>
+                                {getExtraBadgeLabel(item.categoria_extra)} • Extra de la Orden
+                              </span>
+                            </div>
+                            {item.dedicatoria && (
+                              <p className="text-[11px] text-frambuesa-700 italic mt-0.5">
+                                ✍️ Detalle / Mensaje: "{item.dedicatoria}"
+                              </p>
+                            )}
+                          </div>
+                        ) : (
+                          <div>
+                            <p className="font-bold text-chocolate-900">{item.receta_nombre}</p>
+                            <p className="text-[11px] text-chocolate-600">
+                              {item.tamano_porciones}
+                              {item.masa_base && !item.masa_base.toLowerCase().startsWith('ningun') && !item.masa_base.toLowerCase().startsWith('no aplica') && ` • Masa: ${item.masa_base}`}
+                              {item.relleno && !item.relleno.toLowerCase().startsWith('ningun') && !item.relleno.toLowerCase().startsWith('no aplica') && ` • Relleno: ${item.relleno}`}
+                            </p>
+                            {item.decoracion && !item.decoracion.toLowerCase().startsWith('ningun') && !item.decoracion.toLowerCase().startsWith('no aplica') && (
+                              <p className="text-[11px] text-gray-500">
+                                Decoración: {item.decoracion}
+                              </p>
+                            )}
+                            {item.variables_receta && item.variables_receta.length > 0 && (
+                              <p className="text-[10px] text-emerald-700 font-semibold mt-0.5">
+                                🎨 Variables: {item.variables_receta.join(', ')}
+                              </p>
+                            )}
+                            {item.dedicatoria && (
+                              <p className="text-[11px] text-frambuesa-700 italic">
+                                Dedicatoria: "{item.dedicatoria}"
+                              </p>
+                            )}
+                            {item.extras.length > 0 && (
+                              <p className="text-[10px] text-trigo-700 font-medium mt-0.5">
+                                + Extras: {item.extras.map((e) => e.cantidad && e.cantidad > 1 ? `${e.nombre} (x${e.cantidad})` : e.nombre).join(', ')}
+                              </p>
+                            )}
+                            {item.costo_elaboracion !== undefined && item.costo_elaboracion > 0 && (
+                              <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-amber-50 text-amber-900 border border-amber-200 font-mono">
+                                  ⏱️ Taller: {formatCurrency(item.costo_elaboracion)} ({item.tiempo_elaboracion_min || 0}m)
+                                </span>
+                                {item.costo_materia_prima !== undefined && (
+                                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-stone-50 text-stone-700 border border-stone-200 font-mono">
+                                    🌾 Insumos: {formatCurrency(item.costo_materia_prima)}
+                                  </span>
+                                )}
+                              </div>
+                            )}
+                          </div>
                         )}
                       </td>
-                      <td className="py-3 px-3 text-center font-bold text-chocolate-800">
-                        {item.cantidad}
+                      <td className="py-3 px-3 text-center">
+                        <div className="flex items-center justify-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => handleUpdateItemQuantity(item.id, -1)}
+                            className="w-5 h-5 rounded bg-stone-100 hover:bg-stone-200 text-stone-800 font-black text-xs flex items-center justify-center transition"
+                            title="Restar 1"
+                          >
+                            -
+                          </button>
+                          <input
+                            type="number"
+                            min="1"
+                            value={item.cantidad}
+                            onChange={(e) => {
+                              const val = parseInt(e.target.value) || 1;
+                              handleUpdateItemQuantity(item.id, val, true);
+                            }}
+                            className="w-8 h-6 text-center text-xs font-bold text-chocolate-900 border border-trigo-300 rounded bg-white"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => handleUpdateItemQuantity(item.id, 1)}
+                            className="w-5 h-5 rounded bg-stone-100 hover:bg-stone-200 text-stone-800 font-black text-xs flex items-center justify-center transition"
+                            title="Sumar 1"
+                          >
+                            +
+                          </button>
+                        </div>
                       </td>
                       <td className="py-3 px-3 text-right">
                         <div className="flex items-center justify-end gap-1">
@@ -2402,14 +3126,18 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
                               handleUpdateItemPrice(item.id, isNaN(val) ? 0 : val);
                             }}
                             className="w-24 px-2 py-1 text-right text-xs font-mono font-bold text-chocolate-900 border border-trigo-300 rounded-lg focus:ring-1 focus:ring-frambuesa-500 bg-canvas/30 hover:bg-white transition-colors"
-                            title="Haz clic para editar el precio unitario de este producto"
+                            title="Haz clic para editar el precio unitario"
                           />
                         </div>
-                        {item.tipo_precio_aplicado && (
+                        {item.es_extra ? (
+                          <span className="text-[9px] text-frambuesa-700 font-semibold block mt-0.5">
+                            Extra individual
+                          </span>
+                        ) : item.tipo_precio_aplicado ? (
                           <span className="text-[9px] text-gray-400 block mt-0.5 capitalize">
                             {item.tipo_precio_aplicado === 'real' ? 'Precio real' : item.tipo_precio_aplicado === 'redondeado' ? 'Redondeado' : 'Editado'}
                           </span>
-                        )}
+                        ) : null}
                       </td>
                       <td className="py-3 px-3 text-right font-extrabold text-chocolate-900">
                         {formatCurrency(item.subtotal)}
@@ -2427,11 +3155,40 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
                   ))}
                 </tbody>
               </table>
+
+              {/* Barra de Totales Rápidos de Items */}
+              <div className="bg-crema/40 px-4 py-2 border-t border-trigo-200 flex flex-wrap items-center justify-between text-[11px] text-chocolate-700">
+                <div className="flex items-center gap-3 flex-wrap">
+                  <span>
+                    Productos: <b>{items.filter((i) => !i.es_extra).length}</b>
+                  </span>
+                  <span>•</span>
+                  <span>
+                    Extras de la orden: <b>{items.filter((i) => i.es_extra).length}</b>
+                  </span>
+                  <span>•</span>
+                  <span>
+                    Unidades totales: <b>{items.reduce((sum, i) => sum + i.cantidad, 0)}</b>
+                  </span>
+                  {items.some((i) => (i.tiempo_elaboracion_min || 0) > 0) && (
+                    <>
+                      <span>•</span>
+                      <span className="text-amber-900 font-bold font-mono">
+                        ⏱️ Taller: {Math.floor(items.reduce((sum, i) => sum + (i.tiempo_elaboracion_min || 0) * i.cantidad, 0) / 60)}h{' '}
+                        {items.reduce((sum, i) => sum + (i.tiempo_elaboracion_min || 0) * i.cantidad, 0) % 60}m ({formatCurrency(items.reduce((sum, i) => sum + (i.costo_elaboracion || 0) * i.cantidad, 0))})
+                      </span>
+                    </>
+                  )}
+                </div>
+                <div className="font-bold text-chocolate-900">
+                  Subtotal ítems: {formatCurrency(subtotalCotizacion)}
+                </div>
+              </div>
             </div>
           )}
         </div>
 
-        {/* 4. Resumen Financiero y Totales */}
+        {/* 5. Resumen Financiero y Totales */}
         <div className="bg-canvas p-4 rounded-2xl border border-trigo-200 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 text-xs">
           <div>
             <label className="block font-semibold text-chocolate-700 mb-1">

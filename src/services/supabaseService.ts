@@ -221,28 +221,42 @@ export async function fetchAllFromSupabase(): Promise<{
       cobro_delivery_al_recibir: Boolean(c.cobro_delivery_al_recibir || c.pago_delivery === 'efectivo_aparte'),
       cobro_contra_entrega: Boolean(c.cobro_contra_entrega),
       created_at: c.created_at || new Date().toISOString(),
-      items: (c.cotizacion_items || []).map((item: any) => ({
-        id: `item-cot-${item.id}`,
-        receta_id: item.receta_id ? Number(item.receta_id) : undefined,
-        receta_nombre: item.receta_nombre,
-        tamano_porciones: item.tamano_porciones,
-        masa_base: item.masa_base,
-        relleno: item.relleno,
-        decoracion: item.decoracion,
-        dedicatoria: item.dedicatoria || '',
-        extras: Array.isArray(item.extras)
-          ? item.extras.filter((e: any) => e.id !== 'variables_receta')
-          : [],
-        variables_receta: item.variables_receta || (
-          Array.isArray(item.extras)
-            ? item.extras.find((e: any) => e.id === 'variables_receta')?.nombre?.replace(/^Variables:\s*/, '').split(', ')
-            : undefined
-        ),
-        cantidad: Number(item.cantidad),
-        precio_unitario: Number(item.precio_unitario),
-        subtotal: Number(item.subtotal),
-        factor_receta: Number(item.factor_receta || 1),
-      })),
+      items: (c.cotizacion_items || []).map((item: any) => {
+        const isExtra = !item.receta_id && (
+          Boolean(item.tamano_porciones?.toLowerCase().includes('extra')) ||
+          (Array.isArray(item.extras) && item.extras.some((e: any) => e.id === 'es_extra'))
+        );
+        const extraMeta = Array.isArray(item.extras) ? item.extras.find((e: any) => e.id === 'es_extra') : null;
+        const costoMeta = Array.isArray(item.extras) ? item.extras.find((e: any) => e.id === 'costo_meta') : null;
+        return {
+          id: `item-cot-${item.id}`,
+          receta_id: item.receta_id ? Number(item.receta_id) : undefined,
+          receta_nombre: item.receta_nombre,
+          tamano_porciones: item.tamano_porciones,
+          masa_base: item.masa_base,
+          relleno: item.relleno,
+          decoracion: item.decoracion,
+          dedicatoria: item.dedicatoria || '',
+          extras: Array.isArray(item.extras)
+            ? item.extras.filter((e: any) => e.id !== 'variables_receta' && e.id !== 'es_extra' && e.id !== 'costo_meta')
+            : [],
+          variables_receta: item.variables_receta || (
+            Array.isArray(item.extras)
+              ? item.extras.find((e: any) => e.id === 'variables_receta')?.nombre?.replace(/^Variables:\s*/, '').split(', ')
+              : undefined
+          ),
+          cantidad: Number(item.cantidad),
+          precio_unitario: Number(item.precio_unitario),
+          subtotal: Number(item.subtotal),
+          factor_receta: Number(item.factor_receta || 1),
+          es_extra: isExtra,
+          categoria_extra: extraMeta?.nombre as any || undefined,
+          costo_materia_prima: item.costo_materia_prima ?? (costoMeta?.costo_materia_prima !== undefined ? Number(costoMeta.costo_materia_prima) : undefined),
+          costo_elaboracion: item.costo_elaboracion ?? (costoMeta?.costo_elaboracion !== undefined ? Number(costoMeta.costo_elaboracion) : undefined),
+          costo_total_unitario: item.costo_total_unitario ?? (costoMeta?.costo_total_unitario !== undefined ? Number(costoMeta.costo_total_unitario) : undefined),
+          tiempo_elaboracion_min: item.tiempo_elaboracion_min ?? (costoMeta?.tiempo_elaboracion_min !== undefined ? Number(costoMeta.tiempo_elaboracion_min) : undefined),
+        };
+      }),
     }));
 
     const pedidos: Pedido[] = (pedidosDb || []).map((p: any) => ({
@@ -273,21 +287,41 @@ export async function fetchAllFromSupabase(): Promise<{
       cobro_delivery_al_recibir: Boolean(p.cobro_delivery_al_recibir),
       maps_url: p.maps_url || undefined,
       created_at: p.created_at || new Date().toISOString(),
-      items: (p.pedido_items || []).map((item: any) => ({
-        id: `item-ped-${item.id}`,
-        receta_id: item.receta_id ? Number(item.receta_id) : undefined,
-        receta_nombre: item.receta_nombre,
-        tamano_porciones: item.tamano_porciones,
-        masa_base: item.masa_base,
-        relleno: item.relleno,
-        decoracion: item.decoracion,
-        dedicatoria: item.dedicatoria || '',
-        extras_texto: item.extras_texto || '',
-        cantidad: Number(item.cantidad),
-        precio_unitario: Number(item.precio_unitario),
-        subtotal: Number(item.subtotal),
-        factor_receta: Number(item.factor_receta || 1),
-      })),
+      items: (p.pedido_items || []).map((item: any) => {
+        const isExtra = !item.receta_id && (
+          Boolean(item.tamano_porciones?.toLowerCase().includes('extra')) ||
+          Boolean(item.extras_texto?.toLowerCase().includes('extra'))
+        );
+        let extrasTexto = item.extras_texto || '';
+        let costoMeta: any = null;
+        const metaMatch = extrasTexto.match(/<!--costo_meta:(.*?)-->/);
+        if (metaMatch) {
+          try {
+            costoMeta = JSON.parse(metaMatch[1]);
+          } catch {}
+          extrasTexto = extrasTexto.replace(/<!--costo_meta:.*?-->/g, '').trim();
+        }
+        return {
+          id: `item-ped-${item.id}`,
+          receta_id: item.receta_id ? Number(item.receta_id) : undefined,
+          receta_nombre: item.receta_nombre,
+          tamano_porciones: item.tamano_porciones,
+          masa_base: item.masa_base,
+          relleno: item.relleno,
+          decoracion: item.decoracion,
+          dedicatoria: item.dedicatoria || '',
+          extras_texto: extrasTexto,
+          cantidad: Number(item.cantidad),
+          precio_unitario: Number(item.precio_unitario),
+          subtotal: Number(item.subtotal),
+          factor_receta: Number(item.factor_receta || 1),
+          es_extra: isExtra,
+          costo_materia_prima: item.costo_materia_prima ?? (costoMeta?.mp !== undefined ? Number(costoMeta.mp) : undefined),
+          costo_elaboracion: item.costo_elaboracion ?? (costoMeta?.elab !== undefined ? Number(costoMeta.elab) : undefined),
+          costo_total_unitario: item.costo_total_unitario ?? (costoMeta?.ctp !== undefined ? Number(costoMeta.ctp) : undefined),
+          tiempo_elaboracion_min: item.tiempo_elaboracion_min ?? (costoMeta?.tiempo !== undefined ? Number(costoMeta.tiempo) : undefined),
+        };
+      }),
       pagos: (p.pagos || []).map((pago: any) => ({
         id: `pago-${pago.id}`,
         pedido_id: Number(pago.pedido_id),
@@ -525,21 +559,34 @@ export async function syncPedidoToSupabase(pedido: Pedido): Promise<boolean> {
     // Eliminar e insertar items
     await client.from('pedido_items').delete().eq('pedido_id', pedDb.id);
     if (pedido.items.length > 0) {
-      const itemRows = pedido.items.map(item => ({
-        pedido_id: pedDb.id,
-        receta_id: item.receta_id || null,
-        receta_nombre: item.receta_nombre,
-        tamano_porciones: item.tamano_porciones,
-        masa_base: item.masa_base,
-        relleno: item.relleno,
-        decoracion: item.decoracion,
-        dedicatoria: item.dedicatoria || '',
-        extras_texto: item.extras_texto || '',
-        cantidad: item.cantidad,
-        precio_unitario: item.precio_unitario,
-        subtotal: item.subtotal,
-        factor_receta: item.factor_receta || 1,
-      }));
+      const itemRows = pedido.items.map(item => {
+        let extrasTexto = item.extras_texto || '';
+        if (item.costo_elaboracion !== undefined || item.costo_materia_prima !== undefined) {
+          extrasTexto = extrasTexto.replace(/<!--costo_meta:.*?-->/g, '').trim();
+          const metaJson = JSON.stringify({
+            mp: item.costo_materia_prima,
+            elab: item.costo_elaboracion,
+            ctp: item.costo_total_unitario,
+            tiempo: item.tiempo_elaboracion_min,
+          });
+          extrasTexto = extrasTexto ? `${extrasTexto} <!--costo_meta:${metaJson}-->` : `<!--costo_meta:${metaJson}-->`;
+        }
+        return {
+          pedido_id: pedDb.id,
+          receta_id: item.receta_id || null,
+          receta_nombre: item.receta_nombre,
+          tamano_porciones: item.tamano_porciones,
+          masa_base: item.masa_base,
+          relleno: item.relleno,
+          decoracion: item.decoracion,
+          dedicatoria: item.dedicatoria || '',
+          extras_texto: extrasTexto,
+          cantidad: item.cantidad,
+          precio_unitario: item.precio_unitario,
+          subtotal: item.subtotal,
+          factor_receta: item.factor_receta || 1,
+        };
+      });
       await client.from('pedido_items').insert(itemRows);
     }
 
@@ -638,15 +685,27 @@ export async function syncCotizacionToSupabase(
         cotizacion_id: cotDb.id,
         receta_id: item.receta_id || null,
         receta_nombre: item.receta_nombre,
-        tamano_porciones: item.tamano_porciones || '1 LB (16-20 porciones)',
-        masa_base: item.masa_base || 'Tradicional',
-        relleno: item.relleno || 'Sin relleno',
-        decoracion: item.decoracion || 'Estándar',
+        tamano_porciones: item.tamano_porciones || (item.es_extra ? 'Extra de la orden' : '1 LB (16-20 porciones)'),
+        masa_base: item.masa_base || (item.es_extra ? 'No aplica' : 'Tradicional'),
+        relleno: item.relleno || (item.es_extra ? 'No aplica' : 'Sin relleno'),
+        decoracion: item.decoracion || (item.es_extra ? 'No aplica' : 'Estándar'),
         dedicatoria: item.dedicatoria || '',
         extras: [
-          ...(Array.isArray(item.extras) ? item.extras.filter((e: any) => e.id !== 'variables_receta') : []),
+          ...(Array.isArray(item.extras) ? item.extras.filter((e: any) => e.id !== 'variables_receta' && e.id !== 'es_extra' && e.id !== 'costo_meta') : []),
+          ...(item.es_extra ? [{ id: 'es_extra', nombre: item.categoria_extra || 'extra', precio: 0 }] : []),
           ...(item.variables_receta && item.variables_receta.length > 0
             ? [{ id: 'variables_receta', nombre: `Variables: ${item.variables_receta.join(', ')}`, precio: 0 }]
+            : []),
+          ...((item.costo_elaboracion !== undefined || item.costo_materia_prima !== undefined)
+            ? [{
+                id: 'costo_meta',
+                nombre: 'costo_meta',
+                precio: 0,
+                costo_materia_prima: item.costo_materia_prima,
+                costo_elaboracion: item.costo_elaboracion,
+                costo_total_unitario: item.costo_total_unitario,
+                tiempo_elaboracion_min: item.tiempo_elaboracion_min,
+              }]
             : [])
         ],
         cantidad: item.cantidad || 1,

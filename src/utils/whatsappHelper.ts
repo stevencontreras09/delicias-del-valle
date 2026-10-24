@@ -1,5 +1,5 @@
 import { Pedido, Cotizacion } from '../types';
-import { formatCurrency, formatDate } from './formatters';
+import { formatCurrency, formatDate, formatDisplayTamano } from './formatters';
 
 /**
  * Normaliza números telefónicos para WhatsApp en República Dominicana / Internacional.
@@ -39,23 +39,31 @@ export function generateOrderWhatsAppUrl(pedido: Pedido): string {
   }
 
   lines.push('');
-  lines.push('🎂 *Detalle de Productos:*');
+  lines.push('🎂 *Detalle de Productos & Extras:*');
   pedido.items.forEach((item) => {
-    lines.push(`• *${item.cantidad}x ${item.receta_nombre}* (${item.tamano_porciones})`);
-    if (item.masa_base && !item.masa_base.toLowerCase().startsWith('ningun')) {
-      lines.push(`   - Masa: ${item.masa_base}`);
-    }
-    if (item.relleno && !item.relleno.toLowerCase().startsWith('ningun')) {
-      lines.push(`   - Relleno: ${item.relleno}`);
-    }
-    if (item.decoracion && !item.decoracion.toLowerCase().startsWith('ningun')) {
-      lines.push(`   - Cobertura: ${item.decoracion}`);
-    }
-    if (item.dedicatoria) {
-      lines.push(`   - Dedicatoria: "${item.dedicatoria}"`);
-    }
-    if (item.extras_texto) {
-      lines.push(`   - Adicionales: ${item.extras_texto}`);
+    const isExtra = item.es_extra || (!item.receta_id && (Boolean(item.tamano_porciones?.toLowerCase().includes('extra')) || Boolean(item.extras_texto?.toLowerCase().includes('extra'))));
+    if (isExtra) {
+      lines.push(`• *${item.cantidad}x [EXTRA DE LA ORDEN] ${item.receta_nombre}*`);
+      if (item.dedicatoria) {
+        lines.push(`   - Detalle / Dedicatoria: "${item.dedicatoria}"`);
+      }
+    } else {
+      lines.push(`• *${item.cantidad}x ${item.receta_nombre}* (${item.tamano_porciones})`);
+      if (item.masa_base && !item.masa_base.toLowerCase().startsWith('ningun') && !item.masa_base.toLowerCase().startsWith('no aplica')) {
+        lines.push(`   - Masa: ${item.masa_base}`);
+      }
+      if (item.relleno && !item.relleno.toLowerCase().startsWith('ningun') && !item.relleno.toLowerCase().startsWith('no aplica')) {
+        lines.push(`   - Relleno: ${item.relleno}`);
+      }
+      if (item.decoracion && !item.decoracion.toLowerCase().startsWith('ningun') && !item.decoracion.toLowerCase().startsWith('no aplica')) {
+        lines.push(`   - Cobertura: ${item.decoracion}`);
+      }
+      if (item.dedicatoria) {
+        lines.push(`   - Dedicatoria: "${item.dedicatoria}"`);
+      }
+      if (item.extras_texto && !item.extras_texto.toLowerCase().includes('extra de la orden')) {
+        lines.push(`   - Adicionales: ${item.extras_texto}`);
+      }
     }
   });
 
@@ -96,20 +104,31 @@ export function generateQuoteWhatsAppUrl(cotizacion: Cotizacion): string {
   lines.push(`⏳ *Validez:* ${cotizacion.validez_dias || 5} días naturales`);
 
   lines.push('');
-  lines.push('🎂 *Productos Cotizados:*');
+  lines.push('🎂 *Productos & Extras Cotizados:*');
   cotizacion.items.forEach((item) => {
-    lines.push(`• *${item.cantidad}x ${item.receta_nombre}* (${item.tamano_porciones}) - ${formatCurrency(item.subtotal)}`);
-    if (item.masa_base && !item.masa_base.toLowerCase().startsWith('ningun')) {
-      lines.push(`   - Masa: ${item.masa_base}`);
-    }
-    if (item.relleno && !item.relleno.toLowerCase().startsWith('ningun')) {
-      lines.push(`   - Relleno: ${item.relleno}`);
-    }
-    if (item.decoracion && !item.decoracion.toLowerCase().startsWith('ningun')) {
-      lines.push(`   - Cobertura: ${item.decoracion}`);
-    }
-    if (item.dedicatoria) {
-      lines.push(`   - Dedicatoria: "${item.dedicatoria}"`);
+    const isExtra = item.es_extra || (!item.receta_id && Boolean(item.tamano_porciones?.toLowerCase().includes('extra')));
+    if (isExtra) {
+      lines.push(`• *${item.cantidad}x [EXTRA DE LA ORDEN] ${item.receta_nombre}* - ${formatCurrency(item.subtotal)}`);
+      if (item.dedicatoria) {
+        lines.push(`   - Detalle / Dedicatoria: "${item.dedicatoria}"`);
+      }
+    } else {
+      lines.push(`• *${item.cantidad}x ${item.receta_nombre}* (${formatDisplayTamano(item.tamano_porciones)}) - ${formatCurrency(item.subtotal)}`);
+      if (item.masa_base && !item.masa_base.toLowerCase().startsWith('ningun') && !item.masa_base.toLowerCase().startsWith('no aplica')) {
+        lines.push(`   - Masa: ${item.masa_base}`);
+      }
+      if (item.relleno && !item.relleno.toLowerCase().startsWith('ningun') && !item.relleno.toLowerCase().startsWith('no aplica')) {
+        lines.push(`   - Relleno: ${item.relleno}`);
+      }
+      if (item.decoracion && !item.decoracion.toLowerCase().startsWith('ningun') && !item.decoracion.toLowerCase().startsWith('no aplica')) {
+        lines.push(`   - Cobertura: ${item.decoracion}`);
+      }
+      if (item.dedicatoria) {
+        lines.push(`   - Dedicatoria: "${item.dedicatoria}"`);
+      }
+      if (item.extras && item.extras.length > 0) {
+        lines.push(`   - Extras: ${item.extras.map((e) => `${e.nombre}${e.cantidad && e.cantidad > 1 ? ` (x${e.cantidad})` : ''} (${formatCurrency(e.precio * (e.cantidad || 1))})`).join(', ')}`);
+      }
     }
   });
 

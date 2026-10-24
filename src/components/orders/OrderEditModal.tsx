@@ -3,7 +3,7 @@ import { Pedido, PedidoItem, TipoDespacho } from '../../types';
 import { useApp } from '../../context/AppContext';
 import { Modal } from '../ui/Modal';
 import { formatCurrency, formatDisplayTamano } from '../../utils/formatters';
-import { calcularCostosReceta } from '../../utils/calculations';
+import { calcularCostosReceta, calcularCostoElaboracionProducto } from '../../utils/calculations';
 import { LocationGoogleMapsModal } from '../quotes/LocationGoogleMapsModal';
 import {
   User,
@@ -146,6 +146,7 @@ export const OrderEditModal: React.FC<OrderEditModalProps> = ({
     if (!receta) return;
 
     const costBreakdown = calcularCostosReceta(receta, insumosMap, 1, false);
+    const elabInfo = calcularCostoElaboracionProducto(receta, 1, 0, 300);
     const precioBase = costBreakdown.precio_sugerido_venta || costBreakdown.precio_sugerido_markup || 0;
 
     const newItem: PedidoItem = {
@@ -161,6 +162,10 @@ export const OrderEditModal: React.FC<OrderEditModalProps> = ({
       precio_unitario: precioBase,
       subtotal: precioBase,
       factor_receta: 1,
+      costo_materia_prima: costBreakdown.costo_directo_materia_prima,
+      costo_elaboracion: elabInfo.costoElaboracionTotal,
+      costo_total_unitario: costBreakdown.costo_total_produccion,
+      tiempo_elaboracion_min: elabInfo.tiempoTotalMin,
     };
 
     setItems((prev) => [...prev, newItem]);
@@ -562,9 +567,16 @@ export const OrderEditModal: React.FC<OrderEditModalProps> = ({
                     >
                       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-trigo-100 pb-2">
                         <div>
-                          <span className="text-xs font-black text-chocolate-900 block">
-                            {item.receta_nombre}
-                          </span>
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="text-xs font-black text-chocolate-900 block">
+                              {item.receta_nombre}
+                            </span>
+                            {(item.es_extra || (!item.receta_id && (item.tamano_porciones?.toLowerCase().includes('extra') || item.extras_texto?.toLowerCase().includes('extra')))) && (
+                              <span className="text-[9px] font-bold bg-frambuesa-100 text-frambuesa-800 px-1.5 py-0.2 rounded border border-frambuesa-200">
+                                🎁 Extra de la Orden
+                              </span>
+                            )}
+                          </div>
                           <span className="text-[11px] text-chocolate-600">
                             Tamaño / Formato: <b>{formatDisplayTamano(item.tamano_porciones)}</b>
                           </span>

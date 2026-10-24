@@ -299,25 +299,30 @@ function buildPrintHtml(pedido: Pedido, format: PrintFormat): string {
     <tbody>
       ${pedido.items
         .map(
-          (item) => `
+          (item) => {
+            const isExtra = item.es_extra || (!item.receta_id && (Boolean(item.tamano_porciones?.toLowerCase().includes('extra')) || Boolean(item.extras_texto?.toLowerCase().includes('extra'))));
+            return `
         <tr>
           <td style="font-weight: 800; font-size: 12px; text-align: center;">${item.cantidad}x</td>
           <td>
-            <div class="item-title">${item.receta_nombre}</div>
+            <div class="item-title">${isExtra ? `<span style="background: #fce7f3; color: #9d174d; padding: 1px 5px; border-radius: 4px; font-size: 10px; margin-right: 4px;">EXTRA</span>` : ''}${item.receta_nombre}</div>
             ${item.dedicatoria ? `<div class="dedicatoria-box">✍️ Dedicatoria: "${item.dedicatoria}"</div>` : ''}
           </td>
-          <td>${formatDisplayTamano(item.tamano_porciones)}</td>
+          <td>${isExtra ? 'Extra de la orden' : formatDisplayTamano(item.tamano_porciones)}</td>
           <td>
             <div class="specs-list">
-              ${item.masa_base ? `<div>• <strong>Masa:</strong> ${item.masa_base}</div>` : ''}
-              ${item.relleno ? `<div>• <strong>Relleno:</strong> ${item.relleno}</div>` : ''}
-              ${item.decoracion ? `<div>• <strong>Cobertura:</strong> ${item.decoracion}</div>` : ''}
-              ${item.extras_texto ? `<div>• <strong>Extras:</strong> ${item.extras_texto}</div>` : ''}
+              ${isExtra ? '<span style="color: #666; font-size: 10px;">Extra para despacho de la orden</span>' : `
+                ${item.masa_base && !item.masa_base.toLowerCase().startsWith('no aplica') ? `<div>• <strong>Masa:</strong> ${item.masa_base}</div>` : ''}
+                ${item.relleno && !item.relleno.toLowerCase().startsWith('no aplica') ? `<div>• <strong>Relleno:</strong> ${item.relleno}</div>` : ''}
+                ${item.decoracion && !item.decoracion.toLowerCase().startsWith('no aplica') ? `<div>• <strong>Cobertura:</strong> ${item.decoracion}</div>` : ''}
+                ${item.extras_texto && !item.extras_texto.toLowerCase().includes('extra de la orden') ? `<div>• <strong>Extras:</strong> ${item.extras_texto}</div>` : ''}
+              `}
             </div>
           </td>
           <td class="num">${formatCurrency(item.subtotal)}</td>
         </tr>
-      `
+      `;
+          }
         )
         .join('')}
     </tbody>
@@ -479,22 +484,27 @@ function buildPrintHtml(pedido: Pedido, format: PrintFormat): string {
 
     ${pedido.items
       .map(
-        (item) => `
+        (item) => {
+          const isExtra = item.es_extra || (!item.receta_id && (Boolean(item.tamano_porciones?.toLowerCase().includes('extra')) || Boolean(item.extras_texto?.toLowerCase().includes('extra'))));
+          return `
       <div style="margin-bottom: 5px;">
         <div class="flex font-bold">
-          <span>${item.cantidad}x ${item.receta_nombre}</span>
+          <span>${item.cantidad}x ${isExtra ? '[EXTRA] ' : ''}${item.receta_nombre}</span>
           <span>${formatCurrency(item.subtotal)}</span>
         </div>
         <div class="item-specs">
-          <div>• Porciones: ${formatDisplayTamano(item.tamano_porciones)}</div>
-          ${item.masa_base ? `<div>• Masa: ${item.masa_base}</div>` : ''}
-          ${item.relleno ? `<div>• Relleno: ${item.relleno}</div>` : ''}
-          ${item.decoracion ? `<div>• Cobertura: ${item.decoracion}</div>` : ''}
-          ${item.extras_texto ? `<div>• Extras: ${item.extras_texto}</div>` : ''}
+          ${isExtra ? '<div>• Extra de la orden</div>' : `
+            <div>• Porciones: ${formatDisplayTamano(item.tamano_porciones)}</div>
+            ${item.masa_base && !item.masa_base.toLowerCase().startsWith('no aplica') ? `<div>• Masa: ${item.masa_base}</div>` : ''}
+            ${item.relleno && !item.relleno.toLowerCase().startsWith('no aplica') ? `<div>• Relleno: ${item.relleno}</div>` : ''}
+            ${item.decoracion && !item.decoracion.toLowerCase().startsWith('no aplica') ? `<div>• Cobertura: ${item.decoracion}</div>` : ''}
+            ${item.extras_texto && !item.extras_texto.toLowerCase().includes('extra de la orden') ? `<div>• Extras: ${item.extras_texto}</div>` : ''}
+          `}
           ${item.dedicatoria ? `<div class="dedicatoria">Dedicatoria: "${item.dedicatoria}"</div>` : ''}
         </div>
       </div>
-    `
+    `;
+        }
       )
       .join('')}
   </div>
@@ -812,27 +822,43 @@ export const PrintTicketModal: React.FC<PrintTicketModalProps> = ({
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-200 text-[11px]">
-                    {pedido.items.map((item, idx) => (
+                    {pedido.items.map((item, idx) => {
+                      const isExtra = item.es_extra || (!item.receta_id && (Boolean(item.tamano_porciones?.toLowerCase().includes('extra')) || Boolean(item.extras_texto?.toLowerCase().includes('extra'))));
+                      return (
                       <tr key={idx} className={idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/70'}>
                         <td className="p-2 font-black text-center text-xs">{item.cantidad}x</td>
                         <td className="p-2">
-                          <div className="font-bold text-slate-900">{item.receta_nombre}</div>
+                          <div className="font-bold text-slate-900 flex items-center gap-1.5 flex-wrap">
+                            {isExtra && (
+                              <span className="text-[9px] bg-pink-100 text-pink-800 font-extrabold px-1.5 py-0.5 rounded border border-pink-200">
+                                EXTRA
+                              </span>
+                            )}
+                            <span>{item.receta_nombre}</span>
+                          </div>
                           {item.dedicatoria && (
                             <div className="text-[9.5px] italic font-semibold text-amber-900 bg-amber-50 p-1 rounded mt-1 border border-amber-200">
                               ✍️ Dedicatoria: "{item.dedicatoria}"
                             </div>
                           )}
                         </td>
-                        <td className="p-2 text-slate-700">{formatDisplayTamano(item.tamano_porciones)}</td>
+                        <td className="p-2 text-slate-700">{isExtra ? 'Extra de la orden' : formatDisplayTamano(item.tamano_porciones)}</td>
                         <td className="p-2 text-[10px] text-slate-600 space-y-0.5">
-                          {item.masa_base && <div>• <strong>Masa:</strong> {item.masa_base}</div>}
-                          {item.relleno && <div>• <strong>Relleno:</strong> {item.relleno}</div>}
-                          {item.decoracion && <div>• <strong>Cobertura:</strong> {item.decoracion}</div>}
-                          {item.extras_texto && <div>• <strong>Extras:</strong> {item.extras_texto}</div>}
+                          {isExtra ? (
+                            <span className="text-slate-400 italic">Extra para despacho</span>
+                          ) : (
+                            <>
+                              {item.masa_base && !item.masa_base.toLowerCase().startsWith('no aplica') && <div>• <strong>Masa:</strong> {item.masa_base}</div>}
+                              {item.relleno && !item.relleno.toLowerCase().startsWith('no aplica') && <div>• <strong>Relleno:</strong> {item.relleno}</div>}
+                              {item.decoracion && !item.decoracion.toLowerCase().startsWith('no aplica') && <div>• <strong>Cobertura:</strong> {item.decoracion}</div>}
+                              {item.extras_texto && !item.extras_texto.toLowerCase().includes('extra de la orden') && <div>• <strong>Extras:</strong> {item.extras_texto}</div>}
+                            </>
+                          )}
                         </td>
                         <td className="p-2 text-right font-bold text-slate-900">{formatCurrency(item.subtotal)}</td>
                       </tr>
-                    ))}
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -956,20 +982,28 @@ export const PrintTicketModal: React.FC<PrintTicketModalProps> = ({
                   <span>SUBTOTAL</span>
                 </div>
 
-                {pedido.items.map((item, idx) => (
+                {pedido.items.map((item, idx) => {
+                  const isExtra = item.es_extra || (!item.receta_id && (Boolean(item.tamano_porciones?.toLowerCase().includes('extra')) || Boolean(item.extras_texto?.toLowerCase().includes('extra'))));
+                  return (
                   <div key={idx} className="space-y-0.5 text-[11px]">
                     <div className="flex justify-between font-bold">
                       <span>
-                        {item.cantidad}x {item.receta_nombre}
+                        {item.cantidad}x {isExtra ? '[EXTRA] ' : ''}{item.receta_nombre}
                       </span>
                       <span>{formatCurrency(item.subtotal)}</span>
                     </div>
                     <div className="text-[10px] pl-2 text-gray-800">
-                      <div>• Porciones: {formatDisplayTamano(item.tamano_porciones)}</div>
-                      {item.masa_base && <div>• Masa: {item.masa_base}</div>}
-                      {item.relleno && <div>• Relleno: {item.relleno}</div>}
-                      {item.decoracion && <div>• Cobertura: {item.decoracion}</div>}
-                      {item.extras_texto && <div>• Extras: {item.extras_texto}</div>}
+                      {isExtra ? (
+                        <div>• Extra de la orden</div>
+                      ) : (
+                        <>
+                          <div>• Porciones: {formatDisplayTamano(item.tamano_porciones)}</div>
+                          {item.masa_base && !item.masa_base.toLowerCase().startsWith('no aplica') && <div>• Masa: {item.masa_base}</div>}
+                          {item.relleno && !item.relleno.toLowerCase().startsWith('no aplica') && <div>• Relleno: {item.relleno}</div>}
+                          {item.decoracion && !item.decoracion.toLowerCase().startsWith('no aplica') && <div>• Cobertura: {item.decoracion}</div>}
+                          {item.extras_texto && !item.extras_texto.toLowerCase().includes('extra de la orden') && <div>• Extras: {item.extras_texto}</div>}
+                        </>
+                      )}
                       {item.dedicatoria && (
                         <div className="italic font-bold text-black mt-0.5">
                           Dedicatoria: "{item.dedicatoria}"
@@ -977,7 +1011,8 @@ export const PrintTicketModal: React.FC<PrintTicketModalProps> = ({
                       )}
                     </div>
                   </div>
-                ))}
+                  );
+                })}
               </div>
 
               {/* Resumen Financiero */}

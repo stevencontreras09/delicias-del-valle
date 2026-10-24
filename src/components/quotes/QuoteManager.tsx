@@ -192,16 +192,28 @@ export const QuoteManager: React.FC = () => {
 
                 {/* Items Preview */}
                 <div className="mt-3 pt-3 border-t border-trigo-100 space-y-1 text-xs">
-                  {cot.items.map((item, idx) => (
-                    <div key={idx} className="text-chocolate-800 font-medium flex justify-between">
-                      <span className="truncate pr-2">
-                        • {item.receta_nombre} ({formatDisplayTamano(item.tamano_porciones)})
-                      </span>
-                      <span className="font-bold flex-shrink-0">
-                        x{item.cantidad}
-                      </span>
-                    </div>
-                  ))}
+                  {cot.items.map((item, idx) => {
+                    const isExtra = item.es_extra || (!item.receta_id && Boolean(item.tamano_porciones?.toLowerCase().includes('extra')));
+                    return (
+                      <div key={idx} className="text-chocolate-800 font-medium flex justify-between items-center">
+                        <span className="truncate pr-2 flex items-center gap-1.5">
+                          {isExtra ? (
+                            <>
+                              <span className="text-[9px] bg-frambuesa-100 text-frambuesa-800 font-bold px-1.5 py-0.2 rounded border border-frambuesa-200 shrink-0">
+                                EXTRA
+                              </span>
+                              <span>{item.receta_nombre}</span>
+                            </>
+                          ) : (
+                            <span>• {item.receta_nombre} ({formatDisplayTamano(item.tamano_porciones)})</span>
+                          )}
+                        </span>
+                        <span className="font-bold flex-shrink-0">
+                          x{item.cantidad}
+                        </span>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
 

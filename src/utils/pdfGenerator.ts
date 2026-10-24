@@ -166,19 +166,28 @@ export function generarPdfCotizacion(cotizacion: Cotizacion): void {
 
   // Tabla de Productos / Items (Solo tamaño, masa, relleno, decoración y extras sin variables internas)
   const tableData = cotizacion.items.map((item, index) => {
-    let descripcion = `${item.receta_nombre}\n• Tamaño: ${formatDisplayTamano(item.tamano_porciones)}`;
-    if (item.masa_base && !item.masa_base.toLowerCase().startsWith('ningun') && !item.masa_base.toLowerCase().startsWith('no aplica')) {
-      descripcion += ` | Masa: ${item.masa_base}`;
-    }
-    if (item.relleno && !item.relleno.toLowerCase().startsWith('ningun') && !item.relleno.toLowerCase().startsWith('no aplica')) {
-      descripcion += ` | Relleno: ${item.relleno}`;
-    }
-    if (item.decoracion && !item.decoracion.toLowerCase().startsWith('ningun') && !item.decoracion.toLowerCase().startsWith('no aplica')) {
-      descripcion += `\n• Decoración: ${item.decoracion}`;
-    }
-    if (item.dedicatoria) descripcion += `\n• Dedicatoria: "${item.dedicatoria}"`;
-    if (item.extras && item.extras.length > 0) {
-      descripcion += `\n• Extras: ${item.extras.map(e => e.cantidad && e.cantidad > 1 ? `${e.nombre} (x${e.cantidad})` : e.nombre).join(', ')}`;
+    let descripcion = '';
+    const isExtra = item.es_extra || (!item.receta_id && Boolean(item.tamano_porciones?.toLowerCase().includes('extra')));
+    if (isExtra) {
+      descripcion = `[EXTRA DE LA ORDEN] ${item.receta_nombre}`;
+      if (item.dedicatoria) {
+        descripcion += `\n• Detalle / Dedicatoria: "${item.dedicatoria}"`;
+      }
+    } else {
+      descripcion = `${item.receta_nombre}\n• Tamaño: ${formatDisplayTamano(item.tamano_porciones)}`;
+      if (item.masa_base && !item.masa_base.toLowerCase().startsWith('ningun') && !item.masa_base.toLowerCase().startsWith('no aplica')) {
+        descripcion += ` | Masa: ${item.masa_base}`;
+      }
+      if (item.relleno && !item.relleno.toLowerCase().startsWith('ningun') && !item.relleno.toLowerCase().startsWith('no aplica')) {
+        descripcion += ` | Relleno: ${item.relleno}`;
+      }
+      if (item.decoracion && !item.decoracion.toLowerCase().startsWith('ningun') && !item.decoracion.toLowerCase().startsWith('no aplica')) {
+        descripcion += `\n• Decoración: ${item.decoracion}`;
+      }
+      if (item.dedicatoria) descripcion += `\n• Dedicatoria: "${item.dedicatoria}"`;
+      if (item.extras && item.extras.length > 0) {
+        descripcion += `\n• Extras: ${item.extras.map(e => e.cantidad && e.cantidad > 1 ? `${e.nombre} (x${e.cantidad})` : e.nombre).join(', ')}`;
+      }
     }
 
     return [
@@ -533,31 +542,38 @@ export function generarPdfPedido(pedido: Pedido): void {
 
   // Tabla de Productos con Especificaciones Completas
   const tableData = pedido.items.map((item, index) => {
-    let descripcion = `${item.receta_nombre}\n• Tamaño: ${formatDisplayTamano(item.tamano_porciones)}`;
-    if (
-      item.masa_base &&
-      !item.masa_base.toLowerCase().startsWith('ningun') &&
-      !item.masa_base.toLowerCase().startsWith('no aplica')
-    ) {
-      descripcion += ` | Masa: ${item.masa_base}`;
-    }
-    if (
-      item.relleno &&
-      !item.relleno.toLowerCase().startsWith('ningun') &&
-      !item.relleno.toLowerCase().startsWith('no aplica')
-    ) {
-      descripcion += ` | Relleno: ${item.relleno}`;
-    }
-    if (
-      item.decoracion &&
-      !item.decoracion.toLowerCase().startsWith('ningun') &&
-      !item.decoracion.toLowerCase().startsWith('no aplica')
-    ) {
-      descripcion += `\n• Decoración: ${item.decoracion}`;
-    }
-    if (item.dedicatoria) descripcion += `\n• Dedicatoria: "${item.dedicatoria}"`;
-    if (item.extras_texto) {
-      descripcion += `\n• Extras: ${item.extras_texto}`;
+    let descripcion = '';
+    const isExtra = item.es_extra || (!item.receta_id && (Boolean(item.tamano_porciones?.toLowerCase().includes('extra')) || Boolean(item.extras_texto?.toLowerCase().includes('extra'))));
+    if (isExtra) {
+      descripcion = `[EXTRA DE LA ORDEN] ${item.receta_nombre}`;
+      if (item.dedicatoria) descripcion += `\n• Detalle / Dedicatoria: "${item.dedicatoria}"`;
+    } else {
+      descripcion = `${item.receta_nombre}\n• Tamaño: ${formatDisplayTamano(item.tamano_porciones)}`;
+      if (
+        item.masa_base &&
+        !item.masa_base.toLowerCase().startsWith('ningun') &&
+        !item.masa_base.toLowerCase().startsWith('no aplica')
+      ) {
+        descripcion += ` | Masa: ${item.masa_base}`;
+      }
+      if (
+        item.relleno &&
+        !item.relleno.toLowerCase().startsWith('ningun') &&
+        !item.relleno.toLowerCase().startsWith('no aplica')
+      ) {
+        descripcion += ` | Relleno: ${item.relleno}`;
+      }
+      if (
+        item.decoracion &&
+        !item.decoracion.toLowerCase().startsWith('ningun') &&
+        !item.decoracion.toLowerCase().startsWith('no aplica')
+      ) {
+        descripcion += `\n• Decoración: ${item.decoracion}`;
+      }
+      if (item.dedicatoria) descripcion += `\n• Dedicatoria: "${item.dedicatoria}"`;
+      if (item.extras_texto && !item.extras_texto.toLowerCase().includes('extra de la orden')) {
+        descripcion += `\n• Extras: ${item.extras_texto}`;
+      }
     }
 
     return [
