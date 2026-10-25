@@ -11,7 +11,9 @@ import {
   PieChart,
   Package,
   Check,
+  Sparkles,
 } from 'lucide-react';
+import { SearchableSelect, SearchableSelectOption } from '../ui/SearchableSelect';
 
 interface RecipeFormModalProps {
   isOpen: boolean;
@@ -219,6 +221,46 @@ export const RecipeFormModal: React.FC<RecipeFormModalProps> = ({
   const insumosMap = new Map<number, Insumo>();
   insumos.forEach((i) => insumosMap.set(i.id, i));
 
+  // Opciones formateadas e interactivas para el selector de insumos
+  const insumosOptions: SearchableSelectOption<number>[] = useMemo(() => {
+    return insumos
+      .filter((i) => i.activo !== false)
+      .map((i) => ({
+        value: i.id,
+        label: i.nombre,
+        sublabel: `${i.unidad_compra} • ${formatCurrency(i.costo_unitario_base)}/${i.unidad_base}`,
+        badge: i.categoria,
+        badgeVariant: 'trigo',
+        category: i.categoria,
+      }));
+  }, [insumos]);
+
+  const categoriaOptions: SearchableSelectOption<CategoriaReceta>[] = useMemo(() => {
+    return CATEGORIAS_RECETA.map((cat) => ({
+      value: cat,
+      label: cat,
+      badge: 'Categoría',
+      badgeVariant: 'chocolate',
+    }));
+  }, []);
+
+  const [quickAddInsumoId, setQuickAddInsumoId] = useState<number | ''>('');
+
+  const handleQuickAddIngrediente = (insumoId: number) => {
+    if (!insumoId) return;
+    const ins = insumosMap.get(insumoId);
+    const defaultCant = ins?.unidad_base === 'ud' ? 1 : 100;
+    setIngredientes((prev) => [
+      ...prev,
+      {
+        insumo_id: insumoId,
+        cantidad: defaultCant,
+        tipo: (ins?.tipo_costo as 'fijo' | 'variable') || 'fijo',
+      },
+    ]);
+    setQuickAddInsumoId('');
+  };
+
   // Cálculo en vivo del costo de materia prima
   const subtotalMateriaPrima = ingredientes.reduce((sum, item) => {
     const ins = insumosMap.get(item.insumo_id);
@@ -353,17 +395,15 @@ export const RecipeFormModal: React.FC<RecipeFormModalProps> = ({
             <label className="block text-xs font-bold text-chocolate-700 uppercase tracking-wider mb-1">
               Categoría *
             </label>
-            <select
+            <SearchableSelect
+              size="md"
               value={categoria}
-              onChange={(e) => setCategoria(e.target.value as CategoriaReceta)}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-trigo-300 focus:ring-2 focus:ring-frambuesa-400 text-xs bg-white"
-            >
-              {CATEGORIAS_RECETA.map((cat) => (
-                <option key={cat} value={cat}>
-                  {cat}
-                </option>
-              ))}
-            </select>
+              onChange={(val) => setCategoria(val as CategoriaReceta)}
+              options={categoriaOptions}
+              placeholder="Seleccionar categoría..."
+              searchPlaceholder="Buscar categoría..."
+              usePortal={true}
+            />
           </div>
 
           <div>
@@ -637,16 +677,20 @@ export const RecipeFormModal: React.FC<RecipeFormModalProps> = ({
 
         {/* Lista de Ingredientes (Fijos y Variables) */}
         <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <h3 className="text-xs font-bold text-chocolate-800 uppercase tracking-wider">
-              Ingredientes de la Receta ({ingredientes.length})
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
+            <h3 className="text-xs font-bold text-chocolate-800 uppercase tracking-wider flex items-center gap-2">
+              <span>Ingredientes de la Receta</span>
+              <span className="px-2 py-0.5 rounded-full bg-frambuesa-100 text-frambuesa-800 font-extrabold text-[11px]">
+                {ingredientes.length}
+              </span>
             </h3>
 
             <div className="flex items-center gap-2">
               <button
                 type="button"
                 onClick={() => handleAddIngrediente('fijo')}
-                className="px-3 py-1.5 rounded-xl bg-chocolate-700 hover:bg-chocolate-800 text-white text-xs font-bold flex items-center gap-1"
+                className="px-2.5 py-1.5 rounded-xl bg-chocolate-700 hover:bg-chocolate-800 text-white text-xs font-bold flex items-center gap-1 shadow-xs transition"
+                title="Agregar fila en blanco de ingrediente fijo"
               >
                 <Plus className="w-3.5 h-3.5" />
                 <span>+ Ingrediente Fijo</span>
@@ -654,7 +698,8 @@ export const RecipeFormModal: React.FC<RecipeFormModalProps> = ({
               <button
                 type="button"
                 onClick={() => handleAddIngrediente('variable')}
-                className="px-3 py-1.5 rounded-xl bg-trigo-600 hover:bg-trigo-700 text-white text-xs font-bold flex items-center gap-1"
+                className="px-2.5 py-1.5 rounded-xl bg-trigo-600 hover:bg-trigo-700 text-white text-xs font-bold flex items-center gap-1 shadow-xs transition"
+                title="Agregar fila en blanco de ingrediente variable"
               >
                 <Plus className="w-3.5 h-3.5" />
                 <span>+ Ingrediente Variable</span>
@@ -662,12 +707,32 @@ export const RecipeFormModal: React.FC<RecipeFormModalProps> = ({
             </div>
           </div>
 
-          <div className="border border-trigo-200 rounded-2xl overflow-hidden shadow-sm max-h-[300px] overflow-y-auto">
+          {/* Barra Dinámica de Búsqueda Rápida de Ingredientes */}
+          <div className="p-2.5 bg-gradient-to-r from-crema/80 via-white to-amber-50/50 rounded-2xl border-2 border-trigo-200/80 shadow-xs flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+            <div className="flex items-center gap-1.5 text-xs font-bold text-chocolate-800 whitespace-nowrap shrink-0">
+              <Sparkles className="w-4 h-4 text-frambuesa-600" />
+              <span>Buscador Rápido:</span>
+            </div>
+            <div className="flex-1">
+              <SearchableSelect
+                size="sm"
+                value={quickAddInsumoId}
+                onChange={(val) => handleQuickAddIngrediente(Number(val))}
+                options={insumosOptions}
+                placeholder="🔍 Escribe para buscar insumo y agregarlo a la receta..."
+                searchPlaceholder="Escribe el nombre o categoría del insumo..."
+                usePortal={true}
+                clearable={false}
+              />
+            </div>
+          </div>
+
+          <div className="border border-trigo-200 rounded-2xl overflow-hidden shadow-sm max-h-[340px] overflow-y-auto">
             <table className="w-full text-left text-xs">
-              <thead className="bg-crema text-chocolate-800 font-bold sticky top-0">
+              <thead className="bg-crema text-chocolate-800 font-bold sticky top-0 z-10">
                 <tr>
                   <th className="py-2.5 px-3">Tipo</th>
-                  <th className="py-2.5 px-3">Insumo / Materia Prima</th>
+                  <th className="py-2.5 px-3 min-w-[260px]">Insumo / Materia Prima</th>
                   <th className="py-2.5 px-3 text-center">Cantidad en Receta</th>
                   <th className="py-2.5 px-3 text-right">Costo Calculado</th>
                   <th className="py-2.5 px-3 text-center">Quitar</th>
@@ -693,20 +758,18 @@ export const RecipeFormModal: React.FC<RecipeFormModalProps> = ({
                         </select>
                       </td>
 
-                      <td className="py-2 px-3">
-                        <select
+                      <td className="py-2 px-3 min-w-[260px]">
+                        <SearchableSelect
+                          size="sm"
                           value={item.insumo_id}
-                          onChange={(e) =>
-                            handleUpdateIngrediente(index, 'insumo_id', parseInt(e.target.value))
+                          onChange={(val) =>
+                            handleUpdateIngrediente(index, 'insumo_id', Number(val))
                           }
-                          className="w-full px-2 py-1 rounded-lg border border-trigo-200 text-xs bg-white"
-                        >
-                          {insumos.map((i) => (
-                            <option key={i.id} value={i.id}>
-                              {i.nombre} ({i.unidad_compra} - ${i.costo_unitario_base.toFixed(4)}/{i.unidad_base})
-                            </option>
-                          ))}
-                        </select>
+                          options={insumosOptions}
+                          placeholder="Seleccionar insumo..."
+                          searchPlaceholder="Buscar por nombre o categoría..."
+                          usePortal={true}
+                        />
                       </td>
 
                       <td className="py-2 px-3 text-center">

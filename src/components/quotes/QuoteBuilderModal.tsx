@@ -52,6 +52,7 @@ import {
 } from 'lucide-react';
 import { OptionsManagerModal, CategoriaOpcion } from './OptionsManagerModal';
 import { LocationGoogleMapsModal } from './LocationGoogleMapsModal';
+import { SearchableSelect, SearchableSelectOption } from '../ui/SearchableSelect';
 
 interface QuoteBuilderModalProps {
   isOpen: boolean;
@@ -877,6 +878,55 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
     );
   }, [currentReceta, factorReceta, costoDecoracion, tarifaHoraTaller]);
 
+  // Opciones dinámicas para selectores de zona de delivery y personalizaciones
+  const zonasDeliveryOptions: SearchableSelectOption<number>[] = useMemo(() => {
+    return zonasDelivery
+      .filter((z) => z.activo)
+      .map((z) => ({
+        value: z.id,
+        label: z.nombre,
+        sublabel: `${z.tiempo_estimado_min || 45} min estimados`,
+        badge: `${formatCurrency(z.tarifa)} base`,
+        badgeVariant: 'warning',
+      }));
+  }, [zonasDelivery]);
+
+  const masasSelectOptions: SearchableSelectOption<string>[] = useMemo(() => {
+    return masasOpciones.map((m) => {
+      const addPrice = m.precio_adicional_base * factorReceta;
+      return {
+        value: m.nombre,
+        label: m.nombre,
+        badge: addPrice > 0 ? `+${formatCurrency(addPrice)}` : undefined,
+        badgeVariant: 'frambuesa',
+      };
+    });
+  }, [masasOpciones, factorReceta]);
+
+  const rellenosSelectOptions: SearchableSelectOption<string>[] = useMemo(() => {
+    return rellenosOpciones.map((r) => {
+      const addPrice = r.precio_adicional_base * factorReceta;
+      return {
+        value: r.nombre,
+        label: r.nombre,
+        badge: addPrice > 0 ? `+${formatCurrency(addPrice)}` : undefined,
+        badgeVariant: 'frambuesa',
+      };
+    });
+  }, [rellenosOpciones, factorReceta]);
+
+  const decoracionesSelectOptions: SearchableSelectOption<string>[] = useMemo(() => {
+    return decoracionesOpciones.map((d) => {
+      const addPrice = d.precio_adicional_base * factorDeco;
+      return {
+        value: d.nombre,
+        label: d.nombre,
+        badge: addPrice > 0 ? `+${formatCurrency(addPrice)}` : undefined,
+        badgeVariant: 'frambuesa',
+      };
+    });
+  }, [decoracionesOpciones, factorDeco]);
+
   // 3. Costo Total Unitario de Producción (CTP)
   // Incluye: Materia prima + Merma técnica (3%) + Costos indirectos y reposición + Costo de Elaboración del Taller
   const costoIndirectosYMerma =
@@ -1400,18 +1450,17 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
                   <label className="block font-semibold text-chocolate-700 mb-1 text-xs">
                     Zona de Envío / Tarifa Automática *
                   </label>
-                  <select
+                  <SearchableSelect
+                    size="sm"
                     value={zonaDeliveryId}
-                    onChange={(e) => handleSelectZona(e.target.value === '' ? '' : Number(e.target.value))}
-                    className="w-full px-3 py-2.5 rounded-xl border border-trigo-300 focus:ring-2 focus:ring-frambuesa-400 text-xs bg-white font-medium text-chocolate-900"
-                  >
-                    <option value="">-- Seleccionar zona de entrega --</option>
-                    {zonasDelivery.filter(z => z.activo).map((z) => (
-                      <option key={z.id} value={z.id}>
-                        {z.nombre} — {formatCurrency(z.tarifa)} base ({z.tiempo_estimado_min || 45} min est.)
-                      </option>
-                    ))}
-                  </select>
+                    onChange={(val) => handleSelectZona(val)}
+                    options={zonasDeliveryOptions}
+                    placeholder="-- Seleccionar zona de entrega --"
+                    searchPlaceholder="Buscar zona de delivery..."
+                    usePortal={true}
+                    clearable={true}
+                    onClear={() => handleSelectZona('')}
+                  />
                 </div>
 
                 <div>
@@ -2066,20 +2115,15 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
                   <span>Editar Opciones</span>
                 </button>
               </div>
-              <select
+              <SearchableSelect
+                size="md"
                 value={masaBase}
-                onChange={(e) => setMasaBase(e.target.value)}
-                className="w-full px-3 py-2.5 rounded-xl border border-trigo-300 focus:ring-2 focus:ring-frambuesa-400 focus:outline-none bg-white font-medium text-chocolate-900"
-              >
-                {masasOpciones.map((m) => {
-                  const addPrice = m.precio_adicional_base * factorReceta;
-                  return (
-                    <option key={m.id} value={m.nombre}>
-                      {m.nombre} {addPrice > 0 ? `(+${formatCurrency(addPrice)})` : ''}
-                    </option>
-                  );
-                })}
-              </select>
+                onChange={(val) => setMasaBase(String(val))}
+                options={masasSelectOptions}
+                placeholder="Seleccionar masa base..."
+                searchPlaceholder="Buscar masa base..."
+                usePortal={true}
+              />
             </div>
 
             {/* Relleno Artesanal con Precio Dinámico */}
@@ -2097,20 +2141,15 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
                   <span>Editar Opciones</span>
                 </button>
               </div>
-              <select
+              <SearchableSelect
+                size="md"
                 value={relleno}
-                onChange={(e) => setRelleno(e.target.value)}
-                className="w-full px-3 py-2.5 rounded-xl border border-trigo-300 focus:ring-2 focus:ring-frambuesa-400 focus:outline-none bg-white font-medium text-chocolate-900"
-              >
-                {rellenosOpciones.map((r) => {
-                  const addPrice = r.precio_adicional_base * factorReceta;
-                  return (
-                    <option key={r.id} value={r.nombre}>
-                      {r.nombre} {addPrice > 0 ? `(+${formatCurrency(addPrice)})` : ''}
-                    </option>
-                  );
-                })}
-              </select>
+                onChange={(val) => setRelleno(String(val))}
+                options={rellenosSelectOptions}
+                placeholder="Seleccionar relleno..."
+                searchPlaceholder="Buscar relleno artesanal..."
+                usePortal={true}
+              />
             </div>
 
             {/* Estilo de Decoración con Precio Dinámico */}
@@ -2128,20 +2167,15 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
                   <span>Editar Opciones</span>
                 </button>
               </div>
-              <select
+              <SearchableSelect
+                size="md"
                 value={decoracion}
-                onChange={(e) => setDecoracion(e.target.value)}
-                className="w-full px-3 py-2.5 rounded-xl border border-trigo-300 focus:ring-2 focus:ring-frambuesa-400 focus:outline-none bg-white font-medium text-chocolate-900"
-              >
-                {decoracionesOpciones.map((d) => {
-                  const addPrice = d.precio_adicional_base * factorDeco;
-                  return (
-                    <option key={d.id} value={d.nombre}>
-                      {d.nombre} {addPrice > 0 ? `(+${formatCurrency(addPrice)})` : ''}
-                    </option>
-                  );
-                })}
-              </select>
+                onChange={(val) => setDecoracion(String(val))}
+                options={decoracionesSelectOptions}
+                placeholder="Seleccionar decoración..."
+                searchPlaceholder="Buscar decoración..."
+                usePortal={true}
+              />
             </div>
 
             {/* Cantidad */}

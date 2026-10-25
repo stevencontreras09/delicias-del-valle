@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Insumo, UnidadBase } from '../../types';
 import { Modal } from '../ui/Modal';
 import { formatCurrency } from '../../utils/formatters';
 import { calcularCostoUnitarioBase } from '../../utils/calculations';
 import { Scale, Calculator, ArrowRight, Sparkles } from 'lucide-react';
+import { SearchableSelect, SearchableSelectOption } from '../ui/SearchableSelect';
 
 interface InsumoFormModalProps {
   isOpen: boolean;
@@ -67,6 +68,15 @@ export const InsumoFormModal: React.FC<InsumoFormModalProps> = ({
   const [stockMinimo, setStockMinimo] = useState<number | ''>(0);
   const [activo, setActivo] = useState(true);
   const [tipoCosto, setTipoCosto] = useState<'fijo' | 'variable'>('fijo');
+
+  const categoriasOptions: SearchableSelectOption<string>[] = useMemo(() => {
+    return CATEGORIAS.map((cat) => ({
+      value: cat,
+      label: cat,
+      badge: 'Categoría',
+      badgeVariant: 'trigo',
+    }));
+  }, []);
 
   // Inicialización o reset
   useEffect(() => {
@@ -232,17 +242,15 @@ export const InsumoFormModal: React.FC<InsumoFormModalProps> = ({
             <label className="block font-bold text-chocolate-700 uppercase tracking-wider mb-1">
               Categoría
             </label>
-            <select
+            <SearchableSelect
+              size="md"
               value={categoria}
-              onChange={(e) => setCategoria(e.target.value)}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-trigo-300 focus:outline-none focus:ring-2 focus:ring-frambuesa-400 text-xs bg-white font-medium text-chocolate-900"
-            >
-              {CATEGORIAS.map((cat) => (
-                <option key={cat} value={cat}>
-                  {cat}
-                </option>
-              ))}
-            </select>
+              onChange={(val) => setCategoria(String(val))}
+              options={categoriasOptions}
+              placeholder="Seleccionar categoría..."
+              searchPlaceholder="Buscar categoría..."
+              usePortal={true}
+            />
           </div>
 
           {/* Precio de Compra en RD$ */}

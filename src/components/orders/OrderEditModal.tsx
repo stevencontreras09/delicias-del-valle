@@ -21,6 +21,7 @@ import {
   Package,
   MessageSquare,
 } from 'lucide-react';
+import { SearchableSelect, SearchableSelectOption } from '../ui/SearchableSelect';
 
 interface OrderEditModalProps {
   isOpen: boolean;
@@ -57,6 +58,32 @@ export const OrderEditModal: React.FC<OrderEditModalProps> = ({
   const [showMapModal, setShowMapModal] = useState(false);
   const [selectedRecetaId, setSelectedRecetaId] = useState<number | ''>('');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  // Opciones dinámicas e interactivas para recetas y zonas
+  const recetasOptions: SearchableSelectOption<number>[] = useMemo(() => {
+    return recetas
+      .filter((r) => r.activa)
+      .map((r) => ({
+        value: r.id,
+        label: r.nombre,
+        sublabel: `Rendimiento: ${r.rendimiento_unidad || 'N/A'}`,
+        badge: r.categoria,
+        badgeVariant: 'chocolate',
+        category: r.categoria,
+      }));
+  }, [recetas]);
+
+  const zonasOptions: SearchableSelectOption<number>[] = useMemo(() => {
+    return zonasDelivery
+      .filter((z) => z.activo !== false)
+      .map((z) => ({
+        value: z.id,
+        label: z.nombre,
+        sublabel: `${z.tiempo_estimado_min || 45} min estimados`,
+        badge: formatCurrency(z.tarifa),
+        badgeVariant: 'warning',
+      }));
+  }, [zonasDelivery]);
 
   // Inicializar al abrir
   useEffect(() => {
@@ -422,18 +449,17 @@ export const OrderEditModal: React.FC<OrderEditModalProps> = ({
                         <label className="block text-[11px] font-bold text-amber-950 mb-1">
                           Zona de Delivery
                         </label>
-                        <select
+                        <SearchableSelect
+                          size="sm"
                           value={zonaDeliveryId ?? ''}
-                          onChange={(e) => handleZonaChange(e.target.value)}
-                          className="w-full px-3 py-2 text-xs rounded-xl border border-amber-300 focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white"
-                        >
-                          <option value="">Seleccionar zona de cobertura...</option>
-                          {zonasDelivery.map((z) => (
-                            <option key={z.id} value={z.id}>
-                              {z.nombre} ({formatCurrency(z.tarifa)})
-                            </option>
-                          ))}
-                        </select>
+                          onChange={(val) => handleZonaChange(String(val))}
+                          options={zonasOptions}
+                          placeholder="Seleccionar zona de cobertura..."
+                          searchPlaceholder="Buscar zona por nombre..."
+                          usePortal={true}
+                          clearable={true}
+                          onClear={() => handleZonaChange('')}
+                        />
                       </div>
 
                       <div>
@@ -661,20 +687,19 @@ export const OrderEditModal: React.FC<OrderEditModalProps> = ({
 
                 {/* Agregar Nuevo Producto */}
                 <div className="flex flex-wrap items-center gap-2 pt-2">
-                  <select
-                    value={selectedRecetaId}
-                    onChange={(e) => setSelectedRecetaId(e.target.value ? Number(e.target.value) : '')}
-                    className="flex-1 min-w-[200px] px-3 py-2 text-xs rounded-xl border border-trigo-300 bg-white text-chocolate-900 focus:ring-2 focus:ring-frambuesa-400"
-                  >
-                    <option value="">Seleccionar receta para agregar a la orden...</option>
-                    {recetas
-                      .filter((r) => r.activa)
-                      .map((r) => (
-                        <option key={r.id} value={r.id}>
-                          {r.nombre} ({r.categoria})
-                        </option>
-                      ))}
-                  </select>
+                  <div className="flex-1 min-w-[260px]">
+                    <SearchableSelect
+                      size="sm"
+                      value={selectedRecetaId}
+                      onChange={(val) => setSelectedRecetaId(val ? Number(val) : '')}
+                      options={recetasOptions}
+                      placeholder="🔍 Buscar receta para agregar al pedido..."
+                      searchPlaceholder="Escribe el nombre o categoría de la receta..."
+                      usePortal={true}
+                      clearable={true}
+                      onClear={() => setSelectedRecetaId('')}
+                    />
+                  </div>
                   <button
                     type="button"
                     onClick={handleAddReceta}
