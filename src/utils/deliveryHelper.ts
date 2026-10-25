@@ -22,6 +22,72 @@ export const getWazeUrl = (direccion: string): string => {
 };
 
 /**
+ * Información del escalado de tarifa de delivery según el volumen y monto del pedido.
+ * Reconoce el mayor riesgo, cuidado y espacio que requieren los pedidos grandes de repostería.
+ */
+export interface RecargoDeliveryEscalonado {
+  tarifaBase: number;
+  recargoMonto: number;
+  tarifaTotalSugerida: number;
+  rangoAplicado: 'estandar' | 'medio' | 'grande' | 'banquete';
+  descripcion: string;
+  badgeLabel: string;
+  badgeStyle: string;
+}
+
+/**
+ * Calcula la tarifa justa de delivery combinando la zona geográfica con el tramo de monto del pedido:
+ * - Hasta RD$ 1,500: Tarifa base de zona (+RD$ 0)
+ * - RD$ 1,501 - RD$ 3,500: Tarifa base + RD$ 100
+ * - RD$ 3,501 - RD$ 6,000: Tarifa base + RD$ 200
+ * - Más de RD$ 6,000: Tarifa base + RD$ 350
+ * El 100% del recargo compensa al repartidor por el mayor cuidado, menor velocidad y volumen transportado.
+ */
+export function calcularTarifaDeliveryEscalonada(
+  tarifaBaseZona: number,
+  subtotalPedido: number
+): RecargoDeliveryEscalonado {
+  const base = Math.max(0, Number(tarifaBaseZona) || 0);
+  const subtotal = Math.max(0, Number(subtotalPedido) || 0);
+
+  let recargo = 0;
+  let rango: 'estandar' | 'medio' | 'grande' | 'banquete' = 'estandar';
+  let desc = 'Pedido Estándar (hasta RD$ 1,500)';
+  let badgeLabel = '📦 Carga Estándar';
+  let badgeStyle = 'bg-stone-100 text-stone-800 border-stone-200';
+
+  if (subtotal > 6000) {
+    recargo = 350;
+    rango = 'banquete';
+    desc = 'Banquete / Volumen Alto (> RD$ 6,000)';
+    badgeLabel = '👑 Carga Banquete (+RD$ 350)';
+    badgeStyle = 'bg-purple-100 text-purple-900 border-purple-300';
+  } else if (subtotal > 3500) {
+    recargo = 200;
+    rango = 'grande';
+    desc = 'Pedido Grande / Evento (RD$ 3,501 - RD$ 6,000)';
+    badgeLabel = '🎂 Carga Grande (+RD$ 200)';
+    badgeStyle = 'bg-amber-100 text-amber-900 border-amber-300';
+  } else if (subtotal > 1500) {
+    recargo = 100;
+    rango = 'medio';
+    desc = 'Pedido Mediano (RD$ 1,501 - RD$ 3,500)';
+    badgeLabel = '🧁 Carga Mediana (+RD$ 100)';
+    badgeStyle = 'bg-blue-100 text-blue-900 border-blue-300';
+  }
+
+  return {
+    tarifaBase: base,
+    recargoMonto: recargo,
+    tarifaTotalSugerida: base + recargo,
+    rangoAplicado: rango,
+    descripcion: desc,
+    badgeLabel,
+    badgeStyle,
+  };
+}
+
+/**
  * Genera el enlace wa.me para despachar los datos completos de entrega al chofer / repartidor
  */
 export const generateDriverWhatsAppMessage = (
@@ -44,6 +110,9 @@ export const generateDriverWhatsAppMessage = (
   const mapsUrl = getGoogleMapsUrl(pedido.direccion_entrega || '', pedido.punto_referencia, pedido.maps_url);
   const wazeUrl = getWazeUrl(pedido.direccion_entrega || '');
 
+  const subtotalPedido = Number(pedido.subtotal ?? 0);
+  const infoEscala = calcularTarifaDeliveryEscalonada(0, subtotalPedido);
+
   const lines = [
     `🛵 *NUEVO DESPACHO — DELICIAS DEL VALLE* 🎂`,
     ``,
@@ -51,6 +120,7 @@ export const generateDriverWhatsAppMessage = (
     `👤 *Cliente:* ${clienteNombre}`,
     `📞 *Teléfono Cliente:* ${clienteTelefono}`,
     `⏰ *Hora programada:* ${pedido.fecha_entrega || 'Hoy'} a las ${pedido.hora_entrega || 'Inmediata'}`,
+    infoEscala.recargoMonto > 0 ? `⚖️ *Clasificación de Carga:* ${infoEscala.descripcion} (Compensación extra incluida)` : '',
     ``,
     `📍 *DIRECCIÓN DE ENTREGA:*`,
     `${pedido.direccion_entrega || 'No especificada'}`,
@@ -58,8 +128,9 @@ export const generateDriverWhatsAppMessage = (
     ``,
     `💵 *COBRO EN DESTINO:*`,
     `• Saldo pastel: RD$ ${saldoPendiente}`,
-    `• Tarifa flete: RD$ ${flete}${pedido.cobro_delivery_al_recibir ? ' (Cobrar en efectivo)' : ' (Ya prepagado / incluido)'}`,
+    `• Tarifa flete repartidor: RD$ ${flete}${pedido.cobro_delivery_al_recibir ? ' (Cobrar en efectivo)' : ' (Prepagado)'}`,
     `• *TOTAL A COBRAR AL CLIENTE: RD$ ${totalCobrar}*`,
+    `⭐ *Pago para el Repartidor:* El 100% de la tarifa de flete (RD$ ${flete}) corresponde al chofer por el traslado y cuidado seguro del pedido.`,
     ``,
     `🗺️ *ENLACES DE NAVEGACIÓN GPS:*`,
     `📍 Google Maps: ${mapsUrl}`,

@@ -30,6 +30,7 @@ import { Badge } from '../ui/Badge';
 import { generarPdfCotizacion } from '../../utils/pdfGenerator';
 import { generarMensajeCotizacionWhatsApp } from '../../utils/whatsappShare';
 import { LocationGoogleMapsModal } from './LocationGoogleMapsModal';
+import { calcularTarifaDeliveryEscalonada } from '../../utils/deliveryHelper';
 
 interface QuoteDetailModalProps {
   isOpen: boolean;
@@ -149,7 +150,10 @@ export const QuoteDetailModal: React.FC<QuoteDetailModalProps> = ({
       flete = 0;
     } else if (editZonaId) {
       const z = zonasDelivery.find(item => item.id === Number(editZonaId));
-      if (z) flete = z.tarifa;
+      if (z) {
+        const calculo = calcularTarifaDeliveryEscalonada(z.tarifa, cotizacion.subtotal);
+        flete = calculo.tarifaTotalSugerida;
+      }
     }
 
     const nuevoTotal = Math.max(0, cotizacion.subtotal - cotizacion.descuento + (editTipoDespacho === 'delivery' ? flete : 0));

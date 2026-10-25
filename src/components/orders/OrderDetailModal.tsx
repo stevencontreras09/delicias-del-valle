@@ -27,7 +27,7 @@ import { Badge } from '../ui/Badge';
 import { generarPdfPedido } from '../../utils/pdfGenerator';
 import { generarMensajePedidoWhatsApp } from '../../utils/whatsappShare';
 import { PaymentRecordModal } from './PaymentRecordModal';
-import { getGoogleMapsUrl, getWazeUrl, generateDriverWhatsAppMessage } from '../../utils/deliveryHelper';
+import { getGoogleMapsUrl, getWazeUrl, generateDriverWhatsAppMessage, calcularTarifaDeliveryEscalonada } from '../../utils/deliveryHelper';
 import { CakeCareCard } from '../delivery/CakeCareCard';
 
 interface OrderDetailModalProps {
@@ -76,6 +76,9 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({
 
   const isDelivery = pedido.tipo_despacho === 'delivery' || pedido.tipo_entrega === 'domicilio';
   const zonaAsignada = zonasDelivery.find((z) => z.id === pedido.zona_delivery_id);
+  const escalaDeliveryInfo = useMemo(() => {
+    return calcularTarifaDeliveryEscalonada(zonaAsignada?.tarifa || 0, Number(pedido.subtotal || 0));
+  }, [zonaAsignada, pedido.subtotal]);
   const mapsUrl = getGoogleMapsUrl(pedido.direccion_entrega || '', pedido.punto_referencia);
   const wazeUrl = getWazeUrl(pedido.direccion_entrega || '');
   const driverWaUrl = generateDriverWhatsAppMessage(pedido.repartidor_telefono || '', pedido, {
@@ -365,13 +368,23 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({
                   <p className="font-bold text-chocolate-900 text-xs">
                     {zonaAsignada ? zonaAsignada.nombre : 'Zona Estándar'}
                   </p>
-                  <p className="text-xs font-extrabold text-frambuesa-600">
-                    Flete: {formatCurrency(pedido.costo_delivery || 0)}
-                  </p>
+                  <div className="flex items-center justify-between gap-1 flex-wrap">
+                    <p className="text-xs font-extrabold text-frambuesa-600">
+                      Flete: {formatCurrency(pedido.costo_delivery || 0)}
+                    </p>
+                    {escalaDeliveryInfo.recargoMonto > 0 && (
+                      <span className={`text-[9px] font-black px-1.5 py-0.5 rounded-full border ${escalaDeliveryInfo.badgeStyle}`}>
+                        {escalaDeliveryInfo.badgeLabel}
+                      </span>
+                    )}
+                  </div>
                   <span className="inline-block text-[10px] text-stone-500">
                     {pedido.cobro_delivery_al_recibir
                       ? '⚠️ Chofer debe cobrar flete al entregar'
                       : '✓ Flete ya cubierto en la factura'}
+                  </span>
+                  <span className="block text-[10px] text-emerald-700 font-extrabold">
+                    ⭐ 100% de esta tarifa corresponde al chofer
                   </span>
                 </div>
 

@@ -24,7 +24,7 @@ import {
   getPorcionOpciones,
   redondearPrecioHaciaArribaCero,
 } from '../../utils/calculations';
-import { parseWhatsAppAddress } from '../../utils/deliveryHelper';
+import { parseWhatsAppAddress, calcularTarifaDeliveryEscalonada, RecargoDeliveryEscalonado } from '../../utils/deliveryHelper';
 import {
   Plus,
   Trash2,
@@ -582,6 +582,22 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
   // Lista de items de la cotización
   const [items, setItems] = useState<CotizacionItem[]>([]);
 
+  // Subtotal dinámico de productos y extras añadidos
+  const subtotalCotizacion = useMemo(() => {
+    return items.reduce((sum, i) => sum + i.subtotal, 0);
+  }, [items]);
+
+  // Zona de delivery seleccionada y cálculo de tarifa escalonada según volumen/monto
+  const zonaSeleccionadaObj = useMemo(() => {
+    if (!zonaDeliveryId) return null;
+    return zonasDelivery.find((z) => z.id === Number(zonaDeliveryId)) || null;
+  }, [zonasDelivery, zonaDeliveryId]);
+
+  const infoEscalaDelivery = useMemo(() => {
+    if (!zonaSeleccionadaObj) return null;
+    return calcularTarifaDeliveryEscalonada(zonaSeleccionadaObj.tarifa, subtotalCotizacion);
+  }, [zonaSeleccionadaObj, subtotalCotizacion]);
+
   // Cerrar dropdown al hacer clic fuera
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -661,7 +677,8 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
         const first = zonasDelivery.find(z => z.activo) || zonasDelivery[0];
         if (first) {
           setZonaDeliveryId(first.id);
-          setCostoEnvio(first.tarifa);
+          const calculo = calcularTarifaDeliveryEscalonada(first.tarifa, subtotalCotizacion);
+          setCostoEnvio(calculo.tarifaTotalSugerida);
         }
       }
     }
@@ -674,7 +691,8 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
     } else {
       const found = zonasDelivery.find(z => z.id === Number(id));
       if (found) {
-        setCostoEnvio(found.tarifa);
+        const calculo = calcularTarifaDeliveryEscalonada(found.tarifa, subtotalCotizacion);
+        setCostoEnvio(calculo.tarifaTotalSugerida);
       }
     }
   };
@@ -1082,7 +1100,6 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
     setItems((prev) => prev.filter((i) => i.id !== id));
   };
 
-  const subtotalCotizacion = items.reduce((sum, i) => sum + i.subtotal, 0);
   const envioNum = typeof costoEnvio === 'number' ? costoEnvio : 0;
   const descNum = typeof descuento === 'number' ? descuento : 0;
   const totalCotizacion = Math.max(0, subtotalCotizacion + envioNum - descNum);
@@ -1391,24 +1408,76 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
                     <option value="">-- Seleccionar zona de entrega --</option>
                     {zonasDelivery.filter(z => z.activo).map((z) => (
                       <option key={z.id} value={z.id}>
-                        {z.nombre} — {formatCurrency(z.tarifa)} ({z.tiempo_estimado_min || 45} min est.)
+                        {z.nombre} — {formatCurrency(z.tarifa)} base ({z.tiempo_estimado_min || 45} min est.)
                       </option>
                     ))}
                   </select>
                 </div>
 
                 <div>
-                  <label className="block font-semibold text-chocolate-700 mb-1 text-xs">
-                    Tarifa de Flete Sumada al Total (RD$)
-                  </label>
-                  <div className="flex items-center px-3 py-2.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-950 font-black text-sm">
-                    <span>{formatCurrency(Number(costoEnvio || 0))}</span>
-                    <span className="text-[10px] text-amber-700 font-normal ml-auto">
-                      Se suma automáticamente
-                    </span>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="font-semibold text-chocolate-700 text-xs">
+                      Tarifa Flete Chofer (RD$)
+                    </label>
+                    {infoEscalaDelivery && infoEscalaDelivery.recargoMonto > 0 && (
+                      <span className={`text-[9px] font-black px-1.5 py-0.5 rounded-full border ${infoEscalaDelivery.badgeStyle}`}>
+                        {infoEscalaDelivery.badgeLabel}
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <div className="relative flex-1">
+                      <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs font-bold text-gray-400">RD$</span>
+                      <input
+                        type="number"
+                        min="0"
+                        step="25"
+                        value={costoEnvio}
+                        onChange={(e) => setCostoEnvio(e.target.value === '' ? '' : Math.max(0, parseFloat(e.target.value)))}
+                        className="w-full pl-9 pr-2.5 py-2 rounded-xl border border-amber-300 bg-white text-chocolate-950 font-black text-xs focus:ring-2 focus:ring-amber-400 outline-none shadow-inner"
+                        placeholder="0.00"
+                      />
+                    </div>
+                    {infoEscalaDelivery && Number(costoEnvio) !== infoEscalaDelivery.tarifaTotalSugerida && (
+                      <button
+                        type="button"
+                        onClick={() => setCostoEnvio(infoEscalaDelivery.tarifaTotalSugerida)}
+                        className="px-2.5 py-2 rounded-xl bg-amber-100 hover:bg-amber-200 text-amber-900 text-[10px] font-bold transition shrink-0 border border-amber-300"
+                        title="Restablecer al flete escalonado justo"
+                      >
+                        Auto RD$ {infoEscalaDelivery.tarifaTotalSugerida}
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>
+
+              {/* Banner de Tarifa Escalonada Justa */}
+              {infoEscalaDelivery && (
+                <div className="bg-gradient-to-r from-amber-50 to-orange-50/60 border border-amber-200/90 rounded-2xl p-3 text-xs text-amber-950 space-y-1.5 shadow-2xs">
+                  <div className="flex flex-wrap items-center justify-between gap-1.5">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className="font-extrabold text-chocolate-900 text-xs flex items-center gap-1">
+                        🛵 Flete Justo de Delivery:
+                      </span>
+                      <span className="font-mono text-xs text-chocolate-800">
+                        Base: <b>{formatCurrency(infoEscalaDelivery.tarifaBase)}</b>
+                        {infoEscalaDelivery.recargoMonto > 0 && (
+                          <span className="text-amber-800 font-bold"> + Cuidado/Volumen: <b>+{formatCurrency(infoEscalaDelivery.recargoMonto)}</b></span>
+                        )}
+                        {' = '}
+                        <b className="text-frambuesa-600 text-sm">{formatCurrency(infoEscalaDelivery.tarifaTotalSugerida)}</b>
+                      </span>
+                    </div>
+                    <span className="text-[10px] text-emerald-800 font-extrabold bg-emerald-100/90 px-2.5 py-0.5 rounded-full border border-emerald-300">
+                      ⭐ 100% Asignado al Repartidor
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-chocolate-600">
+                    Escala de carga: <b>{infoEscalaDelivery.descripcion}</b>. Reconoce el mayor espacio físico, peso y lentitud de transporte que exige un pedido de {formatCurrency(subtotalCotizacion)}.
+                  </p>
+                </div>
+              )}
 
               {/* Importar Dirección desde WhatsApp */}
               <div className="border border-emerald-200 bg-emerald-50/50 rounded-2xl p-3 sm:p-4 space-y-2.5">

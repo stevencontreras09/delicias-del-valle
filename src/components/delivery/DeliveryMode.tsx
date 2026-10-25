@@ -23,7 +23,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { formatCurrency, formatDate, formatDisplayTamano } from '../../utils/formatters';
-import { getGoogleMapsUrl, getWazeUrl, generateClientDeliveryNotificationUrl } from '../../utils/deliveryHelper';
+import { getGoogleMapsUrl, getWazeUrl, generateClientDeliveryNotificationUrl, calcularTarifaDeliveryEscalonada } from '../../utils/deliveryHelper';
 import { CakeCareCard } from './CakeCareCard';
 import { LocationGoogleMapsModal } from '../quotes/LocationGoogleMapsModal';
 import { isPedidoSemanaActual } from '../../utils/orderHelper';
@@ -429,6 +429,7 @@ export const DeliveryMode: React.FC = () => {
             const saldo = Number(p.saldo_pendiente ?? 0);
             const fleteAlRecibir = Boolean(p.cobro_delivery_al_recibir);
             const totalACobrar = saldo + (fleteAlRecibir ? flete : 0);
+            const escalaDelivery = calcularTarifaDeliveryEscalonada(0, Number(p.subtotal || 0));
 
             const mapsUrl =
               p.maps_url && (p.maps_url.startsWith('http://') || p.maps_url.startsWith('https://'))
@@ -627,13 +628,25 @@ export const DeliveryMode: React.FC = () => {
                             <strong>
                               {fleteAlRecibir ? `${formatCurrency(flete)} (Efectivo)` : 'Prepagado'}
                             </strong>
+                            {escalaDelivery.recargoMonto > 0 && (
+                              <span className="block text-[9px] text-amber-800 font-extrabold">
+                                {escalaDelivery.badgeLabel}
+                              </span>
+                            )}
                           </div>
                         </div>
                       </div>
                     ) : (
-                      <div className="bg-emerald-50 border border-emerald-300 rounded-2xl p-3 flex items-center gap-2 text-emerald-800 text-xs font-bold">
-                        <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                        <span>¡PEDIDO PAGADO AL 100%! No cobrar dinero al cliente.</span>
+                      <div className="bg-emerald-50 border border-emerald-300 rounded-2xl p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-1 text-emerald-800 text-xs font-bold">
+                        <div className="flex items-center gap-2">
+                          <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                          <span>¡PEDIDO PAGADO AL 100%! No cobrar dinero al cliente.</span>
+                        </div>
+                        {flete > 0 && (
+                          <span className="text-[11px] font-black text-emerald-900 bg-emerald-100/90 px-2 py-0.5 rounded-lg border border-emerald-300">
+                            Flete para ti: {formatCurrency(flete)} {escalaDelivery.recargoMonto > 0 ? `(${escalaDelivery.badgeLabel})` : ''}
+                          </span>
+                        )}
                       </div>
                     )}
                   </div>

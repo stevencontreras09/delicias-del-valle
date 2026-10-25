@@ -5,6 +5,7 @@ import { Modal } from '../ui/Modal';
 import { formatCurrency, formatDisplayTamano } from '../../utils/formatters';
 import { calcularCostosReceta, calcularCostoElaboracionProducto } from '../../utils/calculations';
 import { LocationGoogleMapsModal } from '../quotes/LocationGoogleMapsModal';
+import { calcularTarifaDeliveryEscalonada } from '../../utils/deliveryHelper';
 import {
   User,
   Calendar,
@@ -182,7 +183,8 @@ export const OrderEditModal: React.FC<OrderEditModalProps> = ({
     setZonaDeliveryId(zId);
     const zona = zonasDelivery.find((z) => z.id === zId);
     if (zona) {
-      setCostoDelivery(zona.tarifa);
+      const calculo = calcularTarifaDeliveryEscalonada(zona.tarifa, subtotal);
+      setCostoDelivery(calculo.tarifaTotalSugerida);
     }
   };
 
