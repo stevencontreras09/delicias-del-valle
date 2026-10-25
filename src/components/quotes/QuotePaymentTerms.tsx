@@ -125,7 +125,7 @@ export const QuotePaymentTerms: React.FC<QuotePaymentTermsProps> = ({
                   <td className="py-2 px-2.5 font-medium text-slate-800">
                     <div className="flex items-center gap-1.5">
                       <XCircle className="w-3.5 h-3.5 text-rose-600 flex-shrink-0" />
-                      <span>Con 1 día o menos (≤ 24h)</span>
+                      <span>Con 1 día o menos (24 horas)</span>
                     </div>
                   </td>
                   <td className="py-2 px-2.5 text-center">

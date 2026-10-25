@@ -153,7 +153,7 @@ export function generarMensajeCotizacionWhatsApp(
       texto += `• *Saldo (50%):* Liquidado previo al despacho o contra entrega.\n`;
       texto += `• *Cambio con +5 días hábiles:* 100% del anticipo como crédito para nueva fecha.\n`;
       texto += `• *Cambio de 4 a 2 días hábiles:* 10% de crédito (90% retenido por insumos y agenda bloqueada).\n`;
-      texto += `• *Cambio con ≤24 horas:* 0% de crédito (100% retenido por producción y horneado ya iniciados).\n`;
+      texto += `• *Cambio con 24h o menos:* 0% de crédito (100% retenido por producción y horneado ya iniciados).\n`;
       texto += `_Cualquier reprogramación queda sujeta a disponibilidad de agenda._\n\n`;
     }
   }

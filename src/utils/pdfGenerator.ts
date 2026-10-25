@@ -423,7 +423,7 @@ export function generarPdfCotizacion(cotizacion: Cotizacion): void {
     body: [
       ['Con 5 o más días hábiles', '100% Anticipo', 'El 100% pagado se transfiere como crédito para la nueva fecha acordada.'],
       ['De 4 a 2 días hábiles', '10% de Crédito', 'Se retiene el 90% por costos de agenda bloqueada y preparación de insumos.'],
-      ['Con 1 día hábil o menos (≤ 24h)', '0% (Sin crédito)', 'Retención del 100% en concepto de producción ya iniciada, horneado y gastos operativos.']
+      ['Con 1 día hábil o menos (24h)', '0% (Sin crédito)', 'Retención del 100% en concepto de producción ya iniciada, horneado y gastos operativos.']
     ],
     headStyles: {
       fillColor: chocolateColor,
@@ -431,18 +431,20 @@ export function generarPdfCotizacion(cotizacion: Cotizacion): void {
       fontSize: 7,
       fontStyle: 'bold',
       halign: 'left',
-      cellPadding: 1.8
+      cellPadding: 2
     },
     styles: {
+      font: 'helvetica',
       fontSize: 6.8,
-      cellPadding: 1.8,
+      cellPadding: 2,
       textColor: [60, 60, 60],
-      overflow: 'linebreak'
+      overflow: 'linebreak',
+      valign: 'middle'
     },
     columnStyles: {
-      0: { cellWidth: 48, fontStyle: 'bold' },
+      0: { cellWidth: 50, fontStyle: 'bold' },
       1: { cellWidth: 32, fontStyle: 'bold', halign: 'center' },
-      2: { cellWidth: 102 }
+      2: { cellWidth: 100 }
     }
   });
 
