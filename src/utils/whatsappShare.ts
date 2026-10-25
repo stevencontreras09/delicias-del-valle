@@ -13,10 +13,17 @@ function sanitizePhone(phone: string): string {
   return cleaned;
 }
 
+export interface OpcionesMensajeCotizacion {
+  incluirPoliticas?: boolean;
+}
+
 /**
  * Genera un mensaje formateado y enlace de WhatsApp para enviar cotizaciones
  */
-export function generarMensajeCotizacionWhatsApp(cotizacion: Cotizacion): { mensaje: string; url: string } {
+export function generarMensajeCotizacionWhatsApp(
+  cotizacion: Cotizacion,
+  opciones: OpcionesMensajeCotizacion = { incluirPoliticas: true }
+): { mensaje: string; url: string } {
   let texto = `🧁 *DELICIAS DEL VALLE - PASTELERÍA ARTESANAL* 🍰\n`;
   texto += `_Tradición, Calidad y Amor en Cada Detalle_\n`;
   texto += `📞 *Tel/WhatsApp:* +1 (849) 522-9264\n\n`;
@@ -132,6 +139,22 @@ export function generarMensajeCotizacionWhatsApp(cotizacion: Cotizacion): { mens
     } else {
       texto += `• *Anticipo del 50%:* ${formatCurrency(cotizacion.total * 0.5)} (para agendar)\n`;
       texto += `• *Saldo restante (50%):* ${formatCurrency(cotizacion.total * 0.5)} contra entrega\n\n`;
+    }
+  }
+
+  // Condiciones de Pago y Políticas de Reprogramación
+  if (opciones?.incluirPoliticas !== false) {
+    texto += `🛡️ *CONDICIONES Y POLÍTICAS DEL PEDIDO:*\n`;
+    if (esContraEntrega) {
+      texto += `• *Modalidad:* 100% Contra Entrega al recibir.\n`;
+      texto += `• *Cancelaciones:* Notificar con mín. 24h para mantener habilitada la modalidad contra entrega en futuros pedidos.\n\n`;
+    } else {
+      texto += `• *Reserva (50%):* La orden entra a programación con el 50% de anticipo. *No reembolsable en dinero en efectivo* por adquisición inmediata de insumos perecederos y reserva de cupo artesanal.\n`;
+      texto += `• *Saldo (50%):* Liquidado previo al despacho o contra entrega.\n`;
+      texto += `• *Cambio con +5 días hábiles:* 100% del anticipo como crédito para nueva fecha.\n`;
+      texto += `• *Cambio de 4 a 2 días hábiles:* 10% de crédito (90% retenido por insumos y agenda bloqueada).\n`;
+      texto += `• *Cambio con ≤24 horas:* 0% de crédito (100% retenido por producción y horneado ya iniciados).\n`;
+      texto += `_Cualquier reprogramación queda sujeta a disponibilidad de agenda._\n\n`;
     }
   }
 

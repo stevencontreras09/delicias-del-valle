@@ -357,20 +357,112 @@ export function generarPdfCotizacion(cotizacion: Cotizacion): void {
   }
 
   // Notas Adicionales
+  let postTotalesY = finalY + 34;
   if (cotizacion.notas) {
     doc.setFont('helvetica', 'italic');
     doc.setFontSize(8);
     doc.setTextColor(100, 100, 100);
-    doc.text(`Nota: ${cotizacion.notas}`, 14, finalY + 36);
+    doc.text(`Nota: ${cotizacion.notas}`, 14, postTotalesY + 3);
+    postTotalesY += 7;
   }
 
-  // Pie de Página
-  doc.setFillColor(...chocolateColor);
-  doc.rect(0, 287, 210, 10, 'F');
-  doc.setTextColor(255, 255, 255);
-  doc.setFont('helvetica', 'normal');
+  // Sección Formal: Condiciones de Pago y Política de Reprogramación
+  let politicasStartY = postTotalesY + 3;
+  // Si no hay suficiente espacio para las políticas (necesitan ~45mm) antes del footer (287mm), añadir nueva página
+  if (politicasStartY > 225) {
+    doc.addPage();
+    politicasStartY = 16;
+  }
+
+  // Encabezado de la Sección de Términos
+  doc.setFillColor(...cremaColor);
+  doc.roundedRect(14, politicasStartY, 182, 6, 1.5, 1.5, 'F');
+  doc.setDrawColor(...trigoColor);
+  doc.roundedRect(14, politicasStartY, 182, 6, 1.5, 1.5, 'D');
+
+  doc.setTextColor(...chocolateColor);
+  doc.setFont('helvetica', 'bold');
   doc.setFontSize(8);
-  doc.text('¡Gracias por elegir la repostería artesanal de Delicias del Valle! Elaborado con ingredientes 100% naturales.', 105, 293, { align: 'center' });
+  doc.text('CONDICIONES DE PAGO Y POLÍTICA DE REPROGRAMACIÓN', 18, politicasStartY + 4.2);
+
+  // Cláusula 1: Confirmación y Reserva
+  let currentY = politicasStartY + 10;
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(7.5);
+  doc.setTextColor(50, 50, 50);
+  doc.text('1. Confirmación y Reserva (50%):', 14, currentY);
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(7);
+  doc.setTextColor(80, 80, 80);
+  currentY += 3.8;
+
+  if (esContraEntrega) {
+    doc.text('• Modalidad 100% Contra Entrega. El pedido se liquida al recibir. Se requiere notificar cualquier cancelación', 14, currentY);
+    currentY += 3.2;
+    doc.text('  con al menos 24 horas de anticipación para mantener la modalidad de contra entrega habilitada en pedidos futuros.', 14, currentY);
+  } else {
+    doc.text('• La orden se confirma y entra a programación de taller tras validar el 50% de anticipo. Dicho monto NO es reembolsable en', 14, currentY);
+    currentY += 3.2;
+    doc.text('  dinero en efectivo debido a la reserva inmediata de cupo artesanal e insumos perecederos. El 50% restante se liquida al entregar.', 14, currentY);
+  }
+
+  // Cláusula 2: Escala de Reprogramación
+  currentY += 4.5;
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(7.5);
+  doc.setTextColor(50, 50, 50);
+  doc.text('2. Políticas de Cambio de Fecha y Reprogramación:', 14, currentY);
+
+  currentY += 2;
+  doc.autoTable({
+    startY: currentY,
+    margin: { left: 14, right: 14 },
+    theme: 'grid',
+    head: [['Anticipación Notificada', 'Crédito a Favor', 'Retención / Justificación Operativa']],
+    body: [
+      ['Con 5 o más días hábiles', '100% Anticipo', 'El 100% pagado se transfiere como crédito para la nueva fecha acordada.'],
+      ['De 4 a 2 días hábiles', '10% de Crédito', 'Se retiene el 90% por costos de agenda bloqueada y preparación de insumos.'],
+      ['Con 1 día hábil o menos (≤ 24h)', '0% (Sin crédito)', 'Retención del 100% en concepto de producción ya iniciada, horneado y gastos operativos.']
+    ],
+    headStyles: {
+      fillColor: chocolateColor,
+      textColor: [255, 255, 255],
+      fontSize: 7,
+      fontStyle: 'bold',
+      halign: 'left',
+      cellPadding: 1.8
+    },
+    styles: {
+      fontSize: 6.8,
+      cellPadding: 1.8,
+      textColor: [60, 60, 60],
+      overflow: 'linebreak'
+    },
+    columnStyles: {
+      0: { cellWidth: 48, fontStyle: 'bold' },
+      1: { cellWidth: 32, fontStyle: 'bold', halign: 'center' },
+      2: { cellWidth: 102 }
+    }
+  });
+
+  const tableFinalY = (doc as any).lastAutoTable.finalY + 3;
+  doc.setFont('helvetica', 'italic');
+  doc.setFontSize(6.5);
+  doc.setTextColor(120, 120, 120);
+  doc.text('* Las solicitudes de cambio de fecha quedan sujetas a disponibilidad de agenda. El crédito asignado tiene vigencia máxima de 30 días.', 14, tableFinalY);
+
+  // Pie de Página en todas las páginas generadas
+  const totalPages = (doc as any).internal.getNumberOfPages();
+  for (let p = 1; p <= totalPages; p++) {
+    doc.setPage(p);
+    doc.setFillColor(...chocolateColor);
+    doc.rect(0, 287, 210, 10, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.text('¡Gracias por elegir la repostería artesanal de Delicias del Valle! Elaborado con ingredientes 100% naturales.', 105, 293, { align: 'center' });
+  }
 
   // Guardar archivo
   doc.save(`Cotizacion_${cotizacion.codigo}_Delicias_del_Valle.pdf`);

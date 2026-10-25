@@ -25,11 +25,13 @@ import {
   ExternalLink,
   Clock,
   TrendingUp,
+  Copy,
 } from 'lucide-react';
 import { Badge } from '../ui/Badge';
 import { generarPdfCotizacion } from '../../utils/pdfGenerator';
 import { generarMensajeCotizacionWhatsApp } from '../../utils/whatsappShare';
 import { LocationGoogleMapsModal } from './LocationGoogleMapsModal';
+import { QuotePaymentTerms } from './QuotePaymentTerms';
 import { calcularTarifaDeliveryEscalonada } from '../../utils/deliveryHelper';
 
 interface QuoteDetailModalProps {
@@ -257,7 +259,23 @@ export const QuoteDetailModal: React.FC<QuoteDetailModalProps> = ({
     onClose();
   };
 
-  const { url: waUrl } = generarMensajeCotizacionWhatsApp(cotizacion);
+  const [incluirPoliticasWa, setIncluirPoliticasWa] = useState(true);
+  const [copiedMessage, setCopiedMessage] = useState(false);
+
+  const { mensaje: waMensaje, url: waUrl } = useMemo(
+    () => generarMensajeCotizacionWhatsApp(cotizacion, { incluirPoliticas: incluirPoliticasWa }),
+    [cotizacion, incluirPoliticasWa]
+  );
+
+  const handleCopyMessage = async () => {
+    try {
+      await navigator.clipboard.writeText(waMensaje);
+      setCopiedMessage(true);
+      setTimeout(() => setCopiedMessage(false), 2000);
+    } catch (err) {
+      console.error('Error al copiar resumen:', err);
+    }
+  };
 
   return (
     <Modal
@@ -269,7 +287,7 @@ export const QuoteDetailModal: React.FC<QuoteDetailModalProps> = ({
     >
       <div className="space-y-6">
         {/* Banner de Estado */}
-        <div className="flex flex-wrap items-center justify-between gap-3 bg-crema p-4 rounded-2xl border border-trigo-200">
+        <div className="flex flex-col sm:flex-row flex-wrap items-center justify-between gap-3 bg-crema p-4 rounded-2xl border border-trigo-200">
           <div className="flex items-center gap-3">
             <Badge
               variant={
@@ -295,10 +313,30 @@ export const QuoteDetailModal: React.FC<QuoteDetailModalProps> = ({
           <div className="flex flex-wrap items-center gap-2">
             <button
               onClick={() => generarPdfCotizacion(cotizacion)}
-              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white border border-trigo-300 hover:bg-gray-50 text-chocolate-700 text-xs font-bold transition-all shadow-sm"
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white border border-trigo-300 hover:bg-gray-50 text-chocolate-700 text-xs font-bold transition-all shadow-sm"
+              title="Descargar documento PDF formal con desglose y políticas legales"
             >
               <FileText className="w-4 h-4 text-chocolate-600" />
               <span>Exportar PDF</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handleCopyMessage}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white border border-trigo-300 hover:bg-gray-50 text-chocolate-700 text-xs font-bold transition-all shadow-sm cursor-pointer"
+              title="Copiar resumen para WhatsApp o email"
+            >
+              {copiedMessage ? (
+                <>
+                  <Check className="w-4 h-4 text-emerald-600" />
+                  <span className="text-emerald-700 font-bold">¡Copiado!</span>
+                </>
+              ) : (
+                <>
+                  <Copy className="w-4 h-4 text-chocolate-600" />
+                  <span>Copiar Resumen</span>
+                </>
+              )}
             </button>
 
             <a
@@ -320,6 +358,19 @@ export const QuoteDetailModal: React.FC<QuoteDetailModalProps> = ({
                 <span>Convertir a Pedido (1 Clic)</span>
               </button>
             )}
+          </div>
+
+          {/* Toggle de Inclusión de Políticas en WhatsApp */}
+          <div className="w-full flex justify-end pt-1 border-t border-trigo-200/60 mt-1">
+            <label className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-chocolate-700 cursor-pointer hover:text-chocolate-900 transition select-none">
+              <input
+                type="checkbox"
+                checked={incluirPoliticasWa}
+                onChange={(e) => setIncluirPoliticasWa(e.target.checked)}
+                className="w-3.5 h-3.5 rounded text-emerald-600 focus:ring-emerald-400 cursor-pointer"
+              />
+              <span>🛡️ Adjuntar condiciones y escala de reprogramación en el mensaje de WhatsApp</span>
+            </label>
           </div>
         </div>
 
@@ -1260,6 +1311,9 @@ export const QuoteDetailModal: React.FC<QuoteDetailModalProps> = ({
             </div>
           </div>
         </div>
+
+        {/* Condiciones de Pago y Políticas de Reprogramación */}
+        <QuotePaymentTerms esContraEntrega={Boolean(cotizacion.cobro_contra_entrega)} />
 
         {/* Footer */}
         <div className="pt-4 border-t border-trigo-200 flex items-center justify-between">
