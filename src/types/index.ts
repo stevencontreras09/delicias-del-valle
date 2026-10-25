@@ -122,6 +122,8 @@ export interface RecetaCostosCalculados {
 
 export type CategoriaExtra = 'empaque' | 'topper' | 'sticker' | 'tarjeta' | 'otro';
 
+export type NivelDecoracion = 'basica' | 'intermedia' | 'avanzada' | 'personalizada';
+
 export interface CotizacionExtra {
   id: string;
   nombre: string;
@@ -150,7 +152,13 @@ export interface CotizacionItem {
   precio_real_base?: number;
   precio_redondeado_base?: number;
   costo_materia_prima?: number;
-  costo_elaboracion?: number;
+  costo_mano_obra?: number;
+  costo_horno?: number;
+  tiempo_activo_min?: number;
+  nivel_decoracion?: NivelDecoracion | string;
+  minutos_decoracion_extra?: number;
+  requiere_horno?: boolean;
+  costo_elaboracion?: number; // compatibilidad: costo_mano_obra + costo_horno
   costo_total_unitario?: number;
   tiempo_elaboracion_min?: number;
   es_extra?: boolean;
@@ -241,7 +249,13 @@ export interface PedidoItem {
   subtotal: number;
   factor_receta: number;
   costo_materia_prima?: number;
-  costo_elaboracion?: number;
+  costo_mano_obra?: number;
+  costo_horno?: number;
+  tiempo_activo_min?: number;
+  nivel_decoracion?: NivelDecoracion | string;
+  minutos_decoracion_extra?: number;
+  requiere_horno?: boolean;
+  costo_elaboracion?: number; // compatibilidad: costo_mano_obra + costo_horno
   costo_total_unitario?: number;
   tiempo_elaboracion_min?: number;
   es_extra?: boolean;

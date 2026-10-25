@@ -251,10 +251,15 @@ export async function fetchAllFromSupabase(): Promise<{
           factor_receta: Number(item.factor_receta || 1),
           es_extra: isExtra,
           categoria_extra: extraMeta?.nombre as any || undefined,
-          costo_materia_prima: item.costo_materia_prima ?? (costoMeta?.costo_materia_prima !== undefined ? Number(costoMeta.costo_materia_prima) : undefined),
-          costo_elaboracion: item.costo_elaboracion ?? (costoMeta?.costo_elaboracion !== undefined ? Number(costoMeta.costo_elaboracion) : undefined),
-          costo_total_unitario: item.costo_total_unitario ?? (costoMeta?.costo_total_unitario !== undefined ? Number(costoMeta.costo_total_unitario) : undefined),
-          tiempo_elaboracion_min: item.tiempo_elaboracion_min ?? (costoMeta?.tiempo_elaboracion_min !== undefined ? Number(costoMeta.tiempo_elaboracion_min) : undefined),
+          costo_materia_prima: item.costo_materia_prima ?? (costoMeta?.costo_materia_prima !== undefined ? Number(costoMeta.costo_materia_prima) : (costoMeta?.mp !== undefined ? Number(costoMeta.mp) : undefined)),
+          costo_mano_obra: item.costo_mano_obra ?? (costoMeta?.costo_mano_obra !== undefined ? Number(costoMeta.costo_mano_obra) : (costoMeta?.mod !== undefined ? Number(costoMeta.mod) : (costoMeta?.costo_elaboracion !== undefined ? Number(costoMeta.costo_elaboracion) : undefined))),
+          costo_horno: item.costo_horno ?? (costoMeta?.costo_horno !== undefined ? Number(costoMeta.costo_horno) : (costoMeta?.horno !== undefined ? Number(costoMeta.horno) : undefined)),
+          tiempo_activo_min: item.tiempo_activo_min ?? (costoMeta?.tiempo_activo_min !== undefined ? Number(costoMeta.tiempo_activo_min) : (costoMeta?.tiempo !== undefined ? Number(costoMeta.tiempo) : undefined)),
+          nivel_decoracion: item.nivel_decoracion ?? (costoMeta?.nivel_decoracion || costoMeta?.nivel_deco || undefined),
+          requiere_horno: item.requiere_horno ?? (costoMeta?.requiere_horno !== undefined ? Boolean(costoMeta.requiere_horno) : undefined),
+          costo_elaboracion: item.costo_elaboracion ?? (costoMeta?.costo_elaboracion !== undefined ? Number(costoMeta.costo_elaboracion) : (costoMeta?.elab !== undefined ? Number(costoMeta.elab) : undefined)),
+          costo_total_unitario: item.costo_total_unitario ?? (costoMeta?.costo_total_unitario !== undefined ? Number(costoMeta.costo_total_unitario) : (costoMeta?.ctp !== undefined ? Number(costoMeta.ctp) : undefined)),
+          tiempo_elaboracion_min: item.tiempo_elaboracion_min ?? (costoMeta?.tiempo_elaboracion_min !== undefined ? Number(costoMeta.tiempo_elaboracion_min) : (costoMeta?.tiempo !== undefined ? Number(costoMeta.tiempo) : undefined)),
         };
       }),
     }));
@@ -317,6 +322,11 @@ export async function fetchAllFromSupabase(): Promise<{
           factor_receta: Number(item.factor_receta || 1),
           es_extra: isExtra,
           costo_materia_prima: item.costo_materia_prima ?? (costoMeta?.mp !== undefined ? Number(costoMeta.mp) : undefined),
+          costo_mano_obra: item.costo_mano_obra ?? (costoMeta?.mod !== undefined ? Number(costoMeta.mod) : (costoMeta?.elab !== undefined ? Number(costoMeta.elab) : undefined)),
+          costo_horno: item.costo_horno ?? (costoMeta?.horno !== undefined ? Number(costoMeta.horno) : undefined),
+          tiempo_activo_min: item.tiempo_activo_min ?? (costoMeta?.tiempo !== undefined ? Number(costoMeta.tiempo) : undefined),
+          nivel_decoracion: item.nivel_decoracion ?? (costoMeta?.nivel_deco || undefined),
+          requiere_horno: item.requiere_horno ?? (costoMeta?.horno !== undefined ? Number(costoMeta.horno) > 0 : undefined),
           costo_elaboracion: item.costo_elaboracion ?? (costoMeta?.elab !== undefined ? Number(costoMeta.elab) : undefined),
           costo_total_unitario: item.costo_total_unitario ?? (costoMeta?.ctp !== undefined ? Number(costoMeta.ctp) : undefined),
           tiempo_elaboracion_min: item.tiempo_elaboracion_min ?? (costoMeta?.tiempo !== undefined ? Number(costoMeta.tiempo) : undefined),
@@ -561,13 +571,16 @@ export async function syncPedidoToSupabase(pedido: Pedido): Promise<boolean> {
     if (pedido.items.length > 0) {
       const itemRows = pedido.items.map(item => {
         let extrasTexto = item.extras_texto || '';
-        if (item.costo_elaboracion !== undefined || item.costo_materia_prima !== undefined) {
+        if (item.costo_elaboracion !== undefined || item.costo_materia_prima !== undefined || item.costo_mano_obra !== undefined) {
           extrasTexto = extrasTexto.replace(/<!--costo_meta:.*?-->/g, '').trim();
           const metaJson = JSON.stringify({
             mp: item.costo_materia_prima,
-            elab: item.costo_elaboracion,
+            mod: item.costo_mano_obra ?? item.costo_elaboracion,
+            horno: item.costo_horno ?? 0,
+            elab: item.costo_elaboracion ?? ((item.costo_mano_obra || 0) + (item.costo_horno || 0)),
             ctp: item.costo_total_unitario,
-            tiempo: item.tiempo_elaboracion_min,
+            tiempo: item.tiempo_activo_min ?? item.tiempo_elaboracion_min,
+            nivel_deco: item.nivel_decoracion,
           });
           extrasTexto = extrasTexto ? `${extrasTexto} <!--costo_meta:${metaJson}-->` : `<!--costo_meta:${metaJson}-->`;
         }
@@ -696,15 +709,20 @@ export async function syncCotizacionToSupabase(
           ...(item.variables_receta && item.variables_receta.length > 0
             ? [{ id: 'variables_receta', nombre: `Variables: ${item.variables_receta.join(', ')}`, precio: 0 }]
             : []),
-          ...((item.costo_elaboracion !== undefined || item.costo_materia_prima !== undefined)
+          ...((item.costo_elaboracion !== undefined || item.costo_materia_prima !== undefined || item.costo_mano_obra !== undefined)
             ? [{
                 id: 'costo_meta',
                 nombre: 'costo_meta',
                 precio: 0,
                 costo_materia_prima: item.costo_materia_prima,
-                costo_elaboracion: item.costo_elaboracion,
+                costo_mano_obra: item.costo_mano_obra,
+                costo_horno: item.costo_horno,
+                tiempo_activo_min: item.tiempo_activo_min,
+                nivel_decoracion: item.nivel_decoracion,
+                requiere_horno: item.requiere_horno,
+                costo_elaboracion: item.costo_elaboracion ?? ((item.costo_mano_obra || 0) + (item.costo_horno || 0)),
                 costo_total_unitario: item.costo_total_unitario,
-                tiempo_elaboracion_min: item.tiempo_elaboracion_min,
+                tiempo_elaboracion_min: item.tiempo_elaboracion_min ?? item.tiempo_activo_min,
               }]
             : [])
         ],

@@ -1,4 +1,4 @@
-import { Insumo, Receta, RecetaIngrediente, RecetaCostosCalculados } from '../types';
+import { Insumo, Receta, RecetaIngrediente, RecetaCostosCalculados, NivelDecoracion } from '../types';
 
 /**
  * Redondea cualquier precio hacia arriba al número superior que termine en 0 (múltiplo de 10)
@@ -29,11 +29,152 @@ export function calcularCostoIngrediente(
   return (cantidad * insumo.precio_compra) / insumo.presentacion_empaque;
 }
 
+/** Tarifa base por defecto para Mano de Obra Directa (MOD) en RD$ / hora (RD$ 5.00 / minuto) */
+export const TARIFA_HORA_MOD_DEFAULT = 300;
+export const TARIFA_HORA_TALLER_DEFAULT = 300; // Alias de compatibilidad
+
+/** Costo fijo prorrateado de gas GLP / energía por tanda de horneado estándar en RD$ */
+export const COSTO_HORNO_FIJO_DEFAULT = 35; // RD$ 35 por tanda/horneada
+
+/** Merma técnica gastronómica estándar en repostería (3%) para insumos en tazón, mangas y nivelado */
+export const MERMA_TECNICA_INSUMOS_PCT = 0.03;
+
+/** Minutos extras de mano de obra según el nivel de decoración artesanal */
+export const MINUTOS_NIVEL_DECORACION: Record<NivelDecoracion, number> = {
+  basica: 0,
+  intermedia: 30,
+  avanzada: 60,
+  personalizada: 0,
+};
+
+export interface CosteoPasteleriaLoteResult {
+  cantidad: number;
+  tiempoBasePrepMin: number;
+  minutosDecoracionExtra: number;
+  tiempoActivoTotalMin: number;
+  nivelDecoracion: NivelDecoracion;
+  tarifaHoraMOD: number;
+  tarifaMinutoMOD: number;
+  costoMateriaPrimaLote: number;
+  costoManoObraLote: number;
+  requiereHorno: boolean;
+  costoHornoLote: number;
+  costoTotalProduccionLote: number;
+  costoMateriaPrimaUnitario: number;
+  costoManoObraUnitario: number;
+  costoHornoUnitario: number;
+  costoElaboracionUnitario: number;
+  costoTotalUnitario: number;
+  margenBeneficioPct: number;
+  precioSugeridoUnitario: number;
+  precioSugeridoLote: number;
+  gananciaEstimadaUnitario: number;
+  gananciaEstimadaLote: number;
+  margenRealPct: number;
+}
+
+export interface ParametrosCosteoPasteleria {
+  costoInsumosBase: number;
+  costoPersonalizaciones?: number;
+  costoEmpaque?: number;
+  tiempoBasePrepMin?: number;
+  nivelDecoracion?: NivelDecoracion;
+  minutosDecoracionManual?: number;
+  requiereHorno?: boolean;
+  costoFijoHorno?: number;
+  tarifaHoraMOD?: number;
+  cantidad?: number;
+  margenBeneficioPct?: number;
+}
+
 /**
- * Tarifa base de taller por hora en RD$ (DOP) para mano de obra y elaboración.
- * Default: RD$ 300 / hora (RD$ 5.00 / minuto).
+ * Costeo Profesional de Repostería por Lote:
+ * 1. MPD: Insumos base + personalizaciones + empaque, con 3% de merma técnica gastronómica.
+ * 2. MOD: Solo tiempo activo humano (preparación de tazón + decoración) a RD$ 5.00/min.
+ * 3. CIF: Consumo de horno/gas fijo por tanda prorrateado entre la cantidad del lote (evita RD$ 35 * 24 en cupcakes).
+ * 4. Precio Sugerido: Fórmula estricta de Margen sobre Venta: CTP / (1 - Margen).
  */
-export const TARIFA_HORA_TALLER_DEFAULT = 300;
+export function calcularCosteoPasteleriaLote(params: ParametrosCosteoPasteleria): CosteoPasteleriaLoteResult {
+  const {
+    costoInsumosBase = 0,
+    costoPersonalizaciones = 0,
+    costoEmpaque = 0,
+    tiempoBasePrepMin = 30,
+    nivelDecoracion = 'basica',
+    minutosDecoracionManual = 0,
+    requiereHorno = true,
+    costoFijoHorno = COSTO_HORNO_FIJO_DEFAULT,
+    tarifaHoraMOD = TARIFA_HORA_MOD_DEFAULT,
+    cantidad = 1,
+    margenBeneficioPct = 50,
+  } = params;
+
+  // 1. Protección estricta de división por cero
+  const cant = Math.max(1, cantidad || 1);
+
+  // 2. Materia Prima Directa (MPD) con 3% de merma técnica gastronómica
+  const insumosBrutosUnitario = (costoInsumosBase || 0) + (costoPersonalizaciones || 0) + (costoEmpaque || 0);
+  const costoMateriaPrimaUnitario = Number((insumosBrutosUnitario * (1 + MERMA_TECNICA_INSUMOS_PCT)).toFixed(2));
+  const costoMateriaPrimaLote = Number((costoMateriaPrimaUnitario * cant).toFixed(2));
+
+  // 3. Mano de Obra Directa (MOD) - Solo tiempo activo humano del lote
+  const minutosDeco = nivelDecoracion === 'personalizada'
+    ? Math.max(0, minutosDecoracionManual || 0)
+    : (MINUTOS_NIVEL_DECORACION[nivelDecoracion] ?? 0);
+
+  const tiempoActivoTotalMin = Math.round((tiempoBasePrepMin || 30) + minutosDeco);
+  const tarifaMinutoMOD = (tarifaHoraMOD || TARIFA_HORA_MOD_DEFAULT) / 60;
+  const costoManoObraLote = Number((tiempoActivoTotalMin * tarifaMinutoMOD).toFixed(2));
+  const costoManoObraUnitario = Number((costoManoObraLote / cant).toFixed(2));
+
+  // 4. Costos Indirectos de Fabricación (CIF - Horno y Gas GLP)
+  // Se aplica por tanda/lote horneado, NO multiplicado ciegamente por la cantidad
+  const costoHornoLote = requiereHorno ? Number(costoFijoHorno.toFixed(2)) : 0;
+  const costoHornoUnitario = Number((costoHornoLote / cant).toFixed(2));
+
+  // 5. Costo de Elaboración (MOD + CIF) y Costo Total de Producción (CTP)
+  const costoElaboracionUnitario = Number((costoManoObraUnitario + costoHornoUnitario).toFixed(2));
+  const costoTotalUnitario = Number((costoMateriaPrimaUnitario + costoManoObraUnitario + costoHornoUnitario).toFixed(2));
+  const costoTotalProduccionLote = Number((costoTotalUnitario * cant).toFixed(2));
+
+  // 6. Fórmula profesional de Margen sobre Venta: Precio = CTP / (1 - Margen)
+  const margenValido = Math.min(95, Math.max(0, margenBeneficioPct || 50));
+  const divisor = Math.max(0.05, 1 - (margenValido / 100));
+  const precioSugeridoUnitario = Number((costoTotalUnitario / divisor).toFixed(2));
+  const precioSugeridoLote = Number((precioSugeridoUnitario * cant).toFixed(2));
+
+  const gananciaEstimadaUnitario = Number((precioSugeridoUnitario - costoTotalUnitario).toFixed(2));
+  const gananciaEstimadaLote = Number((gananciaEstimadaUnitario * cant).toFixed(2));
+  const margenRealPct = precioSugeridoUnitario > 0
+    ? Math.round((gananciaEstimadaUnitario / precioSugeridoUnitario) * 100)
+    : 0;
+
+  return {
+    cantidad: cant,
+    tiempoBasePrepMin,
+    minutosDecoracionExtra: minutosDeco,
+    tiempoActivoTotalMin,
+    nivelDecoracion,
+    tarifaHoraMOD,
+    tarifaMinutoMOD,
+    costoMateriaPrimaLote,
+    costoManoObraLote,
+    requiereHorno,
+    costoHornoLote,
+    costoTotalProduccionLote,
+    costoMateriaPrimaUnitario,
+    costoManoObraUnitario,
+    costoHornoUnitario,
+    costoElaboracionUnitario,
+    costoTotalUnitario,
+    margenBeneficioPct: margenValido,
+    precioSugeridoUnitario,
+    precioSugeridoLote,
+    gananciaEstimadaUnitario,
+    gananciaEstimadaLote,
+    margenRealPct,
+  };
+}
 
 export interface CostoElaboracionDesglose {
   tiempoPreparacionMin: number;
@@ -47,10 +188,7 @@ export interface CostoElaboracionDesglose {
 }
 
 /**
- * Calcula el Costo Real de Elaboración de un producto combinando:
- * 1. Tiempo de preparación y batido (escalado por el factor de receta) × Tarifa de taller/min
- * 2. Tiempo de horneado (gas y energía del horno) × Tarifa de operación/min
- * 3. Complejidad y mano de obra del decorado seleccionado
+ * Mantenido por retrocompatibilidad con componentes existentes.
  */
 export function calcularCostoElaboracionProducto(
   receta: Receta | undefined,
@@ -71,28 +209,15 @@ export function calcularCostoElaboracionProducto(
     };
   }
 
-  // 1. Minutos de preparación de masa/batido escalados según formato/tamaño
   const factorTiempoPrep = factorEscalado < 1 ? Math.max(0.6, factorEscalado) : Math.min(2.5, factorEscalado);
   const tiempoPrep = Math.round((receta.tiempo_preparacion_min || 45) * factorTiempoPrep);
-
-  // 2. Minutos de horneado (aumenta moderadamente para tamaños grandes)
-  const factorTiempoHorno = factorEscalado >= 1.5 ? 1.2 : 1.0;
-  const tiempoHorno = Math.round((receta.tiempo_horneado_min || 40) * factorTiempoHorno);
-
+  const tiempoHorno = Math.round(receta.tiempo_horneado_min || 40);
   const tiempoTotal = tiempoPrep + tiempoHorno;
 
-  // 3. Tarifa por minuto de taller (ej. RD$ 300 / 60 = RD$ 5.00 / min)
   const tarifaMinuto = (tarifaHoraTaller || TARIFA_HORA_TALLER_DEFAULT) / 60;
-
-  // Costo de mano de obra directa del pastelero
   const costoManoObraPrep = Number((tiempoPrep * tarifaMinuto).toFixed(2));
-
-  // Costo operativo de horneado (energía/gas por tiempo de cocción en horno)
-  const costoOperativoHorno = Number((tiempoHorno * (tarifaMinuto * 0.75)).toFixed(2));
-
-  // Costo de elaboración del decorado manual
+  const costoOperativoHorno = receta.tiempo_horneado_min && receta.tiempo_horneado_min > 0 ? COSTO_HORNO_FIJO_DEFAULT : 0;
   const costoDeco = Number((costoDecoracion || 0).toFixed(2));
-
   const costoTotal = Number((costoManoObraPrep + costoOperativoHorno + costoDeco).toFixed(2));
 
   return {
@@ -100,7 +225,7 @@ export function calcularCostoElaboracionProducto(
     tiempoHorneadoMin: tiempoHorno,
     tiempoTotalMin: tiempoTotal,
     costoManoObraPreparacion: costoManoObraPrep,
-    costoOperativoHorno: costoOperativoHorno,
+    costoOperativoHorno,
     costoElaboracionDecorado: costoDeco,
     costoElaboracionTotal: costoTotal,
     tarifaHoraTaller,

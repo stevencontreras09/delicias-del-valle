@@ -98,20 +98,23 @@ export const QuoteDetailModal: React.FC<QuoteDetailModalProps> = ({
   // Análisis ejecutivo de costos y rentabilidad de la cotización
   const metricasRentabilidad = useMemo(() => {
     let costoMateriaPrimaTotal = 0;
-    let costoElaboracionTotal = 0;
+    let costoManoObraTotal = 0;
+    let costoHornoTotal = 0;
     let tiempoTotalMinutos = 0;
     let costoProduccionTotal = 0;
 
     cotizacion.items.forEach((item) => {
-      const cant = item.cantidad || 1;
+      const cant = Math.max(1, item.cantidad || 1);
       const mp = item.costo_materia_prima ?? (item.es_extra ? item.precio_unitario * 0.4 : item.precio_unitario * 0.35);
-      const elab = item.costo_elaboracion ?? 0;
-      const tiempo = item.tiempo_elaboracion_min ?? 0;
-      const ctp = item.costo_total_unitario ?? (mp + elab);
+      const mod = item.costo_mano_obra ?? item.costo_elaboracion ?? 0;
+      const horno = item.costo_horno ?? 0;
+      const tiempo = item.tiempo_activo_min ?? item.tiempo_elaboracion_min ?? 0;
+      const ctp = item.costo_total_unitario ?? (mp + mod + horno);
 
       costoMateriaPrimaTotal += mp * cant;
-      costoElaboracionTotal += elab * cant;
-      tiempoTotalMinutos += tiempo * cant;
+      costoManoObraTotal += mod * cant;
+      costoHornoTotal += horno * cant;
+      tiempoTotalMinutos += tiempo;
       costoProduccionTotal += ctp * cant;
     });
 
@@ -121,7 +124,9 @@ export const QuoteDetailModal: React.FC<QuoteDetailModalProps> = ({
 
     return {
       costoMateriaPrimaTotal,
-      costoElaboracionTotal,
+      costoManoObraTotal,
+      costoHornoTotal,
+      costoElaboracionTotal: costoManoObraTotal + costoHornoTotal,
       tiempoTotalMinutos,
       costoProduccionTotal,
       gananciaNeta,
@@ -1070,14 +1075,19 @@ export const QuoteDetailModal: React.FC<QuoteDetailModalProps> = ({
                             + Extras: {item.extras.map((e) => `${e.nombre}${e.cantidad && e.cantidad > 1 ? ` (x${e.cantidad})` : ''} (${formatCurrency(e.precio * (e.cantidad || 1))})`).join(', ')}
                           </p>
                         )}
-                        {item.costo_elaboracion !== undefined && item.costo_elaboracion > 0 && (
+                        {(item.costo_mano_obra !== undefined || item.costo_elaboracion !== undefined) && (
                           <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
                             <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-amber-50 text-amber-900 border border-amber-200 font-mono">
-                              ⏱️ Elaboración: {formatCurrency(item.costo_elaboracion)} ({item.tiempo_elaboracion_min || 0} min)
+                              ⏱️ MOD: {formatCurrency(item.costo_mano_obra ?? item.costo_elaboracion ?? 0)} ({item.tiempo_activo_min || item.tiempo_elaboracion_min || 0} min)
                             </span>
+                            {item.costo_horno !== undefined && item.costo_horno > 0 && (
+                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-orange-50 text-orange-900 border border-orange-200 font-mono">
+                                🔥 Horno: {formatCurrency(item.costo_horno)}
+                              </span>
+                            )}
                             {item.costo_materia_prima !== undefined && (
                               <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-stone-50 text-stone-700 border border-stone-200 font-mono">
-                                🌾 Materia Prima: {formatCurrency(item.costo_materia_prima)}
+                                🌾 MPD: {formatCurrency(item.costo_materia_prima)}
                               </span>
                             )}
                           </div>
@@ -1118,28 +1128,30 @@ export const QuoteDetailModal: React.FC<QuoteDetailModalProps> = ({
               </div>
             </div>
             {metricasRentabilidad.tiempoTotalMinutos > 0 && (
-              <span className="text-[11px] font-bold px-3 py-1 rounded-full bg-amber-400/20 text-amber-300 border border-amber-400/30 flex items-center gap-1 self-start sm:self-auto">
+              <span className="text-[11px] font-bold px-3 py-1 rounded-full bg-amber-400/20 text-amber-300 border border-amber-400/30 flex items-center gap-1 self-start sm:self-auto font-mono">
                 <Clock className="w-3.5 h-3.5" />
-                <span>Tiempo Total Taller: {Math.floor(metricasRentabilidad.tiempoTotalMinutos / 60)}h {metricasRentabilidad.tiempoTotalMinutos % 60}m</span>
+                <span>Tiempo Activo Taller: {Math.floor(metricasRentabilidad.tiempoTotalMinutos / 60)}h {metricasRentabilidad.tiempoTotalMinutos % 60}m</span>
               </span>
             )}
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <div className="bg-white/10 backdrop-blur-xs p-3 rounded-xl border border-white/10">
-              <span className="text-[10px] uppercase font-bold text-trigo-300 block">🌾 Materia Prima</span>
+              <span className="text-[10px] uppercase font-bold text-trigo-300 block">🌾 Insumos (MPD)</span>
               <p className="text-sm sm:text-base font-extrabold text-white font-mono mt-0.5">
                 {formatCurrency(metricasRentabilidad.costoMateriaPrimaTotal)}
               </p>
-              <span className="text-[10px] text-trigo-400">Insumos e ingredientes</span>
+              <span className="text-[10px] text-trigo-400">Insumos + merma técnica</span>
             </div>
 
             <div className="bg-white/10 backdrop-blur-xs p-3 rounded-xl border border-amber-400/30 bg-amber-400/10">
-              <span className="text-[10px] uppercase font-bold text-amber-300 block">⏱️ Costo Elaboración</span>
+              <span className="text-[10px] uppercase font-bold text-amber-300 block">⏱️ Mano de Obra (MOD)</span>
               <p className="text-sm sm:text-base font-extrabold text-amber-200 font-mono mt-0.5">
-                {formatCurrency(metricasRentabilidad.costoElaboracionTotal)}
+                {formatCurrency(metricasRentabilidad.costoManoObraTotal)}
               </p>
-              <span className="text-[10px] text-amber-300/80">Taller, horno y deco</span>
+              <span className="text-[10px] text-amber-300/80">
+                {metricasRentabilidad.costoHornoTotal > 0 ? `+ ${formatCurrency(metricasRentabilidad.costoHornoTotal)} horno (CIF)` : 'Trabajo activo de taller'}
+              </span>
             </div>
 
             <div className="bg-white/10 backdrop-blur-xs p-3 rounded-xl border border-white/10">
@@ -1147,7 +1159,7 @@ export const QuoteDetailModal: React.FC<QuoteDetailModalProps> = ({
               <p className="text-sm sm:text-base font-extrabold text-white font-mono mt-0.5">
                 {formatCurrency(metricasRentabilidad.costoProduccionTotal)}
               </p>
-              <span className="text-[10px] text-trigo-400">Costo real de producir</span>
+              <span className="text-[10px] text-trigo-400">MPD + MOD + CIF</span>
             </div>
 
             <div className="bg-white/10 backdrop-blur-xs p-3 rounded-xl border border-emerald-400/40 bg-emerald-500/20">
@@ -1156,7 +1168,7 @@ export const QuoteDetailModal: React.FC<QuoteDetailModalProps> = ({
                 {formatCurrency(metricasRentabilidad.gananciaNeta)}
               </p>
               <span className="text-[10px] text-emerald-200 font-bold">
-                {metricasRentabilidad.margenRentabilidadPct}% Margen de Retorno
+                {metricasRentabilidad.margenRentabilidadPct}% Margen Real
               </span>
             </div>
           </div>

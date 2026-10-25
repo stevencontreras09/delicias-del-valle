@@ -4,6 +4,7 @@ import {
   CotizacionItem,
   CotizacionExtra,
   CategoriaExtra,
+  NivelDecoracion,
   Receta,
   Insumo,
   Cliente,
@@ -19,7 +20,12 @@ import {
   calcularCostosReceta,
   calcularCostoIngrediente,
   calcularCostoElaboracionProducto,
+  calcularCosteoPasteleriaLote,
+  TARIFA_HORA_MOD_DEFAULT,
   TARIFA_HORA_TALLER_DEFAULT,
+  COSTO_HORNO_FIJO_DEFAULT,
+  MINUTOS_NIVEL_DECORACION,
+  MERMA_TECNICA_INSUMOS_PCT,
   getRecipePortionsCount,
   getPorcionOpciones,
   redondearPrecioHaciaArribaCero,
@@ -512,6 +518,13 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
     } catch {}
   };
 
+  // Parámetros de Costeo Profesional de Repostería (Mano de Obra Activa, Horno Tanda CIF, Nivel Deco)
+  const [nivelDecoracion, setNivelDecoracion] = useState<NivelDecoracion>('basica');
+  const [minutosDecoracionManual, setMinutosDecoracionManual] = useState<number | ''>('');
+  const [requiereHorno, setRequiereHorno] = useState<boolean>(true);
+  const [costoFijoHorno, setCostoFijoHorno] = useState<number>(COSTO_HORNO_FIJO_DEFAULT);
+  const [tiempoBaseMin, setTiempoBaseMin] = useState<number>(30);
+
   const isTarjetaSelected = useMemo(() => {
     return selectedExtras.some((id) => {
       const extra = extrasOpciones.find((e) => e.id === id);
@@ -821,7 +834,21 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
       setFactorReceta(0.35);
       setIsCustomMiniSelected(false);
     }
+
+    // Precarga automática de parámetros de costeo gastronómico profesional
+    setTiempoBaseMin(receta.tiempo_preparacion_min || 30);
+    setRequiereHorno((receta.tiempo_horneado_min || 0) > 0);
+    setNivelDecoracion('basica');
+    setMinutosDecoracionManual('');
   };
+
+  // Precarga automática de tiempo base y horno al montar o cambiar receta activa
+  useEffect(() => {
+    if (currentReceta) {
+      setTiempoBaseMin(currentReceta.tiempo_preparacion_min || 30);
+      setRequiereHorno((currentReceta.tiempo_horneado_min || 0) > 0);
+    }
+  }, [currentReceta?.id]);
 
   // =========================================================================
   // CÁLCULO DINÁMICO DE COSTO BOM + VARIABLES + MASA + RELLENO + DECORACIÓN
@@ -861,22 +888,59 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
   const costoPersonalizaciones = costoMasa + costoRelleno + costoDecoracion;
 
   // =========================================================================
-  // CÁLCULO DE COSTO DE ELABORACIÓN (TALLER, HORNO, MANO DE OBRA Y MARGEN)
+  // CÁLCULO PROFESIONAL DE COSTEO DE REPOSTERÍA (MPD + MOD + CIF) POR LOTE
   // =========================================================================
-  // 1. Materia prima directa (fijos + variables de receta + insumos de masa/relleno)
-  const costoMateriaPrima = Number(
-    ((calcReceta?.costo_directo_materia_prima || 0) + (costoMasa * 0.45) + (costoRelleno * 0.45)).toFixed(2)
-  );
+  const costeoPasteleria = useMemo(() => {
+    return calcularCosteoPasteleriaLote({
+      costoInsumosBase: calcReceta?.costo_directo_materia_prima || 0,
+      costoPersonalizaciones: (costoMasa * 0.45) + (costoRelleno * 0.45),
+      costoEmpaque: 0,
+      tiempoBasePrepMin: tiempoBaseMin,
+      nivelDecoracion,
+      minutosDecoracionManual: typeof minutosDecoracionManual === 'number' ? minutosDecoracionManual : 0,
+      requiereHorno,
+      costoFijoHorno,
+      tarifaHoraMOD: tarifaHoraTaller,
+      cantidad,
+      margenBeneficioPct: currentReceta?.margen_beneficio_pct ?? 50,
+    });
+  }, [
+    calcReceta?.costo_directo_materia_prima,
+    costoMasa,
+    costoRelleno,
+    tiempoBaseMin,
+    nivelDecoracion,
+    minutosDecoracionManual,
+    requiereHorno,
+    costoFijoHorno,
+    tarifaHoraTaller,
+    cantidad,
+    currentReceta?.margen_beneficio_pct,
+  ]);
 
-  // 2. Costo de Elaboración dinámico (tiempo de batido/preparación + tiempo de horneado + acabado/decoración)
+  const costoMateriaPrima = costeoPasteleria.costoMateriaPrimaUnitario;
+  const costoManoObra = costeoPasteleria.costoManoObraUnitario;
+  const costoHorno = costeoPasteleria.costoHornoUnitario;
+  const costoElaboracionUnitario = costeoPasteleria.costoElaboracionUnitario;
+  const costoTotalUnitario = costeoPasteleria.costoTotalUnitario;
+
+  // Precio Sugerido profesional con Margen sobre Venta: CTP / (1 - Margen)
+  const precioSugeridoReal = costeoPasteleria.precioSugeridoUnitario;
+  const precioSugeridoRedondeado = redondearPrecioHaciaArribaCero(precioSugeridoReal);
+
+  // Mantenido para retrocompatibilidad con vistas existentes
   const costoElaboracionInfo = useMemo(() => {
-    return calcularCostoElaboracionProducto(
-      currentReceta,
-      factorReceta,
-      costoDecoracion,
-      tarifaHoraTaller
-    );
-  }, [currentReceta, factorReceta, costoDecoracion, tarifaHoraTaller]);
+    return {
+      tiempoPreparacionMin: costeoPasteleria.tiempoBasePrepMin,
+      tiempoHorneadoMin: costeoPasteleria.minutosDecoracionExtra,
+      tiempoTotalMin: costeoPasteleria.tiempoActivoTotalMin,
+      costoManoObraPreparacion: costeoPasteleria.costoManoObraUnitario,
+      costoOperativoHorno: costeoPasteleria.costoHornoUnitario,
+      costoElaboracionDecorado: 0,
+      costoElaboracionTotal: costeoPasteleria.costoElaboracionUnitario,
+      tarifaHoraTaller,
+    };
+  }, [costeoPasteleria, tarifaHoraTaller]);
 
   // Opciones dinámicas para selectores de zona de delivery y personalizaciones
   const zonasDeliveryOptions: SearchableSelectOption<number>[] = useMemo(() => {
@@ -926,27 +990,6 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
       };
     });
   }, [decoracionesOpciones, factorDeco]);
-
-  // 3. Costo Total Unitario de Producción (CTP)
-  // Incluye: Materia prima + Merma técnica (3%) + Costos indirectos y reposición + Costo de Elaboración del Taller
-  const costoIndirectosYMerma =
-    (calcReceta?.costo_merma || 0) +
-    (calcReceta?.costo_materiales_indirectos || 0) +
-    (calcReceta?.costo_reposicion_equipos || 0);
-
-  const costoTotalUnitario = Number(
-    (costoMateriaPrima + costoIndirectosYMerma + costoElaboracionInfo.costoElaboracionTotal).toFixed(2)
-  );
-
-  // 4. Margen comercial y Precio Sugerido
-  // Garantiza que el precio cubra tanto la receta base como el costo completo de horas de taller y horneado
-  const margenPct = currentReceta?.margen_beneficio_pct ?? 50;
-  const divisor = Math.max(0.01, 1 - (margenPct / 100));
-  const precioMinimoPorElaboracion = costoTotalUnitario / divisor;
-
-  const precioSugeridoBase = precioBaseRecetaReal + costoPersonalizaciones;
-  const precioSugeridoReal = Number(Math.max(precioSugeridoBase, precioMinimoPorElaboracion).toFixed(2));
-  const precioSugeridoRedondeado = redondearPrecioHaciaArribaCero(precioSugeridoReal);
 
   // Extras adicionales por unidad considerando la cantidad configurada
   const totalExtrasUnitario = selectedExtras.reduce((sum, extId) => {
@@ -1012,9 +1055,15 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
       precio_real_base: precioSugeridoReal,
       precio_redondeado_base: precioSugeridoRedondeado,
       costo_materia_prima: costoMateriaPrima,
-      costo_elaboracion: costoElaboracionInfo.costoElaboracionTotal,
+      costo_mano_obra: costoManoObra,
+      costo_horno: costoHorno,
+      tiempo_activo_min: costeoPasteleria.tiempoActivoTotalMin,
+      nivel_decoracion: nivelDecoracion,
+      minutos_decoracion_extra: costeoPasteleria.minutosDecoracionExtra,
+      requiere_horno: requiereHorno,
+      costo_elaboracion: costoElaboracionUnitario,
       costo_total_unitario: costoTotalUnitario,
-      tiempo_elaboracion_min: costoElaboracionInfo.tiempoTotalMin,
+      tiempo_elaboracion_min: costeoPasteleria.tiempoActivoTotalMin,
     };
 
     setItems((prev) => [...prev, newItem]);
@@ -1024,6 +1073,8 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
     setSelectedExtras([]);
     setExtraQuantities({});
     setActiveRecipeVariableIds(new Set());
+    setNivelDecoracion('basica');
+    setMinutosDecoracionManual('');
     setCantidad(1);
     setPrecioBaseManual('');
     setTipoPrecioSeleccionado('redondeado');
@@ -2583,29 +2634,38 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
             </div>
           </div>
 
-          {/* Panel de Costos de Elaboración & Taller (Insumos + Tiempo de Horno y Preparación) */}
-          <div className="bg-gradient-to-r from-amber-50/80 via-crema to-orange-50/60 p-4 rounded-2xl border border-amber-200/90 shadow-2xs space-y-3">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-amber-200/60 pb-2">
-              <div className="flex items-center gap-2">
-                <div className="p-1.5 bg-amber-500 text-white rounded-lg shadow-xs shrink-0">
-                  <Clock className="w-4 h-4" />
+          {/* Panel de Costeo Profesional de Repostería (MPD + MOD + CIF) */}
+          <div className="bg-gradient-to-r from-amber-50/80 via-crema to-orange-50/60 p-4 sm:p-5 rounded-2xl border-2 border-amber-200/90 shadow-2xs space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-amber-200/60 pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 bg-amber-500 text-white rounded-xl shadow-xs shrink-0">
+                  <ChefHat className="w-5 h-5" />
                 </div>
                 <div>
-                  <h4 className="text-xs font-black text-chocolate-900 uppercase tracking-wider flex items-center gap-1.5 flex-wrap">
-                    <span>Costos de Elaboración & Taller</span>
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-300 font-mono">
-                      ⏱️ {costoElaboracionInfo.tiempoTotalMin} min totales
+                  <h4 className="text-xs font-black text-chocolate-900 uppercase tracking-wider flex items-center gap-2 flex-wrap">
+                    <span>Costeo Profesional de Repostería</span>
+                    <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-300 font-mono">
+                      ⏱️ {costeoPasteleria.tiempoActivoTotalMin} min activos
                     </span>
+                    {costeoPasteleria.requiereHorno ? (
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-orange-100 text-orange-900 border border-orange-300">
+                        🔥 Horno Activo
+                      </span>
+                    ) : (
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-sky-100 text-sky-900 border border-sky-300">
+                        ❄️ Postre Frío
+                      </span>
+                    )}
                   </h4>
-                  <p className="text-[11px] text-chocolate-600">
-                    Cálculo de mano de obra de preparación, tiempo de horneado y decoración artesanal.
+                  <p className="text-[11px] text-chocolate-600 mt-0.5">
+                    Materia prima con merma técnica (3%), mano de obra activa y consumo fijo de horno por tanda.
                   </p>
                 </div>
               </div>
 
-              {/* Ajuste editable de Tarifa Taller */}
-              <div className="flex items-center gap-1.5 bg-white/95 px-2.5 py-1 rounded-xl border border-amber-200 text-xs shadow-2xs self-start sm:self-auto">
-                <span className="text-[11px] font-bold text-chocolate-800">Tarifa Taller:</span>
+              {/* Ajuste editable de Tarifa MOD */}
+              <div className="flex items-center gap-1.5 bg-white/95 px-3 py-1.5 rounded-xl border border-amber-200 text-xs shadow-2xs self-start sm:self-auto">
+                <span className="text-[11px] font-bold text-chocolate-800">Tarifa MOD:</span>
                 <div className="flex items-center gap-1">
                   <span className="text-[11px] font-bold text-gray-500">RD$</span>
                   <input
@@ -2615,7 +2675,7 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
                     value={tarifaHoraTaller}
                     onChange={(e) => handleUpdateTarifaTaller(Number(e.target.value))}
                     className="w-16 px-1.5 py-0.5 text-xs font-mono font-bold text-chocolate-900 border border-amber-300 rounded-lg text-center bg-white"
-                    title="Tarifa por hora del taller de repostería (RD$)"
+                    title="Tarifa por hora de Mano de Obra Directa (RD$)"
                   />
                   <span className="text-[10px] text-chocolate-600 font-semibold">/h</span>
                   <span className="text-[9px] text-gray-400 font-mono">({formatCurrency(tarifaHoraTaller / 60)}/min)</span>
@@ -2623,50 +2683,215 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
               </div>
             </div>
 
-            {/* Tarjetas métricas de costos */}
+            {/* Controles de Nivel de Decoración y Toggle de Horno */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {/* Selector de Nivel de Decoración (2 cols en sm) */}
+              <div className="sm:col-span-2 bg-white/80 p-3 rounded-xl border border-amber-200/80 space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="text-[11px] font-extrabold text-chocolate-900 uppercase tracking-wide flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-frambuesa-600" />
+                    <span>Nivel de Decoración</span>
+                  </label>
+                  <span className="text-[11px] font-bold text-frambuesa-700 bg-frambuesa-50 px-2 py-0.5 rounded-full border border-frambuesa-200 font-mono">
+                    +{costeoPasteleria.minutosDecoracionExtra} min
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setNivelDecoracion('basica')}
+                    className={`px-2 py-1.5 rounded-lg border text-left transition-all ${
+                      nivelDecoracion === 'basica'
+                        ? 'bg-frambuesa-500 text-white border-frambuesa-600 shadow-xs'
+                        : 'bg-white hover:bg-amber-50 text-chocolate-800 border-trigo-200'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold">Básica</span>
+                      <span className={`text-[9px] font-black px-1 rounded ${
+                        nivelDecoracion === 'basica' ? 'bg-white/25 text-white' : 'bg-trigo-100 text-chocolate-700'
+                      }`}>+0m</span>
+                    </div>
+                    <span className={`text-[9px] block truncate ${nivelDecoracion === 'basica' ? 'text-white/80' : 'text-gray-400'}`}>
+                      Lustre plano / liso
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setNivelDecoracion('intermedia')}
+                    className={`px-2 py-1.5 rounded-lg border text-left transition-all ${
+                      nivelDecoracion === 'intermedia'
+                        ? 'bg-frambuesa-500 text-white border-frambuesa-600 shadow-xs'
+                        : 'bg-white hover:bg-amber-50 text-chocolate-800 border-trigo-200'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold">Intermedia</span>
+                      <span className={`text-[9px] font-black px-1 rounded ${
+                        nivelDecoracion === 'intermedia' ? 'bg-white/25 text-white' : 'bg-trigo-100 text-chocolate-700'
+                      }`}>+30m</span>
+                    </div>
+                    <span className={`text-[9px] block truncate ${nivelDecoracion === 'intermedia' ? 'text-white/80' : 'text-gray-400'}`}>
+                      Drip / boquillas
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setNivelDecoracion('avanzada')}
+                    className={`px-2 py-1.5 rounded-lg border text-left transition-all ${
+                      nivelDecoracion === 'avanzada'
+                        ? 'bg-frambuesa-500 text-white border-frambuesa-600 shadow-xs'
+                        : 'bg-white hover:bg-amber-50 text-chocolate-800 border-trigo-200'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold">Avanzada</span>
+                      <span className={`text-[9px] font-black px-1 rounded ${
+                        nivelDecoracion === 'avanzada' ? 'bg-white/25 text-white' : 'bg-trigo-100 text-chocolate-700'
+                      }`}>+60m</span>
+                    </div>
+                    <span className={`text-[9px] block truncate ${nivelDecoracion === 'avanzada' ? 'text-white/80' : 'text-gray-400'}`}>
+                      Fondant / modelado
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setNivelDecoracion('personalizada')}
+                    className={`px-2 py-1.5 rounded-lg border text-left transition-all ${
+                      nivelDecoracion === 'personalizada'
+                        ? 'bg-frambuesa-500 text-white border-frambuesa-600 shadow-xs'
+                        : 'bg-white hover:bg-amber-50 text-chocolate-800 border-trigo-200'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold">Manual</span>
+                      <span className={`text-[9px] font-black px-1 rounded ${
+                        nivelDecoracion === 'personalizada' ? 'bg-white/25 text-white' : 'bg-trigo-100 text-chocolate-700'
+                      }`}>Exacto</span>
+                    </div>
+                    <span className={`text-[9px] block truncate ${nivelDecoracion === 'personalizada' ? 'text-white/80' : 'text-gray-400'}`}>
+                      Minutos a medida
+                    </span>
+                  </button>
+                </div>
+
+                {nivelDecoracion === 'personalizada' && (
+                  <div className="flex items-center gap-2 pt-1 animate-fade-in">
+                    <span className="text-[11px] font-bold text-chocolate-800">Minutos de decoración manual:</span>
+                    <input
+                      type="number"
+                      min="0"
+                      step="5"
+                      value={minutosDecoracionManual}
+                      onChange={(e) => setMinutosDecoracionManual(e.target.value === '' ? '' : Math.max(0, parseInt(e.target.value) || 0))}
+                      placeholder="Ej. 45"
+                      className="w-20 px-2 py-0.5 text-xs font-mono font-bold rounded-lg border border-trigo-300 bg-white text-chocolate-900 text-center"
+                    />
+                    <span className="text-[10px] text-gray-500 font-semibold">minutos activos</span>
+                  </div>
+                )}
+
+                {/* Nota visual sutil solicitada por el usuario */}
+                <p className="text-[10px] text-gray-500 italic pt-0.5">
+                  Tiempo estimado de decoración para este lote ({costeoPasteleria.minutosDecoracionExtra} min adicionales).
+                </p>
+              </div>
+
+              {/* Toggle de Horno Gas GLP (1 col en sm) */}
+              <div className="bg-white/80 p-3 rounded-xl border border-amber-200/80 flex flex-col justify-between space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-extrabold text-chocolate-900 uppercase tracking-wide flex items-center gap-1">
+                    <span>{requiereHorno ? '🔥 Horno GLP' : '❄️ Postre Frío'}</span>
+                  </span>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={requiereHorno}
+                      onChange={(e) => setRequiereHorno(e.target.checked)}
+                      className="sr-only peer"
+                    />
+                    <div className="w-9 h-5 bg-gray-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-amber-600"></div>
+                  </label>
+                </div>
+
+                <div className="text-[10px] text-gray-500">
+                  {requiereHorno ? (
+                    <div>
+                      <span className="font-bold text-amber-900 block font-mono">
+                        {formatCurrency(costoFijoHorno)} por tanda
+                      </span>
+                      <span>
+                        Prorrateado: <b className="text-chocolate-800">{formatCurrency(costeoPasteleria.costoHornoUnitario)}/ud</b> ({cantidad} ud)
+                      </span>
+                    </div>
+                  ) : (
+                    <span className="text-gray-400 italic">No consume gas ni energía de horneado (RD$ 0).</span>
+                  )}
+                </div>
+
+                <div className="pt-1 border-t border-amber-100 flex items-center justify-between text-[10px]">
+                  <span className="text-gray-400">Prep Base:</span>
+                  <span className="font-mono font-bold text-chocolate-800">{costeoPasteleria.tiempoBasePrepMin} min</span>
+                </div>
+              </div>
+            </div>
+
+            {/* 4 Tarjetas Métricas Ejecutivas de Costos */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-              <div className="bg-white/90 p-2.5 rounded-xl border border-amber-100/80 shadow-2xs">
-                <span className="text-[10px] font-bold text-gray-500 uppercase flex items-center gap-1">
+              <div className="bg-white/95 p-2.5 rounded-xl border border-amber-100/90 shadow-2xs">
+                <span className="text-[10px] font-extrabold text-chocolate-700 uppercase flex items-center gap-1">
                   🌾 Insumos (MPD)
                 </span>
                 <p className="text-sm font-black text-chocolate-900 font-mono mt-0.5">
                   {formatCurrency(costoMateriaPrima)}
                 </p>
-                <span className="text-[10px] text-gray-400">Materia prima directa</span>
+                <div className="flex items-center justify-between text-[9px] text-gray-500 mt-0.5">
+                  <span>+3% merma</span>
+                  <span className="font-mono font-bold text-chocolate-700">Lote: {formatCurrency(costeoPasteleria.costoMateriaPrimaLote)}</span>
+                </div>
               </div>
 
-              <div className="bg-white/90 p-2.5 rounded-xl border border-amber-300 shadow-2xs ring-1 ring-amber-300/60 bg-amber-50/30">
-                <span className="text-[10px] font-bold text-amber-800 uppercase flex items-center gap-1">
-                  ⏱️ Elaboración Taller
+              <div className="bg-white/95 p-2.5 rounded-xl border border-amber-300/80 shadow-2xs ring-1 ring-amber-300/50 bg-amber-50/40">
+                <span className="text-[10px] font-extrabold text-amber-900 uppercase flex items-center gap-1">
+                  ⏱️ Mano de Obra (MOD)
                 </span>
                 <p className="text-sm font-black text-amber-900 font-mono mt-0.5">
-                  {formatCurrency(costoElaboracionInfo.costoElaboracionTotal)}
+                  {formatCurrency(costoManoObra)}
                 </p>
-                <span className="text-[10px] text-amber-700 font-medium">
-                  {costoElaboracionInfo.tiempoPreparacionMin}m prep + {costoElaboracionInfo.tiempoHorneadoMin}m horno
-                </span>
+                <div className="flex items-center justify-between text-[9px] text-amber-800 mt-0.5">
+                  <span>{costeoPasteleria.tiempoActivoTotalMin}m activos</span>
+                  <span className="font-mono font-bold">Lote: {formatCurrency(costeoPasteleria.costoManoObraLote)}</span>
+                </div>
               </div>
 
-              <div className="bg-white/90 p-2.5 rounded-xl border border-amber-100/80 shadow-2xs">
-                <span className="text-[10px] font-bold text-gray-500 uppercase flex items-center gap-1">
+              <div className="bg-white/95 p-2.5 rounded-xl border border-orange-200/90 shadow-2xs bg-orange-50/30">
+                <span className="text-[10px] font-extrabold text-orange-900 uppercase flex items-center gap-1">
+                  🔥 Horno / Gas (CIF)
+                </span>
+                <p className="text-sm font-black text-orange-950 font-mono mt-0.5">
+                  {formatCurrency(costoHorno)}
+                </p>
+                <div className="flex items-center justify-between text-[9px] text-orange-800 mt-0.5">
+                  <span>{costeoPasteleria.requiereHorno ? 'Tanda fija' : 'Frío'}</span>
+                  <span className="font-mono font-bold">Lote: {formatCurrency(costeoPasteleria.costoHornoLote)}</span>
+                </div>
+              </div>
+
+              <div className="bg-white/95 p-2.5 rounded-xl border border-emerald-300/80 shadow-2xs ring-1 ring-emerald-300/50 bg-emerald-50/40">
+                <span className="text-[10px] font-extrabold text-emerald-900 uppercase flex items-center gap-1">
                   📦 Costo Total (CTP)
                 </span>
-                <p className="text-sm font-black text-chocolate-900 font-mono mt-0.5">
+                <p className="text-sm font-black text-emerald-950 font-mono mt-0.5">
                   {formatCurrency(costoTotalUnitario)}
                 </p>
-                <span className="text-[10px] text-gray-400">MPD + Elaboración + Merma</span>
-              </div>
-
-              <div className="bg-white/90 p-2.5 rounded-xl border border-emerald-200 shadow-2xs bg-emerald-50/40">
-                <span className="text-[10px] font-bold text-emerald-800 uppercase flex items-center gap-1">
-                  📈 Margen / Retorno
-                </span>
-                <p className="text-sm font-black text-emerald-700 font-mono mt-0.5">
-                  {formatCurrency(precioUnitarioFinal - costoTotalUnitario)}
-                </p>
-                <span className="text-[10px] text-emerald-700 font-bold">
-                  {precioUnitarioFinal > 0 ? Math.round(((precioUnitarioFinal - costoTotalUnitario) / precioUnitarioFinal) * 100) : 0}% sobre venta
-                </span>
+                <div className="flex items-center justify-between text-[9px] text-emerald-800 mt-0.5">
+                  <span>Margen: {costeoPasteleria.margenBeneficioPct}%</span>
+                  <span className="font-mono font-bold">Lote: {formatCurrency(costeoPasteleria.costoTotalProduccionLote)}</span>
+                </div>
               </div>
             </div>
           </div>
@@ -3171,11 +3396,16 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
                                 + Extras: {item.extras.map((e) => e.cantidad && e.cantidad > 1 ? `${e.nombre} (x${e.cantidad})` : e.nombre).join(', ')}
                               </p>
                             )}
-                            {item.costo_elaboracion !== undefined && item.costo_elaboracion > 0 && (
+                            {(item.costo_mano_obra !== undefined || item.costo_elaboracion !== undefined) && (
                               <div className="flex items-center gap-1.5 mt-1 flex-wrap">
                                 <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-amber-50 text-amber-900 border border-amber-200 font-mono">
-                                  ⏱️ Taller: {formatCurrency(item.costo_elaboracion)} ({item.tiempo_elaboracion_min || 0}m)
+                                  ⏱️ MOD: {formatCurrency(item.costo_mano_obra ?? item.costo_elaboracion ?? 0)} ({item.tiempo_activo_min || item.tiempo_elaboracion_min || 0}m)
                                 </span>
+                                {item.costo_horno !== undefined && item.costo_horno > 0 && (
+                                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-orange-50 text-orange-900 border border-orange-200 font-mono">
+                                    🔥 Gas: {formatCurrency(item.costo_horno)}
+                                  </span>
+                                )}
                                 {item.costo_materia_prima !== undefined && (
                                   <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-stone-50 text-stone-700 border border-stone-200 font-mono">
                                     🌾 Insumos: {formatCurrency(item.costo_materia_prima)}
