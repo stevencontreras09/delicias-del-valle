@@ -22,11 +22,13 @@ import {
   Lock,
   Clock,
   TrendingUp,
+  Boxes,
 } from 'lucide-react';
 import { Badge } from '../ui/Badge';
 import { generarPdfPedido } from '../../utils/pdfGenerator';
 import { generarMensajePedidoWhatsApp } from '../../utils/whatsappShare';
 import { PaymentRecordModal } from './PaymentRecordModal';
+import { QuoteMaterialsBreakdown } from '../inventory/QuoteMaterialsBreakdown';
 import { getGoogleMapsUrl, getWazeUrl, generateDriverWhatsAppMessage, calcularTarifaDeliveryEscalonada } from '../../utils/deliveryHelper';
 import { CakeCareCard } from '../delivery/CakeCareCard';
 
@@ -71,6 +73,7 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({
   const { zonasDelivery } = useApp();
   const [isPaymentOpen, setIsPaymentOpen] = useState(false);
   const [showCareCard, setShowCareCard] = useState(false);
+  const [isMaterialsOpen, setIsMaterialsOpen] = useState(false);
 
   if (!pedido) return null;
 
@@ -240,6 +243,16 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({
                 <span>Ticket Térmico</span>
               </button>
             )}
+
+            <button
+              type="button"
+              onClick={() => setIsMaterialsOpen(true)}
+              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold transition-all shadow-sm cursor-pointer"
+              title="Verificar insumos y stock en almacén (BOM vs. Inventario)"
+            >
+              <Boxes className="w-4 h-4" />
+              <span>Insumos & Stock</span>
+            </button>
 
             <a
               href={waUrl}
@@ -691,6 +704,18 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({
             />
           </div>
         </div>
+      )}
+
+      {/* Modal de Explosión de Materiales y Verificación de Stock (BOM) */}
+      {isMaterialsOpen && (
+        <QuoteMaterialsBreakdown
+          isOpen={isMaterialsOpen}
+          onClose={() => setIsMaterialsOpen(false)}
+          items={pedido.items}
+          codigoReferencia={pedido.numero_factura}
+          clienteNombre={pedido.cliente_nombre}
+          tipoDocumento="pedido"
+        />
       )}
     </Modal>
   );

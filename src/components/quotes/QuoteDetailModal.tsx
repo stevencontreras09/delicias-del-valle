@@ -26,12 +26,14 @@ import {
   Clock,
   TrendingUp,
   Copy,
+  Boxes,
 } from 'lucide-react';
 import { Badge } from '../ui/Badge';
 import { generarPdfCotizacion } from '../../utils/pdfGenerator';
 import { generarMensajeCotizacionWhatsApp } from '../../utils/whatsappShare';
 import { LocationGoogleMapsModal } from './LocationGoogleMapsModal';
 import { QuotePaymentTerms } from './QuotePaymentTerms';
+import { QuoteMaterialsBreakdown } from '../inventory/QuoteMaterialsBreakdown';
 import { calcularTarifaDeliveryEscalonada } from '../../utils/deliveryHelper';
 
 interface QuoteDetailModalProps {
@@ -261,6 +263,7 @@ export const QuoteDetailModal: React.FC<QuoteDetailModalProps> = ({
 
   const [incluirPoliticasWa, setIncluirPoliticasWa] = useState(true);
   const [copiedMessage, setCopiedMessage] = useState(false);
+  const [isMaterialsOpen, setIsMaterialsOpen] = useState(false);
 
   const { mensaje: waMensaje, url: waUrl } = useMemo(
     () => generarMensajeCotizacionWhatsApp(cotizacion, { incluirPoliticas: incluirPoliticasWa }),
@@ -337,6 +340,16 @@ export const QuoteDetailModal: React.FC<QuoteDetailModalProps> = ({
                   <span>Copiar Resumen</span>
                 </>
               )}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setIsMaterialsOpen(true)}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold transition-all shadow-sm cursor-pointer"
+              title="Verificar insumos y stock en almacén (BOM vs. Inventario)"
+            >
+              <Boxes className="w-4 h-4" />
+              <span>Insumos & Stock (BOM)</span>
             </button>
 
             <a
@@ -1351,6 +1364,18 @@ export const QuoteDetailModal: React.FC<QuoteDetailModalProps> = ({
         zonaNombre={zonasDelivery.find(z => z.id === Number(isEditingDespacho ? editZonaId : cotizacion.zona_delivery_id))?.nombre}
         onSave={handleApplyLocationFromMap}
       />
+
+      {/* Modal de Explosión de Materiales y Verificación de Stock (BOM) */}
+      {isMaterialsOpen && (
+        <QuoteMaterialsBreakdown
+          isOpen={isMaterialsOpen}
+          onClose={() => setIsMaterialsOpen(false)}
+          items={cotizacion.items}
+          codigoReferencia={cotizacion.codigo}
+          clienteNombre={cotizacion.cliente_nombre}
+          tipoDocumento="cotizacion"
+        />
+      )}
     </Modal>
   );
 };
