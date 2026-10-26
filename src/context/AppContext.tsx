@@ -64,6 +64,7 @@ import {
   canAccessTab,
   getDefaultTabForRole,
 } from '../utils/security';
+import { esIngredienteRecetaAplicable } from '../utils/inventoryCalculations';
 
 export type ActiveTab =
   | 'dashboard'
@@ -1564,17 +1565,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // PEDIDOS & FACTURACIÓN & DEDUCCIÓN DE INVENTARIO
   // ==========================================
   const isIngredienteAplicable = useCallback((ing: any, item: any): boolean => {
-    if (ing.tipo !== 'variable') return true;
-    if (Array.isArray(item.variables_seleccionadas)) {
-      return item.variables_seleccionadas.includes(ing.insumo_id);
-    }
-    if (Array.isArray(item.variables_receta) && item.variables_receta.length > 0) {
-      const insumo = insumosMap.get(ing.insumo_id);
-      const nombre = (insumo?.nombre || ing.insumo_nombre || '').toLowerCase().trim();
-      if (!nombre) return false;
-      return item.variables_receta.some((vStr: string) => vStr.toLowerCase().includes(nombre));
-    }
-    return false;
+    const insumo = insumosMap.get(ing.insumo_id);
+    return esIngredienteRecetaAplicable(ing, item, insumo?.nombre);
   }, [insumosMap]);
 
   const verificarStockParaPedido = useCallback(

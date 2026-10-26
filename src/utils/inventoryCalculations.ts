@@ -34,6 +34,114 @@ export interface ResumenExplosionMateriales {
 }
 
 /**
+ * Normaliza un texto para comparaciones gastronómicas: minúsculas, sin acentos ni signos.
+ */
+export function normalizarTextoGastronomico(texto?: string): string {
+  if (!texto) return '';
+  return texto
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/**
+ * Determina si un ingrediente de una receta aplica para un ítem de cotización o pedido.
+ * Si es 'fijo', SIEMPRE aplica (materia prima base obligatoria).
+ * Si es 'variable', APLICA ÚNICAMENTE SI:
+ *   1. Su ID está en item.variables_seleccionadas (selección explícita de checkboxes).
+ *   2. Su nombre está registrado en item.variables_receta.
+ *   3. O coincide inteligentemente con el Relleno, Masa Base o Decoración seleccionados.
+ * En cualquier otro caso, se EXCLUYE estrictamente para evitar compras o descuentos indebidos.
+ */
+export function esIngredienteRecetaAplicable(
+  ing: { insumo_id: number; tipo: 'fijo' | 'variable'; insumo_nombre?: string },
+  item: {
+    variables_seleccionadas?: number[];
+    variables_receta?: string[];
+    relleno?: string;
+    masa_base?: string;
+    decoracion?: string;
+  },
+  insumoNombre?: string
+): boolean {
+  // Los ingredientes fijos SIEMPRE aplican
+  if (ing.tipo !== 'variable') {
+    return true;
+  }
+
+  // 1. Verificación primaria por ID explícito en variables_seleccionadas
+  if (Array.isArray(item.variables_seleccionadas) && item.variables_seleccionadas.length > 0) {
+    if (item.variables_seleccionadas.includes(ing.insumo_id)) {
+      return true;
+    }
+  }
+
+  const nombreRaw = (insumoNombre || ing.insumo_nombre || '').trim();
+  const nombreNorm = normalizarTextoGastronomico(nombreRaw);
+  if (!nombreNorm) {
+    return false;
+  }
+
+  // 2. Verificación secundaria por nombres registrados en variables_receta
+  if (Array.isArray(item.variables_receta) && item.variables_receta.length > 0) {
+    const matchVariables = item.variables_receta.some((vStr) => {
+      if (!vStr) return false;
+      const vNorm = normalizarTextoGastronomico(vStr.replace(/\s*\([\d\.,\s\w]+\)/g, ''));
+      return vNorm.includes(nombreNorm) || nombreNorm.includes(vNorm);
+    });
+    if (matchVariables) return true;
+  }
+
+  // 3. Coincidencia inteligente con los selectores de Relleno, Masa Base y Decoración
+  const palabrasClave = nombreNorm.split(' ').filter((w) => w.length >= 4);
+
+  // A. Coincidencia con Relleno (siempre que no sea 'ninguno', 'sin relleno', etc.)
+  const rellenoNorm = normalizarTextoGastronomico(item.relleno);
+  if (
+    rellenoNorm &&
+    !rellenoNorm.startsWith('ningun') &&
+    !rellenoNorm.startsWith('sin relleno') &&
+    !rellenoNorm.startsWith('no aplica')
+  ) {
+    if (rellenoNorm.includes(nombreNorm) || nombreNorm.includes(rellenoNorm)) {
+      return true;
+    }
+    // Palabras clave específicas de rellenos
+    if (palabrasClave.some((p) => p !== 'crema' && p !== 'pasta' && p !== 'sabor' && rellenoNorm.includes(p))) {
+      return true;
+    }
+  }
+
+  // B. Coincidencia con Masa Base
+  const masaNorm = normalizarTextoGastronomico(item.masa_base);
+  if (masaNorm && !masaNorm.startsWith('no aplica') && !masaNorm.startsWith('ningun')) {
+    if (masaNorm.includes(nombreNorm) || nombreNorm.includes(masaNorm)) {
+      return true;
+    }
+    if (palabrasClave.some((p) => (p === 'cacao' || p === 'chocolate' || p === 'zanahoria' || p === 'red velvet') && masaNorm.includes(p))) {
+      return true;
+    }
+  }
+
+  // C. Coincidencia con Decoración
+  const decoNorm = normalizarTextoGastronomico(item.decoracion);
+  if (decoNorm && !decoNorm.startsWith('no aplica') && !decoNorm.startsWith('estandar') && !decoNorm.startsWith('ningun')) {
+    if (decoNorm.includes(nombreNorm) || nombreNorm.includes(decoNorm)) {
+      return true;
+    }
+    if (palabrasClave.some((p) => (p === 'fondant' || p === 'chantilly' || p === 'buttercream' || p === 'ganache' || p === 'macarons') && decoNorm.includes(p))) {
+      return true;
+    }
+  }
+
+  // Si no coincidió con ninguna selección ni opción, se EXCLUYE
+  return false;
+}
+
+/**
  * Formatea una cantidad según su unidad base gastronómica (g -> kg, ml -> L, ud -> uds)
  */
 export function formatCantidadUnidadBase(cantidad: number, unidad: UnidadBase | string): string {
@@ -127,37 +235,15 @@ export function calcularRequerimientosMateriales(
     const receta = recetasMap.get(item.receta_id) || catalogoRecetas.find((r) => r.nombre.trim().toLowerCase() === nombreItem.trim().toLowerCase());
     if (receta && Array.isArray(receta.ingredientes)) {
       const escalaLote = factor * itemCant;
-      const selectedVars: number[] | undefined = (item as any).variables_seleccionadas;
-      const variablesRecetaNombres: string[] | undefined = (item as any).variables_receta;
 
       receta.ingredientes.forEach((ing) => {
+        const insumoObj = insumosMap.get(ing.insumo_id);
+        const insNombre = insumoObj?.nombre || ing.insumo_nombre;
+
         // REGLA ESTRICTA DE COSTEO Y BOM:
-        // Si el ingrediente es de tipo 'variable', NUNCA se incluye por defecto.
-        // Solo se agrega si el usuario lo seleccionó expresamente para este producto.
-        if (ing.tipo === 'variable') {
-          let estaSeleccionado = false;
-
-          // 1. Verificación primaria por ID numérico (en cotizaciones activas o sincronizadas)
-          if (Array.isArray(selectedVars)) {
-            estaSeleccionado = selectedVars.includes(ing.insumo_id);
-          }
-          // 2. Verificación secundaria por nombres registrados en variables_receta (cotizaciones recuperadas de BD)
-          else if (Array.isArray(variablesRecetaNombres) && variablesRecetaNombres.length > 0) {
-            const insumoObj = insumosMap.get(ing.insumo_id);
-            const nombreInsumo = (insumoObj?.nombre || ing.insumo_nombre || '').toLowerCase().trim();
-            if (nombreInsumo) {
-              estaSeleccionado = variablesRecetaNombres.some((vStr) => {
-                if (!vStr) return false;
-                const vLimpio = vStr.toLowerCase().replace(/\s*\([\d\.,\s\w]+\)/g, '').trim();
-                return vLimpio.includes(nombreInsumo) || nombreInsumo.includes(vLimpio) || vStr.toLowerCase().includes(nombreInsumo);
-              });
-            }
-          }
-
-          // Si NO fue seleccionado, se omite de inmediato: NO es necesario comprarlo
-          if (!estaSeleccionado) {
-            return;
-          }
+        // Solo aplica si es 'fijo' o si fue seleccionado explícitamente / coincide con relleno o masa.
+        if (!esIngredienteRecetaAplicable(ing, item, insNombre)) {
+          return;
         }
 
         const cantTotal = ing.cantidad * escalaLote;
