@@ -727,90 +727,101 @@ export const RecipeFormModal: React.FC<RecipeFormModalProps> = ({
             </div>
           </div>
 
-          <div className="border border-trigo-200 rounded-2xl overflow-hidden shadow-sm max-h-[340px] overflow-y-auto">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-crema text-chocolate-800 font-bold sticky top-0 z-10">
+          <div className="border border-trigo-200 rounded-2xl shadow-sm max-h-[380px] overflow-x-auto overflow-y-auto bg-white">
+            <table className="w-full text-left text-xs min-w-[580px] border-collapse">
+              <thead className="bg-crema text-chocolate-800 font-bold sticky top-0 z-20 shadow-2xs">
                 <tr>
-                  <th className="py-2.5 px-3">Tipo</th>
-                  <th className="py-2.5 px-3 min-w-[260px]">Insumo / Materia Prima</th>
-                  <th className="py-2.5 px-3 text-center">Cantidad en Receta</th>
-                  <th className="py-2.5 px-3 text-right">Costo Calculado</th>
-                  <th className="py-2.5 px-3 text-center">Quitar</th>
+                  <th className="py-2.5 px-3 w-36 whitespace-nowrap">Tipo</th>
+                  <th className="py-2.5 px-3 min-w-[200px]">Insumo / Materia Prima</th>
+                  <th className="py-2.5 px-3 text-center w-32 whitespace-nowrap">Cantidad</th>
+                  <th className="py-2.5 px-3 text-right w-28 whitespace-nowrap">Costo</th>
+                  <th className="py-2.5 px-2 text-center w-14 whitespace-nowrap sticky right-0 z-30 bg-crema shadow-[-4px_0_6px_-2px_rgba(0,0,0,0.06)]">
+                    Quitar
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-trigo-100 bg-white">
-                {ingredientes.map((item, index) => {
-                  const ins = insumosMap.get(item.insumo_id);
-                  const costoItem = ins ? item.cantidad * ins.costo_unitario_base : 0;
+                {ingredientes.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="py-8 text-center text-gray-400">
+                      No hay ingredientes en esta receta. Usa el buscador rápido o los botones de arriba para agregar insumos.
+                    </td>
+                  </tr>
+                ) : (
+                  ingredientes.map((item, index) => {
+                    const ins = insumosMap.get(item.insumo_id);
+                    const costoItem = ins ? item.cantidad * ins.costo_unitario_base : 0;
 
-                  return (
-                    <tr key={index} className="hover:bg-crema/20">
-                      <td className="py-2 px-3">
-                        <select
-                          value={item.tipo}
-                          onChange={(e) =>
-                            handleUpdateIngrediente(index, 'tipo', e.target.value as 'fijo' | 'variable')
-                          }
-                          className="px-2 py-1 rounded-lg border border-trigo-200 text-xs font-bold bg-white"
-                        >
-                          <option value="fijo">Fijo (Masa)</option>
-                          <option value="variable">Variable (Relleno/Empaque)</option>
-                        </select>
-                      </td>
-
-                      <td className="py-2 px-3 min-w-[260px]">
-                        <SearchableSelect
-                          size="sm"
-                          value={item.insumo_id}
-                          onChange={(val) =>
-                            handleUpdateIngrediente(index, 'insumo_id', Number(val))
-                          }
-                          options={insumosOptions}
-                          placeholder="Seleccionar insumo..."
-                          searchPlaceholder="Buscar por nombre o categoría..."
-                          usePortal={true}
-                        />
-                      </td>
-
-                      <td className="py-2 px-3 text-center">
-                        <div className="flex items-center justify-center gap-1">
-                          <input
-                            type="number"
-                            step="any"
-                            min="0.01"
-                            required
-                            value={item.cantidad}
+                    return (
+                      <tr key={index} className="hover:bg-crema/25 group transition-colors">
+                        <td className="py-2 px-3 w-36">
+                          <select
+                            value={item.tipo}
                             onChange={(e) =>
-                              handleUpdateIngrediente(
-                                index,
-                                'cantidad',
-                                e.target.value === '' ? 0 : parseFloat(e.target.value)
-                              )
+                              handleUpdateIngrediente(index, 'tipo', e.target.value as 'fijo' | 'variable')
                             }
-                            className="w-20 px-2 py-1 rounded-lg border border-trigo-300 text-center text-xs font-bold"
+                            className="w-full px-2 py-1.5 rounded-lg border border-trigo-200 text-xs font-bold bg-white text-chocolate-900 focus:outline-none focus:ring-1 focus:ring-frambuesa-400 cursor-pointer shadow-2xs"
+                          >
+                            <option value="fijo">Fijo (Masa)</option>
+                            <option value="variable">Variable</option>
+                          </select>
+                        </td>
+
+                        <td className="py-2 px-3 min-w-[200px]">
+                          <SearchableSelect
+                            size="sm"
+                            value={item.insumo_id}
+                            onChange={(val) =>
+                              handleUpdateIngrediente(index, 'insumo_id', Number(val))
+                            }
+                            options={insumosOptions}
+                            placeholder="Seleccionar insumo..."
+                            searchPlaceholder="Buscar por nombre o categoría..."
+                            usePortal={true}
                           />
-                          <span className="text-gray-500 font-bold text-[11px]">
-                            {ins?.unidad_base || 'g'}
-                          </span>
-                        </div>
-                      </td>
+                        </td>
 
-                      <td className="py-2 px-3 text-right font-extrabold text-chocolate-900">
-                        {formatCurrency(costoItem)}
-                      </td>
+                        <td className="py-2 px-3 text-center w-32">
+                          <div className="flex items-center justify-center gap-1.5">
+                            <input
+                              type="number"
+                              step="any"
+                              min="0.01"
+                              required
+                              value={item.cantidad}
+                              onChange={(e) =>
+                                handleUpdateIngrediente(
+                                  index,
+                                  'cantidad',
+                                  e.target.value === '' ? 0 : parseFloat(e.target.value)
+                                )
+                              }
+                              className="w-20 px-2 py-1 rounded-lg border border-trigo-300 text-center text-xs font-bold font-mono focus:outline-none focus:ring-1 focus:ring-frambuesa-400"
+                            />
+                            <span className="text-gray-500 font-bold text-[11px] min-w-[20px] text-left">
+                              {ins?.unidad_base || 'g'}
+                            </span>
+                          </div>
+                        </td>
 
-                      <td className="py-2 px-3 text-center">
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveIngrediente(index)}
-                          className="p-1 rounded-lg text-red-500 hover:bg-red-50"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })}
+                        <td className="py-2 px-3 text-right font-extrabold text-chocolate-900 font-mono whitespace-nowrap w-28">
+                          {formatCurrency(costoItem)}
+                        </td>
+
+                        <td className="py-2 px-2 text-center w-14 sticky right-0 z-10 bg-white group-hover:bg-amber-50/70 shadow-[-4px_0_6px_-2px_rgba(0,0,0,0.06)] transition-colors">
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveIngrediente(index)}
+                            className="p-1.5 rounded-lg text-red-500 hover:text-red-700 hover:bg-red-100/80 transition-colors inline-flex items-center justify-center"
+                            title="Eliminar ingrediente de la receta"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
               </tbody>
             </table>
           </div>
