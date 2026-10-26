@@ -62,7 +62,7 @@ export const PublicOrderTrackingPage: React.FC<PublicOrderTrackingPageProps> = (
     '';
 
   const { isLoaded: isMapLoaded } = useJsApiLoader({
-    id: 'google-map-tracking-script',
+    id: 'google-map-script',
     googleMapsApiKey: apiKey,
     libraries: GOOGLE_LIBRARIES,
   });

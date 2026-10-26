@@ -67,7 +67,7 @@ export const DeliveryRoutePlanner: React.FC<DeliveryRoutePlannerProps> = ({
     '';
 
   const { isLoaded } = useJsApiLoader({
-    id: 'google-map-route-script',
+    id: 'google-map-script',
     googleMapsApiKey: apiKey,
     libraries: LIBRARIES,
   });

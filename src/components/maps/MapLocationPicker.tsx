@@ -214,9 +214,6 @@ export const MapLocationPicker: React.FC<MapLocationPickerProps> = ({
         <p className="text-[11px] text-amber-800">
           Si estás en local (localhost), reinicia tu terminal con <code>npm run dev</code>.
         </p>
-        <p className="text-[11px] text-gray-500">
-          Mientras tanto, puedes hacer clic en la pestaña superior <strong>Satélite HD / Relieve / OSM</strong> para ubicar la entrega en el mapa.
-        </p>
       </div>
     );
   }
@@ -229,10 +226,7 @@ export const MapLocationPicker: React.FC<MapLocationPickerProps> = ({
           <span>Error al conectar con Google Maps</span>
         </div>
         <p className="text-[11px] text-rose-800">
-          Google Maps no pudo cargarse ({loadError.message || 'Verifica la consola'}). Asegúrate de que tu clave tenga habilitadas en Google Cloud Console: <strong>Maps JavaScript API</strong> y <strong>Places API</strong>, y que tu dominio esté autorizado.
-        </p>
-        <p className="text-[11px] text-gray-600">
-          Puedes hacer clic en la pestaña <strong>Satélite HD / Relieve / OSM</strong> para continuar trabajando.
+          Google Maps no pudo cargarse ({loadError.message || 'Verifica la consola'}). Asegúrate de que tu clave tenga habilitadas en Google Cloud Console: <strong>Maps JavaScript API</strong> y <strong>Places API</strong>, y que el dominio actual esté autorizado en las restricciones de la clave.
         </p>
       </div>
     );
