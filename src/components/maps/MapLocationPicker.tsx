@@ -60,7 +60,7 @@ export const MapLocationPicker: React.FC<MapLocationPickerProps> = ({
   onChangeLocation,
 }) => {
   const apiKey =
-    (import.meta as any).env?.VITE_GOOGLE_MAPS_API_KEY ||
+    import.meta.env.VITE_GOOGLE_MAPS_API_KEY ||
     (typeof process !== 'undefined' ? (process.env as any)?.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY : '') ||
     '';
 
@@ -201,19 +201,38 @@ export const MapLocationPicker: React.FC<MapLocationPickerProps> = ({
     }
   };
 
-  if (!apiKey || loadError) {
+  if (!apiKey) {
     return (
       <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 text-xs space-y-2">
         <div className="flex items-center gap-2 font-bold text-chocolate-800">
           <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
-          <span>Google Maps API no configurada</span>
+          <span>Google Maps API no detectada en este despliegue</span>
         </div>
         <p className="text-[11px] text-amber-800">
-          Para ver el mapa oficial interactivo de Google Maps con autocompletado de lugares en tiempo real, añade tu clave en el archivo <code>.env</code> como:
-          <code className="block mt-1 font-mono font-bold bg-white/80 p-1.5 rounded border border-amber-300">VITE_GOOGLE_MAPS_API_KEY=tu_api_key</code>
+          Si acabas de agregar la variable <code>VITE_GOOGLE_MAPS_API_KEY</code> en <strong>Vercel</strong>, recuerda hacer un <strong>Redeploy</strong> en la pestaña <em>Deployments</em> para que se compile con la nueva clave.
+        </p>
+        <p className="text-[11px] text-amber-800">
+          Si estás en local (localhost), reinicia tu terminal con <code>npm run dev</code>.
         </p>
         <p className="text-[11px] text-gray-500">
-          Las coordenadas ingresadas manualmente o mediante enlaces de Maps seguirán procesándose con total normalidad para el ruteo.
+          Mientras tanto, puedes hacer clic en la pestaña superior <strong>Satélite HD / Relieve / OSM</strong> para ubicar la entrega en el mapa.
+        </p>
+      </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-900 text-xs space-y-2">
+        <div className="flex items-center gap-2 font-bold text-rose-800">
+          <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
+          <span>Error al conectar con Google Maps</span>
+        </div>
+        <p className="text-[11px] text-rose-800">
+          Google Maps no pudo cargarse ({loadError.message || 'Verifica la consola'}). Asegúrate de que tu clave tenga habilitadas en Google Cloud Console: <strong>Maps JavaScript API</strong> y <strong>Places API</strong>, y que tu dominio esté autorizado.
+        </p>
+        <p className="text-[11px] text-gray-600">
+          Puedes hacer clic en la pestaña <strong>Satélite HD / Relieve / OSM</strong> para continuar trabajando.
         </p>
       </div>
     );

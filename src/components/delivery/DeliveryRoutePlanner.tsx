@@ -62,7 +62,7 @@ export const DeliveryRoutePlanner: React.FC<DeliveryRoutePlannerProps> = ({
   onOpenLocationModal,
 }) => {
   const apiKey =
-    (import.meta as any).env?.VITE_GOOGLE_MAPS_API_KEY ||
+    import.meta.env.VITE_GOOGLE_MAPS_API_KEY ||
     (typeof process !== 'undefined' ? (process.env as any)?.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY : '') ||
     '';
 

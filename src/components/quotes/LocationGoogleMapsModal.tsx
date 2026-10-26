@@ -154,7 +154,7 @@ export const LocationGoogleMapsModal: React.FC<LocationGoogleMapsModalProps> = (
   onSave,
 }) => {
   const hasGoogleApiKey = Boolean(
-    (import.meta as any).env?.VITE_GOOGLE_MAPS_API_KEY ||
+    import.meta.env.VITE_GOOGLE_MAPS_API_KEY ||
     (typeof process !== 'undefined' ? (process.env as any)?.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY : '')
   );
   const [mapEngine, setMapEngine] = useState<'google-api' | 'interactive-tiles'>(hasGoogleApiKey ? 'google-api' : 'interactive-tiles');
