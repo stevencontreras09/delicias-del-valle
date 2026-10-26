@@ -128,14 +128,35 @@ export function calcularRequerimientosMateriales(
     if (receta && Array.isArray(receta.ingredientes)) {
       const escalaLote = factor * itemCant;
       const selectedVars: number[] | undefined = (item as any).variables_seleccionadas;
+      const variablesRecetaNombres: string[] | undefined = (item as any).variables_receta;
 
       receta.ingredientes.forEach((ing) => {
-        // Si el ingrediente es variable, solo se suma si fue explícitamente seleccionado
+        // REGLA ESTRICTA DE COSTEO Y BOM:
+        // Si el ingrediente es de tipo 'variable', NUNCA se incluye por defecto.
+        // Solo se agrega si el usuario lo seleccionó expresamente para este producto.
         if (ing.tipo === 'variable') {
-          if (selectedVars && selectedVars.length > 0) {
-            if (!selectedVars.includes(ing.insumo_id)) {
-              return;
+          let estaSeleccionado = false;
+
+          // 1. Verificación primaria por ID numérico (en cotizaciones activas o sincronizadas)
+          if (Array.isArray(selectedVars)) {
+            estaSeleccionado = selectedVars.includes(ing.insumo_id);
+          }
+          // 2. Verificación secundaria por nombres registrados en variables_receta (cotizaciones recuperadas de BD)
+          else if (Array.isArray(variablesRecetaNombres) && variablesRecetaNombres.length > 0) {
+            const insumoObj = insumosMap.get(ing.insumo_id);
+            const nombreInsumo = (insumoObj?.nombre || ing.insumo_nombre || '').toLowerCase().trim();
+            if (nombreInsumo) {
+              estaSeleccionado = variablesRecetaNombres.some((vStr) => {
+                if (!vStr) return false;
+                const vLimpio = vStr.toLowerCase().replace(/\s*\([\d\.,\s\w]+\)/g, '').trim();
+                return vLimpio.includes(nombreInsumo) || nombreInsumo.includes(vLimpio) || vStr.toLowerCase().includes(nombreInsumo);
+              });
             }
+          }
+
+          // Si NO fue seleccionado, se omite de inmediato: NO es necesario comprarlo
+          if (!estaSeleccionado) {
+            return;
           }
         }
 

@@ -1563,6 +1563,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // ==========================================
   // PEDIDOS & FACTURACIÓN & DEDUCCIÓN DE INVENTARIO
   // ==========================================
+  const isIngredienteAplicable = useCallback((ing: any, item: any): boolean => {
+    if (ing.tipo !== 'variable') return true;
+    if (Array.isArray(item.variables_seleccionadas)) {
+      return item.variables_seleccionadas.includes(ing.insumo_id);
+    }
+    if (Array.isArray(item.variables_receta) && item.variables_receta.length > 0) {
+      const insumo = insumosMap.get(ing.insumo_id);
+      const nombre = (insumo?.nombre || ing.insumo_nombre || '').toLowerCase().trim();
+      if (!nombre) return false;
+      return item.variables_receta.some((vStr: string) => vStr.toLowerCase().includes(nombre));
+    }
+    return false;
+  }, [insumosMap]);
+
   const verificarStockParaPedido = useCallback(
     (pedido: Pedido) => {
       const faltantes: { insumoNombre: string; requerido: number; disponible: number; unidad: string }[] = [];
@@ -1575,6 +1589,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
         const factor = (item.factor_receta || 1) * item.cantidad;
         receta.ingredientes.forEach((ing) => {
+          if (!isIngredienteAplicable(ing, item)) return;
           const acumulado = mapaRequeridos.get(ing.insumo_id) || 0;
           mapaRequeridos.set(ing.insumo_id, acumulado + ing.cantidad * factor);
         });
@@ -1613,6 +1628,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
         const factor = (item.factor_receta || 1) * item.cantidad;
         receta.ingredientes.forEach((ing) => {
+          if (!isIngredienteAplicable(ing, item)) return;
           const acum = deducciones.get(ing.insumo_id) || 0;
           deducciones.set(ing.insumo_id, acum + ing.cantidad * factor);
         });
@@ -1756,6 +1772,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       costo_elaboracion: item.costo_elaboracion,
       costo_total_unitario: item.costo_total_unitario,
       tiempo_elaboracion_min: item.tiempo_elaboracion_min,
+      variables_receta: item.variables_receta,
+      variables_seleccionadas: item.variables_seleccionadas,
     }));
 
     const nuevoPedido: Pedido = {
@@ -1854,6 +1872,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           if (!receta) return;
           const factor = (item.factor_receta || 1) * item.cantidad;
           receta.ingredientes.forEach((ing) => {
+            if (!isIngredienteAplicable(ing, item)) return;
             const idx = updated.findIndex((i) => i.id === ing.insumo_id);
             if (idx !== -1) {
               updated[idx] = {
@@ -1871,6 +1890,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           if (!receta) return;
           const factor = (item.factor_receta || 1) * item.cantidad;
           receta.ingredientes.forEach((ing) => {
+            if (!isIngredienteAplicable(ing, item)) return;
             const idx = updated.findIndex((i) => i.id === ing.insumo_id);
             if (idx !== -1) {
               updated[idx] = {
@@ -1991,6 +2011,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             if (!receta) return;
             const factor = (item.factor_receta || 1) * item.cantidad;
             receta.ingredientes.forEach((ing) => {
+              if (!isIngredienteAplicable(ing, item)) return;
               const idx = updated.findIndex((i) => i.id === ing.insumo_id);
               if (idx !== -1) {
                 updated[idx] = {
@@ -2087,6 +2108,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           if (!receta) return;
           const factor = (item.factor_receta || 1) * item.cantidad;
           receta.ingredientes.forEach((ing) => {
+            if (!isIngredienteAplicable(ing, item)) return;
             const idx = updated.findIndex((i) => i.id === ing.insumo_id);
             if (idx !== -1) {
               updated[idx] = {

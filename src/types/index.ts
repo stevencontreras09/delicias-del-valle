@@ -261,6 +261,8 @@ export interface PedidoItem {
   es_extra?: boolean;
   categoria_extra?: CategoriaExtra;
   extra_id?: string;
+  variables_receta?: string[];
+  variables_seleccionadas?: number[];
 }
 
 export interface Pedido {

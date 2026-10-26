@@ -238,13 +238,23 @@ export async function fetchAllFromSupabase(): Promise<{
           decoracion: item.decoracion,
           dedicatoria: item.dedicatoria || '',
           extras: Array.isArray(item.extras)
-            ? item.extras.filter((e: any) => e.id !== 'variables_receta' && e.id !== 'es_extra' && e.id !== 'costo_meta')
+            ? item.extras.filter((e: any) => e.id !== 'variables_receta' && e.id !== 'variables_seleccionadas' && e.id !== 'es_extra' && e.id !== 'costo_meta')
             : [],
           variables_receta: item.variables_receta || (
             Array.isArray(item.extras)
               ? item.extras.find((e: any) => e.id === 'variables_receta')?.nombre?.replace(/^Variables:\s*/, '').split(', ')
               : undefined
           ),
+          variables_seleccionadas: Array.isArray(item.variables_seleccionadas)
+            ? item.variables_seleccionadas
+            : (() => {
+                if (!Array.isArray(item.extras)) return undefined;
+                const varObj = item.extras.find((e: any) => e.id === 'variables_receta');
+                if (varObj && Array.isArray(varObj.ids)) return varObj.ids.map(Number);
+                const varSelObj = item.extras.find((e: any) => e.id === 'variables_seleccionadas');
+                if (varSelObj && Array.isArray(varSelObj.ids)) return varSelObj.ids.map(Number);
+                return undefined;
+              })(),
           cantidad: Number(item.cantidad),
           precio_unitario: Number(item.precio_unitario),
           subtotal: Number(item.subtotal),
@@ -330,6 +340,8 @@ export async function fetchAllFromSupabase(): Promise<{
           costo_elaboracion: item.costo_elaboracion ?? (costoMeta?.elab !== undefined ? Number(costoMeta.elab) : undefined),
           costo_total_unitario: item.costo_total_unitario ?? (costoMeta?.ctp !== undefined ? Number(costoMeta.ctp) : undefined),
           tiempo_elaboracion_min: item.tiempo_elaboracion_min ?? (costoMeta?.tiempo !== undefined ? Number(costoMeta.tiempo) : undefined),
+          variables_seleccionadas: item.variables_seleccionadas || (Array.isArray(costoMeta?.var_ids) ? costoMeta.var_ids.map(Number) : undefined),
+          variables_receta: item.variables_receta || (Array.isArray(costoMeta?.vars) ? costoMeta.vars : undefined),
         };
       }),
       pagos: (p.pagos || []).map((pago: any) => ({
@@ -581,6 +593,8 @@ export async function syncPedidoToSupabase(pedido: Pedido): Promise<boolean> {
             ctp: item.costo_total_unitario,
             tiempo: item.tiempo_activo_min ?? item.tiempo_elaboracion_min,
             nivel_deco: item.nivel_decoracion,
+            var_ids: item.variables_seleccionadas,
+            vars: item.variables_receta,
           });
           extrasTexto = extrasTexto ? `${extrasTexto} <!--costo_meta:${metaJson}-->` : `<!--costo_meta:${metaJson}-->`;
         }
@@ -707,8 +721,15 @@ export async function syncCotizacionToSupabase(
           ...(Array.isArray(item.extras) ? item.extras.filter((e: any) => e.id !== 'variables_receta' && e.id !== 'es_extra' && e.id !== 'costo_meta') : []),
           ...(item.es_extra ? [{ id: 'es_extra', nombre: item.categoria_extra || 'extra', precio: 0 }] : []),
           ...(item.variables_receta && item.variables_receta.length > 0
-            ? [{ id: 'variables_receta', nombre: `Variables: ${item.variables_receta.join(', ')}`, precio: 0 }]
-            : []),
+            ? [{
+                id: 'variables_receta',
+                nombre: `Variables: ${item.variables_receta.join(', ')}`,
+                precio: 0,
+                ids: item.variables_seleccionadas || []
+              }]
+            : (Array.isArray(item.variables_seleccionadas) && item.variables_seleccionadas.length > 0
+                ? [{ id: 'variables_receta', nombre: 'Variables seleccionadas', precio: 0, ids: item.variables_seleccionadas }]
+                : [])),
           ...((item.costo_elaboracion !== undefined || item.costo_materia_prima !== undefined || item.costo_mano_obra !== undefined)
             ? [{
                 id: 'costo_meta',
