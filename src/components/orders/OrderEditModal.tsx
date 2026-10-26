@@ -3,7 +3,7 @@ import { Pedido, PedidoItem, TipoDespacho } from '../../types';
 import { useApp } from '../../context/AppContext';
 import { Modal } from '../ui/Modal';
 import { formatCurrency, formatDisplayTamano } from '../../utils/formatters';
-import { calcularCostosReceta, calcularCostoElaboracionProducto, calcularCosteoPasteleriaLote } from '../../utils/calculations';
+import { calcularCostosReceta } from '../../utils/calculations';
 import { LocationGoogleMapsModal } from '../quotes/LocationGoogleMapsModal';
 import { calcularTarifaDeliveryEscalonada } from '../../utils/deliveryHelper';
 import {
@@ -174,17 +174,7 @@ export const OrderEditModal: React.FC<OrderEditModalProps> = ({
     if (!receta) return;
 
     const costBreakdown = calcularCostosReceta(receta, insumosMap, 1, false);
-    const costeo = calcularCosteoPasteleriaLote({
-      costoInsumosBase: costBreakdown.costo_directo_materia_prima,
-      costoPersonalizaciones: 0,
-      costoEmpaque: 0,
-      tiempoBasePrepMin: receta.tiempo_preparacion_min || 30,
-      nivelDecoracion: 'basica',
-      requiereHorno: (receta.tiempo_horneado_min || 0) > 0,
-      cantidad: 1,
-      margenBeneficioPct: receta.margen_beneficio_pct || 50,
-    });
-    const precioBase = costBreakdown.precio_sugerido_venta || costeo.precioSugeridoUnitario || 0;
+    const precioBase = costBreakdown.precio_sugerido_venta || 0;
 
     const newItem: PedidoItem = {
       id: `item-edit-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
@@ -199,16 +189,8 @@ export const OrderEditModal: React.FC<OrderEditModalProps> = ({
       precio_unitario: precioBase,
       subtotal: precioBase,
       factor_receta: 1,
-      costo_materia_prima: costeo.costoMateriaPrimaUnitario,
-      costo_mano_obra: costeo.costoManoObraUnitario,
-      costo_horno: costeo.costoHornoUnitario,
-      tiempo_activo_min: costeo.tiempoActivoTotalMin,
-      nivel_decoracion: 'basica',
-      minutos_decoracion_extra: 0,
-      requiere_horno: costeo.requiereHorno,
-      costo_elaboracion: costeo.costoElaboracionUnitario,
-      costo_total_unitario: costeo.costoTotalUnitario,
-      tiempo_elaboracion_min: costeo.tiempoActivoTotalMin,
+      costo_materia_prima: costBreakdown.costo_directo_materia_prima,
+      costo_total_unitario: costBreakdown.costo_total_produccion,
     };
 
     setItems((prev) => [...prev, newItem]);
