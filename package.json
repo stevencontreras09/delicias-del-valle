@@ -9,6 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@react-google-maps/api": "^2.20.8",
     "@supabase/supabase-js": "^2.112.4",
     "@types/leaflet": "^1.9.22",
     "canvas-confetti": "^1.9.4",

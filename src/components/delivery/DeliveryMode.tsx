@@ -21,11 +21,18 @@ import {
   Check,
   X,
   Sparkles,
+  Route,
+  Share2,
+  Copy,
+  ChevronRight,
+  Radio,
 } from 'lucide-react';
 import { formatCurrency, formatDate, formatDisplayTamano } from '../../utils/formatters';
 import { getGoogleMapsUrl, getWazeUrl, generateClientDeliveryNotificationUrl, calcularTarifaDeliveryEscalonada } from '../../utils/deliveryHelper';
 import { CakeCareCard } from './CakeCareCard';
 import { LocationGoogleMapsModal } from '../quotes/LocationGoogleMapsModal';
+import { DeliveryRoutePlanner } from './DeliveryRoutePlanner';
+import { getSupabaseClient } from '../../utils/supabaseClient';
 import { isPedidoSemanaActual } from '../../utils/orderHelper';
 import confetti from 'canvas-confetti';
 
@@ -33,6 +40,11 @@ type FilterType = 'pendientes' | 'en_camino' | 'entregados' | 'todos';
 
 export const DeliveryMode: React.FC = () => {
   const { pedidos, zonasDelivery, currentUser, showToast, syncFromSupabase, isSyncing } = useApp();
+
+  const [viewMode, setViewMode] = useState<'pedidos' | 'ruta'>('pedidos');
+  const [isTransmittingGps, setIsTransmittingGps] = useState<boolean>(false);
+  const [gpsWatchId, setGpsWatchId] = useState<number | null>(null);
+  const [currentCoords, setCurrentCoords] = useState<{ lat: number; lng: number } | null>(null);
 
   const [filter, setFilter] = useState<FilterType>('pendientes');
   const [onlyMine, setOnlyMine] = useState<boolean>(true);
@@ -143,6 +155,80 @@ export const DeliveryMode: React.FC = () => {
     return { pendientes, enCamino, entregados, historicos: historicosEntregasCount, total };
   }, [deliveryPedidos, enRutaIds, mostrarHistoricoEntregas, historicosEntregasCount]);
 
+  // Transmisión de ubicación GPS en tiempo real para los clientes
+  const startGpsTransmission = () => {
+    if (typeof window === 'undefined' || !navigator.geolocation) {
+      showToast('error', 'GPS no disponible', 'Tu navegador o dispositivo no soporta geolocalización GPS.');
+      return;
+    }
+
+    setIsTransmittingGps(true);
+    const id = navigator.geolocation.watchPosition(
+      (pos) => {
+        const coords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        setCurrentCoords(coords);
+
+        // Emitir coordenadas vía WebSockets Realtime a clientes que rastrean su pedido
+        try {
+          const client = getSupabaseClient();
+          if (client) {
+            const liveChannel = client.channel('delicias-live-tracking');
+            liveChannel.send({
+              type: 'broadcast',
+              event: 'driver-location',
+              payload: {
+                driverId: currentUser?.id,
+                driverName: currentUser?.nombre_completo || currentUser?.username || 'Repartidor Delicias',
+                lat: coords.lat,
+                lng: coords.lng,
+                heading: pos.coords.heading,
+                speed: pos.coords.speed ? Math.round(pos.coords.speed * 3.6) : null,
+                timestamp: Date.now(),
+              },
+            });
+          }
+
+          localStorage.setItem(
+            'delicias_driver_live_coords',
+            JSON.stringify({
+              ...coords,
+              timestamp: Date.now(),
+              driverName: currentUser?.nombre_completo || currentUser?.username || 'Repartidor Delicias',
+            })
+          );
+        } catch (_) {}
+      },
+      (err) => {
+        console.warn('Aviso de GPS:', err.message);
+      },
+      {
+        enableHighAccuracy: true,
+        maximumAge: 4000,
+        timeout: 12000,
+      }
+    );
+
+    setGpsWatchId(id);
+    showToast('success', '📡 GPS en Vivo Activado', 'Tus clientes ahora pueden ver tu trayecto en el mapa en tiempo real.');
+  };
+
+  const stopGpsTransmission = () => {
+    if (gpsWatchId !== null && typeof window !== 'undefined' && navigator.geolocation) {
+      navigator.geolocation.clearWatch(gpsWatchId);
+      setGpsWatchId(null);
+    }
+    setIsTransmittingGps(false);
+    showToast('info', 'GPS en Vivo Pausado', 'Se detuvo la transmisión de coordenadas a los clientes.');
+  };
+
+  useEffect(() => {
+    return () => {
+      if (gpsWatchId !== null && typeof window !== 'undefined' && navigator.geolocation) {
+        navigator.geolocation.clearWatch(gpsWatchId);
+      }
+    };
+  }, [gpsWatchId]);
+
   // Manejador para marcar "Salir a Entregar"
   const handleIniciarRuta = (pedido: Pedido) => {
     if (!enRutaIds.includes(pedido.id)) {
@@ -151,6 +237,9 @@ export const DeliveryMode: React.FC = () => {
     // Si el pedido no estaba en listo, actualizar estado a listo para que cocina sepa que salió
     if (pedido.estado === 'confirmado' || pedido.estado === 'en_produccion') {
       pedidos.cambiarEstadoPedido(pedido.id, 'listo');
+    }
+    if (!isTransmittingGps) {
+      startGpsTransmission();
     }
     showToast('info', '¡Ruta Iniciada!', `Vas en camino a entregar el pedido #${pedido.numero_factura}.`);
   };
@@ -249,6 +338,39 @@ export const DeliveryMode: React.FC = () => {
             >
               Todos ({counts.total})
             </button>
+            {/* Botón de Transmisión GPS en Vivo (WebSockets Broadcast a Clientes) */}
+            <button
+              type="button"
+              onClick={isTransmittingGps ? stopGpsTransmission : startGpsTransmission}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer ${
+                isTransmittingGps
+                  ? 'bg-emerald-600 text-white shadow-emerald-600/25 ring-2 ring-emerald-300'
+                  : 'bg-canvas hover:bg-crema border border-trigo-200 text-chocolate-700'
+              }`}
+              title={
+                isTransmittingGps
+                  ? 'GPS transmitiendo en tiempo real a los clientes (clic para pausar)'
+                  : 'Activar GPS en tiempo real para que los clientes vean tu trayecto en el mapa'
+              }
+            >
+              <span className="relative flex h-2 w-2">
+                <span
+                  className={`absolute inline-flex h-full w-full rounded-full ${
+                    isTransmittingGps ? 'bg-white animate-ping opacity-75' : 'bg-gray-400'
+                  }`}
+                />
+                <span
+                  className={`relative inline-flex rounded-full h-2 w-2 ${
+                    isTransmittingGps ? 'bg-white' : 'bg-gray-500'
+                  }`}
+                />
+              </span>
+              <span className="hidden sm:inline">
+                {isTransmittingGps ? 'GPS en Vivo' : 'Activar GPS'}
+              </span>
+              <span className="sm:hidden">{isTransmittingGps ? 'GPS ●' : 'GPS'}</span>
+            </button>
+
             <button
               type="button"
               onClick={() => {
@@ -306,7 +428,77 @@ export const DeliveryMode: React.FC = () => {
             </button>
           )}
         </div>
+
+        {/* Selector de Modo: Lista de Entregas vs Ruta Inteligente Multi-Parada */}
+        <div className="grid grid-cols-2 gap-2 mt-3 pt-3 border-t border-trigo-100">
+          <button
+            type="button"
+            onClick={() => setViewMode('pedidos')}
+            className={`py-2 px-3 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+              viewMode === 'pedidos'
+                ? 'bg-chocolate-700 text-white shadow-sm'
+                : 'bg-canvas text-chocolate-700 hover:bg-crema border border-trigo-200'
+            }`}
+          >
+            <Truck className="w-4 h-4" />
+            <span>Lista de Pedidos ({counts.pendientes + counts.enCamino})</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setViewMode('ruta')}
+            className={`py-2 px-3 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+              viewMode === 'ruta'
+                ? 'bg-frambuesa-600 text-white shadow-sm ring-2 ring-frambuesa-300'
+                : 'bg-canvas text-chocolate-700 hover:bg-crema border border-trigo-200'
+            }`}
+          >
+            <Route className="w-4 h-4" />
+            <span>Ruta Inteligente (TSP)</span>
+          </button>
+        </div>
       </div>
+
+      {/* VISTA 1: PLANIFICADOR DE RUTA ÓPTIMA CON GOOGLE MAPS Y ALGORITMO 2-OPT (SORA) */}
+      {viewMode === 'ruta' ? (
+        <DeliveryRoutePlanner
+          pedidos={deliveryPedidos.filter((p) => p.estado !== 'entregado')}
+          onMarkAsDelivered={handleConfirmarEntrega}
+          onStartRoute={(id) => {
+            const p = deliveryPedidos.find((item) => item.id === id);
+            if (p) handleIniciarRuta(p);
+          }}
+          onOpenLocationModal={(p) => setMapModalPedido(p)}
+        />
+      ) : (
+        <>
+          {/* Banner de Acceso Rápido a Ruta Óptima cuando hay 2 o más entregas activas */}
+          {counts.pendientes + counts.enCamino >= 2 && (
+            <div
+              onClick={() => setViewMode('ruta')}
+              className="p-3.5 rounded-3xl bg-chocolate-900 text-white cursor-pointer shadow-md hover:bg-black transition-all flex items-center justify-between group active:scale-[0.98] border border-chocolate-800"
+            >
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 rounded-2xl bg-frambuesa-500/20 text-frambuesa-400 flex items-center justify-center shrink-0 border border-frambuesa-500/30">
+                  <Sparkles className="w-5 h-5" />
+                </div>
+                <div>
+                  <h4 className="font-bold text-xs flex items-center gap-1.5">
+                    <span>Optimizar Ruta de Entregas con Google Maps</span>
+                    <span className="text-[10px] font-mono bg-frambuesa-500/30 text-rose-300 px-1.5 py-0.5 rounded-full">
+                      {counts.pendientes + counts.enCamino} entregas
+                    </span>
+                  </h4>
+                  <p className="text-[11px] text-stone-300">
+                    Ahorra combustible y tiempo calculando la secuencia más rápida en Jarabacoa / La Vega
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center space-x-1 text-xs font-bold text-rose-300 group-hover:translate-x-1 transition-transform">
+                <span>Ver Ruta</span>
+                <ChevronRight className="w-4 h-4" />
+              </div>
+            </div>
+          )}
 
       {/* 2. Chips / Filtros Táctiles Grandes */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
@@ -529,6 +721,33 @@ export const DeliveryMode: React.FC = () => {
                     </div>
                   </div>
 
+                  {/* Fila de Compartir Enlace de Rastreo GPS en Vivo */}
+                  <div className="flex items-center gap-2 pt-0.5">
+                    <a
+                      href={clientNotifyWaUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 text-xs font-bold transition-all text-center shadow-2xs"
+                      title="Enviar mensaje de WhatsApp al cliente con su enlace de rastreo en vivo"
+                    >
+                      <Share2 className="w-3.5 h-3.5 text-emerald-600" />
+                      <span>📲 Enviar Rastreo en Vivo al Cliente</span>
+                    </a>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const trackingUrl = `${window.location.origin}/?rastreo=${encodeURIComponent(p.numero_factura)}`;
+                        navigator.clipboard.writeText(trackingUrl);
+                        showToast('success', 'Enlace Copiado', 'Enlace de rastreo público copiado al portapapeles.');
+                      }}
+                      className="py-2 px-2.5 rounded-xl bg-canvas hover:bg-crema text-chocolate-700 border border-trigo-200 text-xs font-bold transition flex items-center gap-1 cursor-pointer active:scale-95"
+                      title="Copiar enlace de rastreo público para el cliente"
+                    >
+                      <Copy className="w-3.5 h-3.5" />
+                      <span className="hidden sm:inline">Copiar Link</span>
+                    </button>
+                  </div>
+
                   {/* Cuadro de Dirección & Referencia (Alta Visibilidad Nocturna y Diurna) */}
                   <div className="bg-slate-900 text-slate-100 p-4 rounded-2xl space-y-2.5 shadow-inner">
                     <div className="flex items-start justify-between gap-2">
@@ -724,6 +943,8 @@ export const DeliveryMode: React.FC = () => {
           })
         )}
       </div>
+      </>
+      )}
 
       {/* MODAL: Confirmación de Cobro en Efectivo */}
       {cobroModalPedido && (

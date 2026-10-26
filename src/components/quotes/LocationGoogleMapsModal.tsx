@@ -18,6 +18,7 @@ import {
   Globe,
 } from 'lucide-react';
 import { Modal } from '../ui/Modal';
+import { MapLocationPicker } from '../maps/MapLocationPicker';
 
 interface LocationGoogleMapsModalProps {
   isOpen: boolean;
@@ -152,6 +153,11 @@ export const LocationGoogleMapsModal: React.FC<LocationGoogleMapsModalProps> = (
   clienteNombre,
   onSave,
 }) => {
+  const hasGoogleApiKey = Boolean(
+    (import.meta as any).env?.VITE_GOOGLE_MAPS_API_KEY ||
+    (typeof process !== 'undefined' ? (process.env as any)?.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY : '')
+  );
+  const [mapEngine, setMapEngine] = useState<'google-api' | 'interactive-tiles'>(hasGoogleApiKey ? 'google-api' : 'interactive-tiles');
   const [inputDireccion, setInputDireccion] = useState('');
   const [inputPuntoRef, setInputPuntoRef] = useState('');
   const [inputMapsUrl, setInputMapsUrl] = useState('');
@@ -650,8 +656,72 @@ export const LocationGoogleMapsModal: React.FC<LocationGoogleMapsModalProps> = (
           ))}
         </div>
 
-        {/* VISOR INTERACTIVO CON MOTOR OFICIAL DE GOOGLE MAPS */}
-        <div className="relative rounded-2xl overflow-hidden border-2 border-trigo-300 shadow-md bg-stone-100">
+        {/* SELECTOR DE MOTOR DE MAPA: GOOGLE MAPS API OFICIAL (SORA) vs CAPAS MULTICAPA */}
+        <div className="flex items-center justify-between gap-2 p-1.5 bg-stone-100 rounded-2xl border border-trigo-200">
+          <div className="flex items-center gap-1.5">
+            <button
+              type="button"
+              onClick={() => setMapEngine('google-api')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
+                mapEngine === 'google-api'
+                  ? 'bg-frambuesa-600 text-white shadow-xs'
+                  : 'text-chocolate-700 hover:bg-stone-200'
+              }`}
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>Google Maps API (Places & Autocompletado)</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setMapEngine('interactive-tiles');
+                setTimeout(() => mapInstanceRef.current?.invalidateSize(), 150);
+              }}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
+                mapEngine === 'interactive-tiles'
+                  ? 'bg-chocolate-700 text-white shadow-xs'
+                  : 'text-chocolate-700 hover:bg-stone-200'
+              }`}
+            >
+              <Layers className="w-3.5 h-3.5" />
+              <span>Satélite HD / Relieve / OSM</span>
+            </button>
+          </div>
+          <span className="text-[10px] text-chocolate-500 font-medium px-2 hidden sm:inline">
+            {mapEngine === 'google-api' ? '⚡ Modelo Google Maps Oficial (Sora)' : '🌐 Modo Multicapa'}
+          </span>
+        </div>
+
+        {/* MOTOR 1: GOOGLE MAPS API OFICIAL (PLACES AUTOCOMPLETE + PIN ARRASTRABLE) */}
+        {mapEngine === 'google-api' && (
+          <div className="rounded-2xl overflow-hidden border-2 border-trigo-300 shadow-md bg-stone-100 p-3">
+            <MapLocationPicker
+              latitude={coords.lat}
+              longitude={coords.lng}
+              address={inputDireccion}
+              puntoReferencia={inputPuntoRef}
+              onChangeLocation={(loc) => {
+                if (loc.latitude && loc.longitude) {
+                  setCoords({ lat: loc.latitude, lng: loc.longitude });
+                  if (markerRef.current) {
+                    markerRef.current.setLatLng([loc.latitude, loc.longitude]);
+                  }
+                }
+                if (loc.address) {
+                  setInputDireccion(loc.address);
+                  setSearchBox(loc.address);
+                }
+                if (loc.mapsUrl) {
+                  setInputMapsUrl(loc.mapsUrl);
+                }
+                setSearchStatus(`Ubicación Google Maps actualizada: ${loc.latitude.toFixed(5)}, ${loc.longitude.toFixed(5)}`);
+              }}
+            />
+          </div>
+        )}
+
+        {/* MOTOR 2: VISOR INTERACTIVO LEAFLET CON MOTOR DE MOSAICOS GOOGLE MAPS */}
+        <div className={`relative rounded-2xl overflow-hidden border-2 border-trigo-300 shadow-md bg-stone-100 ${mapEngine === 'interactive-tiles' ? 'block' : 'hidden'}`}>
           {/* Selector de Modo Google Maps (Callejero, Satélite HD, Terreno, OSM) */}
           <div className="absolute top-3 left-3 z-[400] flex items-center gap-1 bg-white/95 backdrop-blur-md p-1 rounded-xl shadow-lg border border-stone-200 text-[11px] font-bold max-w-[calc(100%-80px)] overflow-x-auto scrollbar-none">
             <button

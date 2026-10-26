@@ -159,10 +159,13 @@ export const generateClientDeliveryNotificationUrl = (pedido: Pedido): string =>
 
   let mensajeCobro = '';
   if (totalCobrarNum > 0) {
-    mensajeCobro = `\n💵 *Monto a pagar al recibir:* RD$ ${totalCobrarNum.toLocaleString('es-DO', { minimumFractionDigits: 2 })} en efectivo.`;
+    mensajeCobro = `💵 *Monto a pagar al recibir:* RD$ ${totalCobrarNum.toLocaleString('es-DO', { minimumFractionDigits: 2 })} en efectivo.`;
   } else {
-    mensajeCobro = `\n✅ *Tu pedido se encuentra pagado al 100%.*`;
+    mensajeCobro = `✅ *Tu pedido se encuentra pagado al 100%.*`;
   }
+
+  const trackingBase = typeof window !== 'undefined' ? window.location.origin : 'https://deliciasdelvalle.com';
+  const trackingUrl = `${trackingBase}/?rastreo=${encodeURIComponent(pedido.numero_factura || String(pedido.id))}`;
 
   const lines = [
     `🛵 *¡HOLA ${clienteNombre.toUpperCase()}!* 🎂`,
@@ -172,7 +175,10 @@ export const generateClientDeliveryNotificationUrl = (pedido: Pedido): string =>
     `📍 Dirección: ${pedido.direccion_entrega || 'Dirección acordada'}`,
     mensajeCobro,
     ``,
-    `Estaré llegando en breve. Por favor estar atento/a para recibir tu pastel artesanal bien frío y seguro. ¡Gracias! ✨`
+    `📲 *Sigue mi ubicación en vivo en el mapa:*`,
+    `${trackingUrl}`,
+    ``,
+    `Estaré llegando en breve. Por favor estar atento/a para recibir tu pastel artesanal bien frío y seguro. ¡Gracias! ✨`,
   ];
 
   const fullText = lines.join('\n');

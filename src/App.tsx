@@ -13,9 +13,32 @@ import { DatabaseViewer } from './components/database/DatabaseViewer';
 import { UserManager } from './components/users/UserManager';
 import { canAccessTab, getDefaultTabForRole } from './utils/security';
 import { ShieldAlert } from 'lucide-react';
+import { PublicOrderTrackingPage } from './components/delivery/PublicOrderTrackingPage';
 
 export const App: React.FC = () => {
   const { activeTab, setActiveTab, currentUser } = useApp();
+
+  // Detección de enlace público de rastreo en tiempo real para clientes
+  const searchParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+  const rastreoQuery =
+    searchParams?.get('rastreo') ||
+    searchParams?.get('tracking') ||
+    (typeof window !== 'undefined' && window.location.pathname.startsWith('/rastreo/')
+      ? window.location.pathname.replace('/rastreo/', '')
+      : null);
+
+  if (rastreoQuery) {
+    return (
+      <PublicOrderTrackingPage
+        orderQuery={rastreoQuery}
+        onBackToApp={() => {
+          if (typeof window !== 'undefined') {
+            window.location.search = '';
+          }
+        }}
+      />
+    );
+  }
 
   // Si no hay sesión iniciada o la cuenta fue desactivada, mostrar pantalla de Login
   if (!currentUser || !currentUser.activo) {
