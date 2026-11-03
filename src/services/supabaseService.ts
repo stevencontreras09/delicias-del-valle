@@ -193,35 +193,47 @@ export async function fetchAllFromSupabase(): Promise<{
       };
     });
 
-    const cotizaciones: Cotizacion[] = (cotizacionesDb || []).map((c: any) => ({
-      id: Number(c.id),
-      codigo: c.codigo,
-      cliente_nombre: c.cliente_nombre,
-      cliente_telefono: c.cliente_telefono,
-      fecha_emision: c.fecha_emision,
-      fecha_evento: c.fecha_evento || undefined,
-      validez_dias: Number(c.validez_dias),
-      subtotal: Number(c.subtotal),
-      descuento: Number(c.descuento || 0),
-      costo_envio: Number(c.costo_envio || 0),
-      total: Number(c.total),
-      notas: c.notas || '',
-      estado: c.estado,
-      tipo_despacho: (c.tipo_despacho as any) || (Number(c.costo_delivery || c.costo_envio || 0) > 0 ? 'delivery' : 'retiro'),
-      zona_delivery_id: c.zona_delivery_id ? Number(c.zona_delivery_id) : undefined,
-      costo_delivery: Number(c.costo_delivery ?? c.costo_envio ?? 0),
-      direccion_entrega: c.direccion_entrega || '',
-      punto_referencia: c.punto_referencia || '',
-      repartidor_nombre: c.repartidor_nombre || '',
-      repartidor_telefono: c.repartidor_telefono || '',
-      direccion_confirmada: Boolean(c.direccion_confirmada),
-      maps_url: c.maps_url || undefined,
-      metodo_pago: c.metodo_pago || 'transferencia',
-      pago_delivery: c.pago_delivery || (c.cobro_delivery_al_recibir ? 'efectivo_aparte' : 'completo'),
-      cobro_delivery_al_recibir: Boolean(c.cobro_delivery_al_recibir || c.pago_delivery === 'efectivo_aparte'),
-      cobro_contra_entrega: Boolean(c.cobro_contra_entrega),
-      created_at: c.created_at || new Date().toISOString(),
-      items: (c.cotizacion_items || []).map((item: any) => {
+    const cotizaciones: Cotizacion[] = (cotizacionesDb || []).map((c: any) => {
+      let rawNotas = c.notas || '';
+      let descripcion = c.descripcion;
+      if (rawNotas) {
+        const descMatch = rawNotas.match(/^\[DESCRIPCION:\s*(.+?)\](?:\n|\r\n)?/);
+        if (descMatch) {
+          descripcion = descMatch[1].trim();
+          rawNotas = rawNotas.replace(/^\[DESCRIPCION:\s*(.+?)\](?:\n|\r\n)?/, '').trim();
+        }
+      }
+
+      return {
+        id: Number(c.id),
+        codigo: c.codigo,
+        descripcion: descripcion || undefined,
+        cliente_nombre: c.cliente_nombre,
+        cliente_telefono: c.cliente_telefono,
+        fecha_emision: c.fecha_emision,
+        fecha_evento: c.fecha_evento || undefined,
+        validez_dias: Number(c.validez_dias),
+        subtotal: Number(c.subtotal),
+        descuento: Number(c.descuento || 0),
+        costo_envio: Number(c.costo_envio || 0),
+        total: Number(c.total),
+        notas: rawNotas,
+        estado: c.estado,
+        tipo_despacho: (c.tipo_despacho as any) || (Number(c.costo_delivery || c.costo_envio || 0) > 0 ? 'delivery' : 'retiro'),
+        zona_delivery_id: c.zona_delivery_id ? Number(c.zona_delivery_id) : undefined,
+        costo_delivery: Number(c.costo_delivery ?? c.costo_envio ?? 0),
+        direccion_entrega: c.direccion_entrega || '',
+        punto_referencia: c.punto_referencia || '',
+        repartidor_nombre: c.repartidor_nombre || '',
+        repartidor_telefono: c.repartidor_telefono || '',
+        direccion_confirmada: Boolean(c.direccion_confirmada),
+        maps_url: c.maps_url || undefined,
+        metodo_pago: c.metodo_pago || 'transferencia',
+        pago_delivery: c.pago_delivery || (c.cobro_delivery_al_recibir ? 'efectivo_aparte' : 'completo'),
+        cobro_delivery_al_recibir: Boolean(c.cobro_delivery_al_recibir || c.pago_delivery === 'efectivo_aparte'),
+        cobro_contra_entrega: Boolean(c.cobro_contra_entrega),
+        created_at: c.created_at || new Date().toISOString(),
+        items: (c.cotizacion_items || []).map((item: any) => {
         const isExtra = !item.receta_id && (
           Boolean(item.tamano_porciones?.toLowerCase().includes('extra')) ||
           (Array.isArray(item.extras) && item.extras.some((e: any) => e.id === 'es_extra'))
@@ -668,6 +680,11 @@ export async function syncCotizacionToSupabase(
   if (!client) return { success: false, error: 'Supabase no está configurado.' };
 
   try {
+    let notasFinal = cotizacion.notas || '';
+    if (cotizacion.descripcion && cotizacion.descripcion.trim()) {
+      notasFinal = `[DESCRIPCION: ${cotizacion.descripcion.trim()}]\n${notasFinal}`.trim();
+    }
+
     const payload: any = {
       id: cotizacion.id,
       codigo: cotizacion.codigo,
@@ -679,7 +696,7 @@ export async function syncCotizacionToSupabase(
       descuento: cotizacion.descuento || 0,
       costo_envio: cotizacion.costo_envio || 0,
       total: cotizacion.total,
-      notas: cotizacion.notas || '',
+      notas: notasFinal,
       estado: cotizacion.estado,
       updated_at: new Date().toISOString(),
     };

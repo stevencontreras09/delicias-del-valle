@@ -177,6 +177,12 @@ export const QuoteManager: React.FC = () => {
                   {cot.cliente_nombre}
                 </h3>
 
+                {cot.descripcion && (
+                  <p className="text-xs text-chocolate-700 font-medium italic mt-1 line-clamp-2 bg-crema/60 px-2 py-1 rounded-lg border border-trigo-200">
+                    "{cot.descripcion}"
+                  </p>
+                )}
+
                 <div className="flex items-center gap-3 text-xs text-gray-500 mt-1">
                   <span className="flex items-center gap-1">
                     <Phone className="w-3.5 h-3.5 text-emerald-600" />

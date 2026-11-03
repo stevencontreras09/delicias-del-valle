@@ -164,6 +164,15 @@ export function generarPdfCotizacion(cotizacion: Cotizacion): void {
     tableStartY = 74;
   }
 
+  // Concepto / Descripción general de la cotización
+  if (cotizacion.descripcion) {
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8);
+    doc.setTextColor(...chocolateColor);
+    doc.text(`Concepto / Descripción: ${cotizacion.descripcion.substring(0, 90)}`, 14, tableStartY + 2);
+    tableStartY += 6;
+  }
+
   // Tabla de Productos / Items (Solo tamaño, masa, relleno, decoración y extras sin variables internas)
   const tableData = cotizacion.items.map((item, index) => {
     let descripcion = '';

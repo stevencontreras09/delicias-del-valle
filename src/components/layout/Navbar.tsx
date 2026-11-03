@@ -100,15 +100,15 @@ export const Navbar: React.FC = () => {
             />
           </div>
 
-          {/* Navegación Desktop */}
-          <nav className="hidden xl:flex items-center gap-1 bg-canvas/90 p-1 rounded-2xl border border-trigo-200">
+          {/* Navegación Desktop y Tablets Horizontales (iPad Landscape 1024px+) */}
+          <nav className="hidden lg:flex items-center gap-0.5 xl:gap-1 bg-canvas/90 p-1 rounded-2xl border border-trigo-200">
             {navItems.map((item) => {
               const isActive = activeTab === item.id;
               return (
                 <button
                   key={item.id}
                   onClick={() => setActiveTab(item.id)}
-                  className={`relative flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all duration-200 ${
+                  className={`relative flex items-center gap-1 xl:gap-1.5 px-2 xl:px-3 py-1.5 rounded-xl text-xs font-bold transition-all duration-200 min-h-[36px] ${
                     isActive
                       ? 'bg-chocolate-700 text-white shadow-md'
                       : 'text-chocolate-600 hover:text-chocolate-900 hover:bg-crema/80'
@@ -250,15 +250,15 @@ export const Navbar: React.FC = () => {
           </div>
         </div>
 
-        {/* Navegación Móvil / Pantallas Medianas */}
-        <div className="flex xl:hidden overflow-x-auto py-2 gap-1.5 border-t border-trigo-200 scrollbar-none text-xs">
+        {/* Navegación Móvil / Tablets Verticales (iPad Portrait 768px - 1023px) */}
+        <div className="flex lg:hidden overflow-x-auto py-2.5 px-1 gap-2 border-t border-trigo-200 scrollbar-none text-xs touch-pan-x overscroll-x-contain">
           {navItems.map((item) => {
             const isActive = activeTab === item.id;
             return (
               <button
                 key={item.id}
                 onClick={() => setActiveTab(item.id)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl whitespace-nowrap text-xs font-semibold ${
+                className={`flex items-center gap-2 px-3.5 py-2 rounded-xl whitespace-nowrap text-xs font-semibold min-h-[40px] select-none active:scale-95 transition-all ${
                   isActive
                     ? 'bg-chocolate-700 text-white shadow-sm'
                     : 'text-chocolate-600 bg-white/80 border border-trigo-200 hover:bg-crema'

@@ -198,6 +198,7 @@ export interface ZonaDelivery {
 export interface Cotizacion {
   id: number;
   codigo: string; // 'COT-2026-001'
+  descripcion?: string; // Concepto o descripción general del evento / pedido
   cliente_id?: number;
   cliente_nombre: string;
   cliente_telefono: string;
@@ -287,6 +288,7 @@ export interface Pedido {
   cotizacion_id?: number;
   cliente_id?: number;
   numero_factura: string; // 'FAC-2026-001' o 'PED-001'
+  descripcion?: string; // Concepto o descripción general del pedido / evento
   cliente_nombre: string;
   cliente_telefono: string;
   cliente_email?: string;

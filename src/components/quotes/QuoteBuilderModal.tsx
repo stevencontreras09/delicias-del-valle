@@ -93,6 +93,7 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
 
   // Datos del Cliente
   const [clienteNombre, setClienteNombre] = useState('');
+  const [descripcion, setDescripcion] = useState('');
   const [clienteTelefono, setClienteTelefono] = useState('');
   const [clienteEmail, setClienteEmail] = useState('');
   const [fechaEvento, setFechaEvento] = useState('');
@@ -432,6 +433,7 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
 
         if (initialCotizacion) {
           setClienteNombre(initialCotizacion.cliente_nombre);
+          setDescripcion(initialCotizacion.descripcion || '');
           setClienteTelefono(initialCotizacion.cliente_telefono);
           setClienteEmail(initialCotizacion.cliente_email || '');
           setFechaEvento(initialCotizacion.fecha_evento || '');
@@ -455,6 +457,7 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
           setIsMapPreviewOpen(false);
         } else {
           setClienteNombre('');
+          setDescripcion('');
           setClienteTelefono('');
           setClienteEmail('');
           setFechaEvento('');
@@ -977,6 +980,7 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
 
     const res = await onSave({
       cliente_nombre: clienteNombre.trim(),
+      descripcion: descripcion.trim() || undefined,
       cliente_telefono: clienteTelefono.trim() || 'N/A',
       cliente_email: clienteEmail.trim(),
       fecha_emision: new Date().toISOString().split('T')[0],
@@ -1169,6 +1173,20 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
                 className="w-full px-3 py-2 rounded-xl border border-trigo-300 focus:ring-2 focus:ring-frambuesa-400 focus:outline-none bg-white text-chocolate-900 font-semibold"
               />
             </div>
+          </div>
+
+          {/* Descripción / Concepto del Pedido o Evento */}
+          <div className="pt-2 border-t border-trigo-200/70">
+            <label className="block text-xs font-bold text-chocolate-700 mb-1">
+              Descripción / Concepto del Pedido (Opcional)
+            </label>
+            <input
+              type="text"
+              value={descripcion}
+              onChange={(e) => setDescripcion(e.target.value)}
+              placeholder="Ej: Pastel de Boda 3 pisos con flores naturales, mesa de bocadillos para 50 personas, fiesta infantil Spiderman..."
+              className="w-full px-3.5 py-2.5 rounded-xl border border-trigo-300 focus:ring-2 focus:ring-frambuesa-400 focus:outline-none bg-white text-xs font-medium text-chocolate-900 shadow-2xs placeholder:text-gray-400"
+            />
           </div>
 
           {/* Ficha CRM de Cliente Frecuente */}

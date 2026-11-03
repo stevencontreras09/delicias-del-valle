@@ -52,7 +52,7 @@ export const Modal: React.FC<ModalProps> = ({
   }[maxWidth];
 
   return createPortal(
-    <div className="fixed inset-0 z-[100] overflow-y-auto bg-chocolate-950/70 backdrop-blur-sm flex justify-center p-3 sm:p-5 md:p-6 animate-fade-in overscroll-contain">
+    <div className="fixed inset-0 z-[100] overflow-y-auto bg-chocolate-950/70 backdrop-blur-sm flex justify-center p-2.5 sm:p-5 md:p-6 animate-fade-in overscroll-contain touch-pan-y">
       <div
         className="fixed inset-0"
         onClick={onClose}
@@ -60,7 +60,7 @@ export const Modal: React.FC<ModalProps> = ({
       />
 
       <div
-        className={`relative bg-white rounded-2xl sm:rounded-3xl shadow-warm-xl border border-trigo-200/80 w-full ${maxWidthClasses} overflow-hidden my-auto z-10 flex flex-col max-h-[calc(100vh-2.5rem)] sm:max-h-[calc(100vh-3.5rem)] max-h-[calc(100dvh-2.5rem)] sm:max-h-[calc(100dvh-3.5rem)] transform transition-all animate-scale-up`}
+        className={`relative bg-white rounded-2xl sm:rounded-3xl shadow-warm-xl border border-trigo-200/80 w-full ${maxWidthClasses} overflow-hidden my-auto z-10 flex flex-col max-h-[calc(100vh-2rem)] sm:max-h-[calc(100vh-3rem)] max-h-[calc(100dvh-2rem)] sm:max-h-[calc(100dvh-3rem)] transform transition-all animate-scale-up`}
       >
         {/* Cabecera del Modal con estilo artesanal */}
         <div className="bg-crema px-4 sm:px-6 py-3.5 sm:py-4 border-b border-trigo-200 flex items-center justify-between flex-shrink-0">
@@ -83,9 +83,9 @@ export const Modal: React.FC<ModalProps> = ({
           )}
         </div>
 
-        {/* Contenido con scroll suave optimizado para touch / iOS / Android */}
+        {/* Contenido con scroll suave optimizado para touch / iOS / iPadOS / Android */}
         <div 
-          className="p-4 sm:p-6 overflow-y-auto flex-1 min-h-0 bg-white text-panadero overscroll-contain"
+          className="p-4 sm:p-6 overflow-y-auto flex-1 min-h-0 bg-white text-panadero overscroll-contain touch-pan-y"
           style={{ WebkitOverflowScrolling: 'touch' }}
         >
           {children}

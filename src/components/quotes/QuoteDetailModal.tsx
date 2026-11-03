@@ -664,6 +664,21 @@ export const QuoteDetailModal: React.FC<QuoteDetailModalProps> = ({
           )}
         </div>
 
+        {/* Descripción / Concepto del Pedido o Evento */}
+        {cotizacion.descripcion && (
+          <div className="bg-gradient-to-r from-crema to-amber-50/60 p-3.5 rounded-2xl border border-trigo-200 flex items-start gap-2.5">
+            <Sparkles className="w-4 h-4 text-frambuesa-600 shrink-0 mt-0.5" />
+            <div>
+              <span className="text-[10px] font-extrabold uppercase tracking-wider text-chocolate-600 block">
+                Descripción / Concepto del Pedido:
+              </span>
+              <p className="text-xs font-bold text-chocolate-900 mt-0.5">
+                {cotizacion.descripcion}
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* Logística, Despacho y Dirección (con Confirmación / Edición) */}
         <div className="bg-white p-4 rounded-2xl border-2 border-trigo-200 shadow-sm space-y-3">
           <div className="flex flex-wrap items-center justify-between gap-2 border-b border-trigo-100 pb-2.5">

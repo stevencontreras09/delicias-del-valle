@@ -21,13 +21,48 @@
     -webkit-tap-highlight-color: transparent;
   }
 
-  /* Prevenir auto-zoom forzado en Safari iOS al enfocar inputs */
-  @media screen and (max-width: 768px) {
+  /* ===================================================
+     OPTIMIZACIONES PARA IPAD, TABLETS Y DISPOSITIVOS TÁCTILES
+     =================================================== */
+  /* 1. Eliminar retraso de 300ms al pulsar botones en iPadOS y tablets */
+  button,
+  a,
+  input[type="checkbox"],
+  input[type="radio"],
+  select {
+    touch-action: manipulation;
+  }
+
+  /* 2. Prevenir auto-zoom molesto en Safari iPadOS/iOS al enfocar cualquier input o selector */
+  @media screen and (max-width: 1024px) {
     input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
     select,
     textarea {
       font-size: 16px !important;
     }
+  }
+
+  @media (pointer: coarse) {
+    input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+    select,
+    textarea {
+      font-size: 16px !important;
+    }
+  }
+
+  /* 3. Desplazamiento táctil fluido (momentum scrolling) en iPad y tablets */
+  .overflow-y-auto,
+  .overflow-x-auto,
+  .overflow-auto {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+  }
+
+  /* 4. Evitar selección de texto accidental al tocar botones o pestañas rápidamente */
+  .select-none {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
   }
 
   /* Ocultar barra de desplazamiento en chips horizontales manteniendo scroll */

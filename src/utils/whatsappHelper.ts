@@ -101,6 +101,9 @@ export function generateQuoteWhatsAppUrl(cotizacion: Cotizacion): string {
   lines.push('');
   lines.push('Te enviamos la cotización solicitada para tu evento:');
   lines.push(`📄 *Cotización N°:* ${cotizacion.codigo}`);
+  if (cotizacion.descripcion) {
+    lines.push(`✨ *Concepto:* ${cotizacion.descripcion}`);
+  }
   if (cotizacion.fecha_evento) {
     lines.push(`📅 *Fecha de Evento:* ${formatDate(cotizacion.fecha_evento)}`);
   }

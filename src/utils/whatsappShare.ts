@@ -29,6 +29,9 @@ export function generarMensajeCotizacionWhatsApp(
   texto += `📞 *Tel/WhatsApp:* +1 (849) 522-9264\n\n`;
   texto += `¡Hola, *${cotizacion.cliente_nombre}*! Es un gusto saludarte. Aquí tienes el detalle de tu cotización personalizada:\n\n`;
   texto += `📋 *Cotización N°:* ${cotizacion.codigo}\n`;
+  if (cotizacion.descripcion) {
+    texto += `✨ *Concepto:* ${cotizacion.descripcion}\n`;
+  }
   texto += `📅 *Fecha:* ${formatDate(cotizacion.fecha_emision)}\n`;
   if (cotizacion.fecha_evento) {
     texto += `🎉 *Fecha de tu Evento:* ${formatDate(cotizacion.fecha_evento)}\n`;

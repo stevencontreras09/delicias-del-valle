@@ -1922,6 +1922,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       id: nextId,
       cotizacion_id: cot.id,
       numero_factura,
+      descripcion: cot.descripcion,
       cliente_nombre: sanitizeInput(cot.cliente_nombre),
       cliente_telefono: sanitizeInput(cot.cliente_telefono),
       cliente_email: cot.cliente_email ? sanitizeInput(cot.cliente_email) : undefined,
