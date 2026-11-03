@@ -225,8 +225,6 @@ try {
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [activeTab, setActiveTab] = useState<ActiveTab>('dashboard');
-
   // Estados de autenticación & Usuarios (almacenamiento sanitizado sin contraseñas)
   const [usuarios, setUsuarios] = useState<Usuario[]>(() => {
     const saved = localStorage.getItem(`${STORAGE_KEY}_usuarios`);
@@ -259,10 +257,45 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
   }, []);
 
+  // Restauración persistente de la sesión del usuario al recargar la app
   const [currentUser, setCurrentUser] = useState<Usuario | null>(() => {
-    // Siempre iniciar en la pantalla de Login primero
+    try {
+      const saved = localStorage.getItem('delicias_active_session_user') || localStorage.getItem(`${STORAGE_KEY}_session_user`);
+      if (saved) {
+        const parsed: any = JSON.parse(saved);
+        if (parsed && parsed.id && parsed.username && parsed.activo !== false) {
+          return parsed as Usuario;
+        }
+      }
+    } catch (e) {
+      console.warn('Error restaurando sesión persistente de usuario:', e);
+    }
     return null;
   });
+
+  const [activeTab, setActiveTab] = useState<ActiveTab>(() => {
+    try {
+      const savedSession = localStorage.getItem('delicias_active_session_user') || localStorage.getItem(`${STORAGE_KEY}_session_user`);
+      if (savedSession) {
+        const parsed: any = JSON.parse(savedSession);
+        if (parsed && parsed.rol) {
+          const savedTab = localStorage.getItem('delicias_active_tab') as ActiveTab;
+          if (savedTab && canAccessTab(parsed.rol, savedTab)) {
+            return savedTab;
+          }
+          return getDefaultTabForRole(parsed.rol);
+        }
+      }
+    } catch {}
+    return 'dashboard';
+  });
+
+  // Guardar la pestaña activa en localStorage para mantener al usuario en su sección tras recargar
+  useEffect(() => {
+    if (activeTab) {
+      localStorage.setItem('delicias_active_tab', activeTab);
+    }
+  }, [activeTab]);
 
   // Estados de datos operacionales
   const [insumos, setInsumos] = useState<Insumo[]>(() => {
@@ -459,7 +492,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       );
       if (dbUser && dbUser.activo === false) {
         setCurrentUser(null);
+        localStorage.removeItem('delicias_active_session_user');
         localStorage.removeItem(`${STORAGE_KEY}_session_user`);
+        localStorage.removeItem('delicias_active_tab');
         setActiveTab('dashboard');
         alert('⚠️ Tu cuenta ha sido desactivada por un administrador del sistema.\n\nHas sido desconectado de Delicias del Valle.');
       }
@@ -509,7 +544,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             const sessionUser = sanitizeUserForStorage(authRes.user);
             if (sessionUser) {
               setCurrentUser(sessionUser as Usuario);
+              localStorage.setItem('delicias_active_session_user', JSON.stringify(sessionUser));
               localStorage.setItem(`${STORAGE_KEY}_session_user`, JSON.stringify(sessionUser));
+              localStorage.setItem('delicias_last_username', sessionUser.username);
 
               // Redirigir a la pestaña correspondiente según permisos RBAC
               const targetTab = getDefaultTabForRole(sessionUser.rol);
@@ -569,7 +606,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       if (sessionUser) {
         setCurrentUser(sessionUser as Usuario);
+        localStorage.setItem('delicias_active_session_user', JSON.stringify(sessionUser));
         localStorage.setItem(`${STORAGE_KEY}_session_user`, JSON.stringify(sessionUser));
+        localStorage.setItem('delicias_last_username', sessionUser.username);
         const targetTab = getDefaultTabForRole(sessionUser.rol);
         setActiveTab(targetTab);
 
@@ -589,7 +628,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const logout = useCallback(() => {
     setCurrentUser(null);
+    localStorage.removeItem('delicias_active_session_user');
     localStorage.removeItem(`${STORAGE_KEY}_session_user`);
+    localStorage.removeItem('delicias_active_tab');
     setActiveTab('dashboard');
     showToast('info', 'Sesión Cerrada', 'Has salido del sistema de Delicias del Valle.');
   }, [showToast]);
@@ -685,12 +726,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           if (data.activo === false) {
             setTimeout(() => {
               setCurrentUser(null);
+              localStorage.removeItem('delicias_active_session_user');
               localStorage.removeItem(`${STORAGE_KEY}_session_user`);
+              localStorage.removeItem('delicias_active_tab');
               setActiveTab('dashboard');
               alert('⚠️ Tu cuenta ha sido desactivada por un administrador del sistema.\n\nHas sido desconectado de Delicias del Valle.');
             }, 50);
           } else {
             setCurrentUser(safeUpdated);
+            localStorage.setItem('delicias_active_session_user', JSON.stringify(safeUpdated));
             localStorage.setItem(`${STORAGE_KEY}_session_user`, JSON.stringify(safeUpdated));
           }
         }
@@ -745,7 +789,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (currentUser?.id === id || (currentUser?.username && user.username && currentUser.username.trim().toLowerCase() === user.username.trim().toLowerCase())) {
         setTimeout(() => {
           setCurrentUser(null);
+          localStorage.removeItem('delicias_active_session_user');
           localStorage.removeItem(`${STORAGE_KEY}_session_user`);
+          localStorage.removeItem('delicias_active_tab');
           setActiveTab('dashboard');
           alert('⚠️ Tu cuenta ha sido desactivada.\n\nHas sido desconectado de Delicias del Valle.');
         }, 50);
@@ -1010,7 +1056,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         ) {
           // Expulsión inmediata de la sesión activa
           setCurrentUser(null);
+          localStorage.removeItem('delicias_active_session_user');
           localStorage.removeItem(`${STORAGE_KEY}_session_user`);
+          localStorage.removeItem('delicias_active_tab');
           setActiveTab('dashboard');
           alert('⚠️ Tu cuenta ha sido desactivada por un administrador del sistema.\n\nHas sido desconectado de Delicias del Valle.');
         } else {
