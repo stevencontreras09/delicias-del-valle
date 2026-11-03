@@ -315,6 +315,7 @@ function buildPrintHtml(pedido: Pedido, format: PrintFormat): string {
                 ${item.masa_base && !item.masa_base.toLowerCase().startsWith('no aplica') ? `<div>• <strong>Masa:</strong> ${item.masa_base}</div>` : ''}
                 ${item.relleno && !item.relleno.toLowerCase().startsWith('no aplica') ? `<div>• <strong>Relleno:</strong> ${item.relleno}</div>` : ''}
                 ${item.decoracion && !item.decoracion.toLowerCase().startsWith('no aplica') ? `<div>• <strong>Cobertura:</strong> ${item.decoracion}</div>` : ''}
+                ${item.empaque && !item.empaque.toLowerCase().startsWith('no aplica') && !item.empaque.toLowerCase().startsWith('ningun') ? `<div>• <strong>Empaque:</strong> ${item.empaque}</div>` : ''}
                 ${item.extras_texto && !item.extras_texto.toLowerCase().includes('extra de la orden') ? `<div>• <strong>Extras:</strong> ${item.extras_texto}</div>` : ''}
               `}
             </div>
@@ -498,6 +499,7 @@ function buildPrintHtml(pedido: Pedido, format: PrintFormat): string {
             ${item.masa_base && !item.masa_base.toLowerCase().startsWith('no aplica') ? `<div>• Masa: ${item.masa_base}</div>` : ''}
             ${item.relleno && !item.relleno.toLowerCase().startsWith('no aplica') ? `<div>• Relleno: ${item.relleno}</div>` : ''}
             ${item.decoracion && !item.decoracion.toLowerCase().startsWith('no aplica') ? `<div>• Cobertura: ${item.decoracion}</div>` : ''}
+            ${item.empaque && !item.empaque.toLowerCase().startsWith('no aplica') && !item.empaque.toLowerCase().startsWith('ningun') ? `<div>• Empaque: ${item.empaque}</div>` : ''}
             ${item.extras_texto && !item.extras_texto.toLowerCase().includes('extra de la orden') ? `<div>• Extras: ${item.extras_texto}</div>` : ''}
           `}
           ${item.dedicatoria ? `<div class="dedicatoria">Dedicatoria: "${item.dedicatoria}"</div>` : ''}
@@ -851,6 +853,7 @@ export const PrintTicketModal: React.FC<PrintTicketModalProps> = ({
                               {item.masa_base && !item.masa_base.toLowerCase().startsWith('no aplica') && <div>• <strong>Masa:</strong> {item.masa_base}</div>}
                               {item.relleno && !item.relleno.toLowerCase().startsWith('no aplica') && <div>• <strong>Relleno:</strong> {item.relleno}</div>}
                               {item.decoracion && !item.decoracion.toLowerCase().startsWith('no aplica') && <div>• <strong>Cobertura:</strong> {item.decoracion}</div>}
+                              {item.empaque && !item.empaque.toLowerCase().startsWith('no aplica') && !item.empaque.toLowerCase().startsWith('ningun') && <div>• <strong>Empaque:</strong> {item.empaque}</div>}
                               {item.extras_texto && !item.extras_texto.toLowerCase().includes('extra de la orden') && <div>• <strong>Extras:</strong> {item.extras_texto}</div>}
                             </>
                           )}
@@ -1001,6 +1004,7 @@ export const PrintTicketModal: React.FC<PrintTicketModalProps> = ({
                           {item.masa_base && !item.masa_base.toLowerCase().startsWith('no aplica') && <div>• Masa: {item.masa_base}</div>}
                           {item.relleno && !item.relleno.toLowerCase().startsWith('no aplica') && <div>• Relleno: {item.relleno}</div>}
                           {item.decoracion && !item.decoracion.toLowerCase().startsWith('no aplica') && <div>• Cobertura: {item.decoracion}</div>}
+                          {item.empaque && !item.empaque.toLowerCase().startsWith('no aplica') && !item.empaque.toLowerCase().startsWith('ningun') && <div>• Empaque: {item.empaque}</div>}
                           {item.extras_texto && !item.extras_texto.toLowerCase().includes('extra de la orden') && <div>• Extras: {item.extras_texto}</div>}
                         </>
                       )}

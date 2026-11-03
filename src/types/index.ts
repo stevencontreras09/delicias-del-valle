@@ -124,6 +124,21 @@ export type CategoriaExtra = 'empaque' | 'topper' | 'sticker' | 'tarjeta' | 'otr
 
 export type NivelDecoracion = 'basica' | 'intermedia' | 'avanzada' | 'personalizada';
 
+export interface OpcionConfigurable {
+  id: string;
+  nombre: string;
+  precio_adicional_base: number; // en RD$ (para tamaño estándar 1 LB / 1x o unidad)
+  descripcion?: string;
+}
+
+export interface QuoteCustomOptions {
+  masas: OpcionConfigurable[];
+  rellenos: OpcionConfigurable[];
+  decoraciones: OpcionConfigurable[];
+  empaques: OpcionConfigurable[];
+  extras: CotizacionExtra[];
+}
+
 export interface CotizacionExtra {
   id: string;
   nombre: string;
@@ -140,6 +155,7 @@ export interface CotizacionItem {
   masa_base: string;
   relleno: string;
   decoracion: string;
+  empaque?: string;
   dedicatoria?: string;
   extras: CotizacionExtra[];
   cantidad: number;
@@ -242,6 +258,7 @@ export interface PedidoItem {
   masa_base: string;
   relleno: string;
   decoracion: string;
+  empaque?: string;
   dedicatoria?: string;
   extras_texto?: string;
   cantidad: number;

@@ -58,6 +58,9 @@ export function generateOrderWhatsAppUrl(pedido: Pedido): string {
       if (item.decoracion && !item.decoracion.toLowerCase().startsWith('ningun') && !item.decoracion.toLowerCase().startsWith('no aplica')) {
         lines.push(`   - Cobertura: ${item.decoracion}`);
       }
+      if (item.empaque && !item.empaque.toLowerCase().startsWith('ningun') && !item.empaque.toLowerCase().startsWith('no aplica')) {
+        lines.push(`   - Empaque: ${item.empaque}`);
+      }
       if (item.dedicatoria) {
         lines.push(`   - Dedicatoria: "${item.dedicatoria}"`);
       }
@@ -122,6 +125,9 @@ export function generateQuoteWhatsAppUrl(cotizacion: Cotizacion): string {
       }
       if (item.decoracion && !item.decoracion.toLowerCase().startsWith('ningun') && !item.decoracion.toLowerCase().startsWith('no aplica')) {
         lines.push(`   - Cobertura: ${item.decoracion}`);
+      }
+      if (item.empaque && !item.empaque.toLowerCase().startsWith('ningun') && !item.empaque.toLowerCase().startsWith('no aplica')) {
+        lines.push(`   - Empaque: ${item.empaque}`);
       }
       if (item.dedicatoria) {
         lines.push(`   - Dedicatoria: "${item.dedicatoria}"`);

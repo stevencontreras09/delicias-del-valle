@@ -184,6 +184,9 @@ export function generarPdfCotizacion(cotizacion: Cotizacion): void {
       if (item.decoracion && !item.decoracion.toLowerCase().startsWith('ningun') && !item.decoracion.toLowerCase().startsWith('no aplica')) {
         descripcion += `\n• Decoración: ${item.decoracion}`;
       }
+      if (item.empaque && !item.empaque.toLowerCase().startsWith('ningun') && !item.empaque.toLowerCase().startsWith('no aplica')) {
+        descripcion += ` | Empaque: ${item.empaque}`;
+      }
       if (item.dedicatoria) descripcion += `\n• Dedicatoria: "${item.dedicatoria}"`;
       if (item.extras && item.extras.length > 0) {
         descripcion += `\n• Extras: ${item.extras.map(e => e.cantidad && e.cantidad > 1 ? `${e.nombre} (x${e.cantidad})` : e.nombre).join(', ')}`;
@@ -663,6 +666,13 @@ export function generarPdfPedido(pedido: Pedido): void {
         !item.decoracion.toLowerCase().startsWith('no aplica')
       ) {
         descripcion += `\n• Decoración: ${item.decoracion}`;
+      }
+      if (
+        item.empaque &&
+        !item.empaque.toLowerCase().startsWith('ningun') &&
+        !item.empaque.toLowerCase().startsWith('no aplica')
+      ) {
+        descripcion += ` | Empaque: ${item.empaque}`;
       }
       if (item.dedicatoria) descripcion += `\n• Dedicatoria: "${item.dedicatoria}"`;
       if (item.extras_texto && !item.extras_texto.toLowerCase().includes('extra de la orden')) {

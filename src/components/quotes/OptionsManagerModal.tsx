@@ -3,9 +3,9 @@ import { Modal } from '../ui/Modal';
 import { OpcionConfigurable, getExtraCategory } from './QuoteBuilderModal';
 import { CotizacionExtra, CategoriaExtra } from '../../types';
 import { formatCurrency } from '../../utils/formatters';
-import { Plus, Trash2, Edit2, RotateCcw, Check, Sparkles, AlertCircle } from 'lucide-react';
+import { Plus, Trash2, Edit2, RotateCcw, Check, Sparkles, AlertCircle, Database, Cloud } from 'lucide-react';
 
-export type CategoriaOpcion = 'masas' | 'rellenos' | 'decoraciones' | 'extras';
+export type CategoriaOpcion = 'masas' | 'rellenos' | 'decoraciones' | 'empaques' | 'extras';
 
 interface OptionsManagerModalProps {
   isOpen: boolean;
@@ -14,14 +14,17 @@ interface OptionsManagerModalProps {
   masas: OpcionConfigurable[];
   rellenos: OpcionConfigurable[];
   decoraciones: OpcionConfigurable[];
+  empaques: OpcionConfigurable[];
   extras: CotizacionExtra[];
   onSave: (data: {
     masas: OpcionConfigurable[];
     rellenos: OpcionConfigurable[];
     decoraciones: OpcionConfigurable[];
+    empaques: OpcionConfigurable[];
     extras: CotizacionExtra[];
   }) => void;
   onResetDefaults: () => void;
+  isSaving?: boolean;
 }
 
 export const OptionsManagerModal: React.FC<OptionsManagerModalProps> = ({
@@ -31,15 +34,18 @@ export const OptionsManagerModal: React.FC<OptionsManagerModalProps> = ({
   masas: initialMasas,
   rellenos: initialRellenos,
   decoraciones: initialDecoraciones,
+  empaques: initialEmpaques,
   extras: initialExtras,
   onSave,
   onResetDefaults,
+  isSaving = false,
 }) => {
   const [activeTab, setActiveTab] = useState<CategoriaOpcion>(initialTab);
 
   const [masas, setMasas] = useState<OpcionConfigurable[]>(initialMasas);
   const [rellenos, setRellenos] = useState<OpcionConfigurable[]>(initialRellenos);
   const [decoraciones, setDecoraciones] = useState<OpcionConfigurable[]>(initialDecoraciones);
+  const [empaques, setEmpaques] = useState<OpcionConfigurable[]>(initialEmpaques || []);
   const [extras, setExtras] = useState<CotizacionExtra[]>(initialExtras);
 
   // Filtro secundario para la pestaña de extras
@@ -51,10 +57,11 @@ export const OptionsManagerModal: React.FC<OptionsManagerModalProps> = ({
       setMasas(initialMasas);
       setRellenos(initialRellenos);
       setDecoraciones(initialDecoraciones);
+      setEmpaques(initialEmpaques || []);
       setExtras(initialExtras);
       setActiveTab(initialTab);
     }
-  }, [isOpen, initialTab, initialMasas, initialRellenos, initialDecoraciones, initialExtras]);
+  }, [isOpen, initialTab, initialMasas, initialRellenos, initialDecoraciones, initialEmpaques, initialExtras]);
 
   // Estado para crear nueva opción
   const [isAdding, setIsAdding] = useState(false);
@@ -90,6 +97,8 @@ export const OptionsManagerModal: React.FC<OptionsManagerModalProps> = ({
       setRellenos(prev => prev.map(r => r.id === editingId ? { ...r, nombre: editName.trim(), precio_adicional_base: finalPrice, descripcion: editDesc.trim() } : r));
     } else if (activeTab === 'decoraciones') {
       setDecoraciones(prev => prev.map(d => d.id === editingId ? { ...d, nombre: editName.trim(), precio_adicional_base: finalPrice, descripcion: editDesc.trim() } : d));
+    } else if (activeTab === 'empaques') {
+      setEmpaques(prev => prev.map(e => e.id === editingId ? { ...e, nombre: editName.trim(), precio_adicional_base: finalPrice, descripcion: editDesc.trim() } : e));
     } else if (activeTab === 'extras') {
       setExtras(prev => prev.map(e => e.id === editingId ? { ...e, nombre: editName.trim(), precio: finalPrice, categoria: editCategoriaExtra } : e));
     }
@@ -107,6 +116,9 @@ export const OptionsManagerModal: React.FC<OptionsManagerModalProps> = ({
     } else if (activeTab === 'decoraciones') {
       if (decoraciones.length <= 1) return alert('Debes mantener al menos una opción');
       setDecoraciones(prev => prev.filter(d => d.id !== id));
+    } else if (activeTab === 'empaques') {
+      if (empaques.length <= 1) return alert('Debes mantener al menos una opción');
+      setEmpaques(prev => prev.filter(e => e.id !== id));
     } else if (activeTab === 'extras') {
       setExtras(prev => prev.filter(e => e.id !== id));
     }
@@ -129,6 +141,7 @@ export const OptionsManagerModal: React.FC<OptionsManagerModalProps> = ({
       if (activeTab === 'masas') setMasas(prev => [...prev, newOption]);
       if (activeTab === 'rellenos') setRellenos(prev => [...prev, newOption]);
       if (activeTab === 'decoraciones') setDecoraciones(prev => [...prev, newOption]);
+      if (activeTab === 'empaques') setEmpaques(prev => [...prev, newOption]);
     }
 
     setNewName('');
@@ -138,7 +151,7 @@ export const OptionsManagerModal: React.FC<OptionsManagerModalProps> = ({
   };
 
   const handleApplyAll = () => {
-    onSave({ masas, rellenos, decoraciones, extras });
+    onSave({ masas, rellenos, decoraciones, empaques, extras });
     onClose();
   };
 
@@ -148,6 +161,8 @@ export const OptionsManagerModal: React.FC<OptionsManagerModalProps> = ({
     ? rellenos
     : activeTab === 'decoraciones'
     ? decoraciones
+    : activeTab === 'empaques'
+    ? empaques
     : filterExtrasTab === 'all'
     ? extras
     : extras.filter(e => getExtraCategory(e) === filterExtrasTab);
@@ -157,43 +172,60 @@ export const OptionsManagerModal: React.FC<OptionsManagerModalProps> = ({
       isOpen={isOpen}
       onClose={onClose}
       title="⚙️ Gestionar Opciones del Cotizador"
-      subtitle="Edita, agrega o elimina masas, rellenos, coberturas y extras opcionales con sus precios en RD$"
+      subtitle="Edita masas, rellenos, decoraciones, empaques y extras sincronizados en la base de datos"
       maxWidth="3xl"
     >
       <div className="space-y-5">
+        {/* Banner de Sincronización en Base de Datos */}
+        <div className="flex items-center gap-2 p-2.5 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-800 text-xs">
+          <Database className="w-4 h-4 text-emerald-600 shrink-0" />
+          <span>
+            <strong>Persistencia Centralizada:</strong> Todas las opciones que edites aquí se guardan directamente en la <strong>Base de Datos (Supabase)</strong> para que aparezcan en todas tus computadoras y dispositivos.
+          </span>
+        </div>
+
         {/* Pestañas de Navegación de Opciones */}
         <div className="flex flex-wrap items-center gap-1.5 p-1.5 bg-canvas border border-trigo-200 rounded-2xl">
           <button
             type="button"
             onClick={() => { setActiveTab('masas'); setEditingId(null); setIsAdding(false); }}
-            className={`flex-1 min-w-[120px] py-2 px-3 rounded-xl text-xs font-bold transition-all ${
+            className={`flex-1 min-w-[110px] py-2 px-2.5 rounded-xl text-xs font-bold transition-all ${
               activeTab === 'masas' ? 'bg-chocolate-700 text-white shadow-sm' : 'text-chocolate-700 hover:bg-crema'
             }`}
           >
-            Masa / Bizcocho ({masas.length})
+            Masa ({masas.length})
           </button>
           <button
             type="button"
             onClick={() => { setActiveTab('rellenos'); setEditingId(null); setIsAdding(false); }}
-            className={`flex-1 min-w-[120px] py-2 px-3 rounded-xl text-xs font-bold transition-all ${
+            className={`flex-1 min-w-[110px] py-2 px-2.5 rounded-xl text-xs font-bold transition-all ${
               activeTab === 'rellenos' ? 'bg-chocolate-700 text-white shadow-sm' : 'text-chocolate-700 hover:bg-crema'
             }`}
           >
-            Relleno Artesanal ({rellenos.length})
+            Relleno ({rellenos.length})
           </button>
           <button
             type="button"
             onClick={() => { setActiveTab('decoraciones'); setEditingId(null); setIsAdding(false); }}
-            className={`flex-1 min-w-[120px] py-2 px-3 rounded-xl text-xs font-bold transition-all ${
+            className={`flex-1 min-w-[110px] py-2 px-2.5 rounded-xl text-xs font-bold transition-all ${
               activeTab === 'decoraciones' ? 'bg-chocolate-700 text-white shadow-sm' : 'text-chocolate-700 hover:bg-crema'
             }`}
           >
-            Decoración & Cobertura ({decoraciones.length})
+            Decoración ({decoraciones.length})
+          </button>
+          <button
+            type="button"
+            onClick={() => { setActiveTab('empaques'); setEditingId(null); setIsAdding(false); }}
+            className={`flex-1 min-w-[110px] py-2 px-2.5 rounded-xl text-xs font-bold transition-all ${
+              activeTab === 'empaques' ? 'bg-chocolate-700 text-white shadow-sm' : 'text-chocolate-700 hover:bg-crema'
+            }`}
+          >
+            Empaques ({empaques.length})
           </button>
           <button
             type="button"
             onClick={() => { setActiveTab('extras'); setEditingId(null); setIsAdding(false); }}
-            className={`flex-1 min-w-[120px] py-2 px-3 rounded-xl text-xs font-bold transition-all ${
+            className={`flex-1 min-w-[110px] py-2 px-2.5 rounded-xl text-xs font-bold transition-all ${
               activeTab === 'extras' ? 'bg-chocolate-700 text-white shadow-sm' : 'text-chocolate-700 hover:bg-crema'
             }`}
           >
@@ -215,7 +247,7 @@ export const OptionsManagerModal: React.FC<OptionsManagerModalProps> = ({
           <button
             type="button"
             onClick={() => {
-              if (confirm('¿Deseas restablecer todas las opciones a los valores iniciales de fábrica?')) {
+              if (confirm('¿Deseas restablecer todas las opciones a los valores iniciales de fábrica en la base de datos?')) {
                 onResetDefaults();
                 onClose();
               }
@@ -232,14 +264,18 @@ export const OptionsManagerModal: React.FC<OptionsManagerModalProps> = ({
           <div className="p-4 rounded-2xl bg-crema/40 border border-trigo-300 space-y-3 animate-fade-in">
             <h4 className="text-xs font-bold text-chocolate-900 flex items-center gap-1.5">
               <Sparkles className="w-3.5 h-3.5 text-frambuesa-500" />
-              Nueva Opción para {activeTab === 'masas' ? 'Masa' : activeTab === 'rellenos' ? 'Relleno' : activeTab === 'decoraciones' ? 'Decoración' : 'Extra'}
+              Nueva Opción para {activeTab === 'masas' ? 'Masa' : activeTab === 'rellenos' ? 'Relleno' : activeTab === 'decoraciones' ? 'Decoración' : activeTab === 'empaques' ? 'Empaque' : 'Extra'}
             </h4>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div className="sm:col-span-2">
                 <label className="block text-[11px] font-bold text-chocolate-700 mb-1">Nombre *</label>
                 <input
                   type="text"
-                  placeholder="Ej: Dulce de Guayaba & Queso, Baño Espejo Dorado, etc."
+                  placeholder={
+                    activeTab === 'empaques'
+                      ? 'Ej: Caja de Acetato Transparente, Domo Plástico Hermético, etc.'
+                      : 'Ej: Dulce de Guayaba & Queso, Baño Espejo Dorado, etc.'
+                  }
                   value={newName}
                   onChange={(e) => setNewName(e.target.value)}
                   className="w-full px-3 py-1.5 rounded-xl border border-trigo-300 text-xs text-chocolate-900 bg-white"
@@ -268,8 +304,8 @@ export const OptionsManagerModal: React.FC<OptionsManagerModalProps> = ({
                   <option value="empaque">📦 Empaque (Cajas, Bases, Domos, Bolsas)</option>
                   <option value="topper">🎂 Topper (Acrílicos, Nombres, Temáticos)</option>
                   <option value="sticker">🏷️ Sticker (Etiquetas, Personalizados, Sellos)</option>
-                  <option value="tarjeta">💌 Tarjeta con Mensaje (Dedicatorias, Postales)</option>
-                  <option value="otro">✨ Otro / Detalle Especial (Velas, Dulces, etc.)</option>
+                  <option value="tarjeta">💌 Tarjeta (Dedicatorias, Mensajes Especiales)</option>
+                  <option value="otro">✨ Otro (Velas, Macarons, Bengalas, etc.)</option>
                 </select>
               </div>
             )}
@@ -279,18 +315,23 @@ export const OptionsManagerModal: React.FC<OptionsManagerModalProps> = ({
                 <label className="block text-[11px] font-bold text-chocolate-700 mb-1">Descripción / Detalle (Opcional)</label>
                 <input
                   type="text"
-                  placeholder="Ej: Mermelada artesanal con trozos naturales"
+                  placeholder={
+                    activeTab === 'empaques'
+                      ? 'Ej: Caja con visor transparente y lazo de cinta de seda'
+                      : 'Ej: Reducción natural de frutas frescas con especias aromáticas'
+                  }
                   value={newDesc}
                   onChange={(e) => setNewDesc(e.target.value)}
                   className="w-full px-3 py-1.5 rounded-xl border border-trigo-300 text-xs text-chocolate-900 bg-white"
                 />
               </div>
             )}
+
             <div className="flex justify-end gap-2 pt-1">
               <button
                 type="button"
                 onClick={() => setIsAdding(false)}
-                className="px-3 py-1 text-xs text-chocolate-700 font-bold hover:bg-white rounded-lg"
+                className="px-3 py-1 rounded-xl text-xs font-medium text-chocolate-600 hover:bg-crema"
               >
                 Cancelar
               </button>
@@ -298,9 +339,9 @@ export const OptionsManagerModal: React.FC<OptionsManagerModalProps> = ({
                 type="button"
                 onClick={handleCreateNew}
                 disabled={!newName.trim()}
-                className="px-4 py-1.5 rounded-xl bg-chocolate-700 text-white text-xs font-bold hover:bg-chocolate-800 disabled:opacity-50"
+                className="px-4 py-1.5 rounded-xl bg-frambuesa-600 hover:bg-frambuesa-700 disabled:opacity-50 text-white text-xs font-bold transition-colors"
               >
-                Guardar Opción
+                Agregar a la Lista
               </button>
             </div>
           </div>
@@ -515,13 +556,13 @@ export const OptionsManagerModal: React.FC<OptionsManagerModalProps> = ({
         </div>
 
         {/* Footer del Modal */}
-        <div className="flex items-center justify-between pt-2 border-t border-trigo-200">
-          <p className="text-[11px] text-gray-500 flex items-center gap-1">
-            <AlertCircle className="w-3.5 h-3.5 text-chocolate-400" />
-            Los cambios se guardan localmente para tus cotizaciones.
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3 border-t border-trigo-200">
+          <p className="text-[11px] text-emerald-700 font-semibold flex items-center gap-1.5">
+            <Cloud className="w-4 h-4 text-emerald-600 shrink-0" />
+            <span>Sincronización en la Nube: Se guardará de inmediato en la base de datos de Supabase.</span>
           </p>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 self-end sm:self-auto">
             <button
               type="button"
               onClick={onClose}
@@ -532,9 +573,11 @@ export const OptionsManagerModal: React.FC<OptionsManagerModalProps> = ({
             <button
               type="button"
               onClick={handleApplyAll}
-              className="px-5 py-2 rounded-xl bg-frambuesa-500 hover:bg-frambuesa-600 text-white text-xs font-bold shadow-sm transition-all"
+              disabled={isSaving}
+              className="px-5 py-2 rounded-xl bg-frambuesa-600 hover:bg-frambuesa-700 disabled:opacity-50 text-white text-xs font-bold shadow-sm transition-all flex items-center gap-1.5"
             >
-              Aplicar y Guardar Cambios
+              <Check className="w-4 h-4" />
+              <span>{isSaving ? 'Guardando en BD...' : 'Guardar en Base de Datos'}</span>
             </button>
           </div>
         </div>

@@ -908,6 +908,9 @@ export const KitchenMode: React.FC = () => {
                           </div>
                           <p className="text-xs text-slate-400 mt-1 pl-8">
                             Masa: <strong className="text-white">{data.item.masa_base || 'Estándar'}</strong> • Relleno: <strong className="text-trigo-300">{data.item.relleno || 'Estándar'}</strong> • Cobertura: <strong className="text-frambuesa-300">{data.item.decoracion || 'Estándar'}</strong>
+                            {data.item.empaque && !data.item.empaque.toLowerCase().startsWith('ningun') && !data.item.empaque.toLowerCase().startsWith('no aplica') && (
+                              <> • Empaque: <strong className="text-emerald-300">{data.item.empaque}</strong></>
+                            )}
                           </p>
                         </div>
 

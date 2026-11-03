@@ -14,6 +14,7 @@ import {
   BancoRD,
   ZonaDelivery,
   TipoDespacho,
+  QuoteCustomOptions,
 } from '../types';
 import {
   INITIAL_INSUMOS,
@@ -57,7 +58,17 @@ import {
   cancelarPedidoConInventarioRpc,
   syncZonaDeliveryToSupabase,
   deleteZonaDeliveryFromSupabase,
+  fetchQuoteOptionsFromSupabase,
+  saveQuoteOptionsToSupabase,
 } from '../services/supabaseService';
+import {
+  getDefaultQuoteOptions,
+  OPCIONES_MASA_DETALLADAS,
+  OPCIONES_RELLENO_DETALLADAS,
+  OPCIONES_DECORACION_DETALLADAS,
+  OPCIONES_EMPAQUE_DETALLADAS,
+  buildDefaultExtrasList,
+} from '../utils/quoteOptionsDefaults';
 import {
   sanitizeInput,
   sanitizeUserForStorage,
@@ -126,6 +137,10 @@ interface AppContextType {
   updateCotizacion: (id: number, cotizacion: Partial<Cotizacion>) => Promise<boolean>;
   deleteCotizacion: (id: number) => void;
   cambiarEstadoCotizacion: (id: number, estado: EstadoCotizacion) => void;
+  // Opciones de Cotizador Personalizadas Sincronizadas en BD
+  quoteOptions: QuoteCustomOptions;
+  saveQuoteOptions: (options: QuoteCustomOptions) => Promise<boolean>;
+  resetQuoteOptions: () => Promise<boolean>;
   convertirCotizacionAPedido: (
     cotizacionId: number,
     anticipo: number,
@@ -329,6 +344,30 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   useEffect(() => {
     localStorage.setItem(`${STORAGE_KEY}_zonas_delivery`, JSON.stringify(zonasDelivery));
   }, [zonasDelivery]);
+
+  // Opciones configurables del cotizador sincronizadas en Base de Datos (Supabase)
+  const [quoteOptions, setQuoteOptions] = useState<QuoteCustomOptions>(() => {
+    const saved = localStorage.getItem('delicias_custom_quote_options');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed.masas) && Array.isArray(parsed.rellenos) && Array.isArray(parsed.decoraciones)) {
+          return {
+            masas: parsed.masas,
+            rellenos: parsed.rellenos,
+            decoraciones: parsed.decoraciones,
+            empaques: Array.isArray(parsed.empaques) && parsed.empaques.length > 0 ? parsed.empaques : OPCIONES_EMPAQUE_DETALLADAS,
+            extras: Array.isArray(parsed.extras) ? parsed.extras : buildDefaultExtrasList(),
+          };
+        }
+      } catch {}
+    }
+    return getDefaultQuoteOptions();
+  });
+
+  useEffect(() => {
+    localStorage.setItem('delicias_custom_quote_options', JSON.stringify(quoteOptions));
+  }, [quoteOptions]);
 
   const [timers, setTimers] = useState<KitchenTimerState[]>([
     {
@@ -807,6 +846,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         if (res.data.zonasDelivery && res.data.zonasDelivery.length > 0) {
           setZonasDelivery(res.data.zonasDelivery);
         }
+        try {
+          const dbQuoteOptions = await fetchQuoteOptionsFromSupabase();
+          if (dbQuoteOptions) {
+            const completeOptions: QuoteCustomOptions = {
+              masas: Array.isArray(dbQuoteOptions.masas) && dbQuoteOptions.masas.length > 0 ? dbQuoteOptions.masas : OPCIONES_MASA_DETALLADAS,
+              rellenos: Array.isArray(dbQuoteOptions.rellenos) && dbQuoteOptions.rellenos.length > 0 ? dbQuoteOptions.rellenos : OPCIONES_RELLENO_DETALLADAS,
+              decoraciones: Array.isArray(dbQuoteOptions.decoraciones) && dbQuoteOptions.decoraciones.length > 0 ? dbQuoteOptions.decoraciones : OPCIONES_DECORACION_DETALLADAS,
+              empaques: Array.isArray(dbQuoteOptions.empaques) && dbQuoteOptions.empaques.length > 0 ? dbQuoteOptions.empaques : OPCIONES_EMPAQUE_DETALLADAS,
+              extras: Array.isArray(dbQuoteOptions.extras) && dbQuoteOptions.extras.length > 0 ? dbQuoteOptions.extras : buildDefaultExtrasList(),
+            };
+            setQuoteOptions(completeOptions);
+            localStorage.setItem('delicias_custom_quote_options', JSON.stringify(completeOptions));
+          }
+        } catch (err) {
+          console.warn('Error sincronizando opciones de cotizador desde Supabase:', err);
+        }
         const usersDb = res.data.usuarios;
         if (usersDb && usersDb.length > 0) {
           setUsuarios(prev => {
@@ -1037,6 +1092,25 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         { event: '*', schema: 'public', table: 'zonas_delivery' },
         () => {
           syncFromSupabase(true);
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'configuracion' },
+        () => {
+          fetchQuoteOptionsFromSupabase().then((dbOpts) => {
+            if (dbOpts) {
+              const completeOptions: QuoteCustomOptions = {
+                masas: Array.isArray(dbOpts.masas) && dbOpts.masas.length > 0 ? dbOpts.masas : OPCIONES_MASA_DETALLADAS,
+                rellenos: Array.isArray(dbOpts.rellenos) && dbOpts.rellenos.length > 0 ? dbOpts.rellenos : OPCIONES_RELLENO_DETALLADAS,
+                decoraciones: Array.isArray(dbOpts.decoraciones) && dbOpts.decoraciones.length > 0 ? dbOpts.decoraciones : OPCIONES_DECORACION_DETALLADAS,
+                empaques: Array.isArray(dbOpts.empaques) && dbOpts.empaques.length > 0 ? dbOpts.empaques : OPCIONES_EMPAQUE_DETALLADAS,
+                extras: Array.isArray(dbOpts.extras) && dbOpts.extras.length > 0 ? dbOpts.extras : buildDefaultExtrasList(),
+              };
+              setQuoteOptions(completeOptions);
+              localStorage.setItem('delicias_custom_quote_options', JSON.stringify(completeOptions));
+            }
+          });
         }
       )
       .subscribe((status) => {
@@ -1513,6 +1587,31 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     showToast('info', 'Estado Actualizado', `Cotización marcada como "${estado}".`);
   };
 
+  // Guardar y sincronizar opciones personalizadas de cotizador en Supabase
+  const saveQuoteOptions = async (newOptions: QuoteCustomOptions): Promise<boolean> => {
+    setQuoteOptions(newOptions);
+    localStorage.setItem('delicias_custom_quote_options', JSON.stringify(newOptions));
+
+    if (isSupabaseConfigured()) {
+      const res = await saveQuoteOptionsToSupabase(newOptions);
+      if (!res.success) {
+        showToast('error', 'Error al Guardar Opciones en BD', res.error || 'No se pudieron sincronizar las opciones con Supabase.');
+        return false;
+      }
+      broadcastChange('actualizó', 'las opciones de cotizador', 'masas, rellenos, decoraciones y empaques');
+      showToast('success', 'Opciones Guardadas en BD', 'Las opciones de cotización quedaron guardadas en la base de datos de Supabase.');
+      return true;
+    } else {
+      showToast('info', 'Guardado Local', 'Opciones guardadas localmente. Conecta Supabase para sincronizar con tu otra PC.');
+      return true;
+    }
+  };
+
+  const resetQuoteOptions = async (): Promise<boolean> => {
+    const defaults = getDefaultQuoteOptions(insumosMap);
+    return await saveQuoteOptions(defaults);
+  };
+
   // ==========================================
   // MINI CRM: CLIENTES FRECUENTES
   // ==========================================
@@ -1740,10 +1839,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       masa_base: item.masa_base,
       relleno: item.relleno,
       decoracion: item.decoracion,
+      empaque: item.empaque,
       dedicatoria: item.dedicatoria,
       extras_texto: item.es_extra
         ? 'Extra de la orden'
         : [
+            item.empaque && !item.empaque.toLowerCase().startsWith('ningun') && !item.empaque.toLowerCase().startsWith('no aplica') ? `Empaque: ${item.empaque}` : '',
             item.variables_receta && item.variables_receta.length > 0 ? `Variables: ${item.variables_receta.join(', ')}` : '',
             item.extras?.map((e) => e.cantidad && e.cantidad > 1 ? `${e.nombre} (x${e.cantidad})` : `${e.nombre}`).join(', ') || ''
           ].filter(Boolean).join(' | '),
@@ -2363,6 +2464,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         updateCotizacion,
         deleteCotizacion,
         cambiarEstadoCotizacion,
+        quoteOptions,
+        saveQuoteOptions,
+        resetQuoteOptions,
         convertirCotizacionAPedido,
         zonasDelivery,
         addZonaDelivery,

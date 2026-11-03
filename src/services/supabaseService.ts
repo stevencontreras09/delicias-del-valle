@@ -1,5 +1,5 @@
 import { getSupabaseClient } from '../utils/supabaseClient';
-import { Insumo, Merma, Receta, Cotizacion, Pedido, Usuario, Cliente, FormatoPresentacion, ZonaDelivery } from '../types';
+import { Insumo, Merma, Receta, Cotizacion, Pedido, Usuario, Cliente, FormatoPresentacion, ZonaDelivery, QuoteCustomOptions } from '../types';
 
 export interface SyncResult {
   success: boolean;
@@ -236,9 +236,14 @@ export async function fetchAllFromSupabase(): Promise<{
           masa_base: item.masa_base,
           relleno: item.relleno,
           decoracion: item.decoracion,
+          empaque: item.empaque || (
+            Array.isArray(item.extras)
+              ? item.extras.find((e: any) => e.id === 'empaque_meta')?.nombre
+              : undefined
+          ) || 'Ninguno / Estándar de la Receta',
           dedicatoria: item.dedicatoria || '',
           extras: Array.isArray(item.extras)
-            ? item.extras.filter((e: any) => e.id !== 'variables_receta' && e.id !== 'variables_seleccionadas' && e.id !== 'es_extra' && e.id !== 'costo_meta')
+            ? item.extras.filter((e: any) => e.id !== 'variables_receta' && e.id !== 'variables_seleccionadas' && e.id !== 'es_extra' && e.id !== 'costo_meta' && e.id !== 'empaque_meta')
             : [],
           variables_receta: item.variables_receta || (
             Array.isArray(item.extras)
@@ -324,6 +329,13 @@ export async function fetchAllFromSupabase(): Promise<{
           masa_base: item.masa_base,
           relleno: item.relleno,
           decoracion: item.decoracion,
+          empaque: item.empaque || (
+            costoMeta?.emp || (
+              extrasTexto.includes('Empaque: ')
+                ? extrasTexto.split('Empaque: ')[1]?.split('|')[0]?.split('<!--')[0]?.trim()
+                : undefined
+            )
+          ) || 'Ninguno / Estándar de la Receta',
           dedicatoria: item.dedicatoria || '',
           extras_texto: extrasTexto,
           cantidad: Number(item.cantidad),
@@ -598,6 +610,11 @@ export async function syncPedidoToSupabase(pedido: Pedido): Promise<boolean> {
           });
           extrasTexto = extrasTexto ? `${extrasTexto} <!--costo_meta:${metaJson}-->` : `<!--costo_meta:${metaJson}-->`;
         }
+        if (item.empaque && !item.empaque.toLowerCase().startsWith('ningun') && !item.empaque.toLowerCase().startsWith('no aplica')) {
+          if (!extrasTexto.includes('Empaque:')) {
+            extrasTexto = extrasTexto ? `Empaque: ${item.empaque} | ${extrasTexto}` : `Empaque: ${item.empaque}`;
+          }
+        }
         return {
           pedido_id: pedDb.id,
           receta_id: item.receta_id || null,
@@ -718,7 +735,10 @@ export async function syncCotizacionToSupabase(
         decoracion: item.decoracion || (item.es_extra ? 'No aplica' : 'Estándar'),
         dedicatoria: item.dedicatoria || '',
         extras: [
-          ...(Array.isArray(item.extras) ? item.extras.filter((e: any) => e.id !== 'variables_receta' && e.id !== 'es_extra' && e.id !== 'costo_meta') : []),
+          ...(Array.isArray(item.extras) ? item.extras.filter((e: any) => e.id !== 'variables_receta' && e.id !== 'es_extra' && e.id !== 'costo_meta' && e.id !== 'empaque_meta') : []),
+          ...(item.empaque && !item.empaque.toLowerCase().startsWith('ningun') && !item.empaque.toLowerCase().startsWith('no aplica')
+            ? [{ id: 'empaque_meta', nombre: item.empaque, precio: 0 }]
+            : []),
           ...(item.es_extra ? [{ id: 'es_extra', nombre: item.categoria_extra || 'extra', precio: 0 }] : []),
           ...(item.variables_receta && item.variables_receta.length > 0
             ? [{
@@ -1142,5 +1162,73 @@ export async function deleteZonaDeliveryFromSupabase(id: number): Promise<boolea
     return false;
   }
 }
+
+/**
+ * Obtiene las opciones configurables del cotizador (masas, rellenos, decoraciones, empaques, extras) desde Supabase
+ */
+export async function fetchQuoteOptionsFromSupabase(): Promise<QuoteCustomOptions | null> {
+  const client = getSupabaseClient();
+  if (!client) return null;
+
+  try {
+    const { data, error } = await client
+      .from('configuracion')
+      .select('valor')
+      .eq('clave', 'custom_quote_options')
+      .maybeSingle();
+
+    if (error) {
+      console.warn('Error leyendo custom_quote_options de Supabase:', error.message);
+      return null;
+    }
+
+    if (data && data.valor && typeof data.valor === 'object') {
+      const val = data.valor as any;
+      if (Array.isArray(val.masas) && Array.isArray(val.rellenos) && Array.isArray(val.decoraciones)) {
+        return val as QuoteCustomOptions;
+      }
+    }
+    return null;
+  } catch (err) {
+    console.warn('Excepción al cargar custom_quote_options de Supabase:', err);
+    return null;
+  }
+}
+
+/**
+ * Guarda las opciones configurables del cotizador directamente en la tabla configuracion de Supabase
+ */
+export async function saveQuoteOptionsToSupabase(
+  options: QuoteCustomOptions
+): Promise<{ success: boolean; error?: string }> {
+  const client = getSupabaseClient();
+  if (!client) {
+    return { success: false, error: 'Supabase no está conectado.' };
+  }
+
+  try {
+    const { error } = await client
+      .from('configuracion')
+      .upsert(
+        {
+          clave: 'custom_quote_options',
+          valor: options,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: 'clave' }
+      );
+
+    if (error) {
+      console.error('Error guardando opciones en Supabase configuracion:', error);
+      return { success: false, error: error.message };
+    }
+
+    return { success: true };
+  } catch (err: any) {
+    console.error('Excepción guardando opciones en Supabase configuracion:', err);
+    return { success: false, error: err?.message || 'Error de conexión' };
+  }
+}
+
 
 

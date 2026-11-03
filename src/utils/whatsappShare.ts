@@ -77,6 +77,9 @@ export function generarMensajeCotizacionWhatsApp(
       if (item.decoracion && !item.decoracion.toLowerCase().startsWith('ningun') && !item.decoracion.toLowerCase().startsWith('no aplica')) {
         texto += `   • Decoración: ${item.decoracion}\n`;
       }
+      if (item.empaque && !item.empaque.toLowerCase().startsWith('ningun') && !item.empaque.toLowerCase().startsWith('no aplica')) {
+        texto += `   • Empaque: ${item.empaque}\n`;
+      }
       if (item.dedicatoria) texto += `   • Dedicatoria: "${item.dedicatoria}"\n`;
       if (item.extras && item.extras.length > 0) {
         texto += `   • Extras: ${item.extras.map((e) => `${e.nombre}${e.cantidad && e.cantidad > 1 ? ` (x${e.cantidad})` : ''} (${formatCurrency(e.precio * (e.cantidad || 1))})`).join(', ')}\n`;

@@ -497,6 +497,9 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({
                         {item.decoracion && !item.decoracion.toLowerCase().startsWith('ningun') && !item.decoracion.toLowerCase().startsWith('no aplica') && (
                           <p className="text-xs text-gray-500">Decoración: {item.decoracion}</p>
                         )}
+                        {item.empaque && !item.empaque.toLowerCase().startsWith('ningun') && !item.empaque.toLowerCase().startsWith('no aplica') && (
+                          <p className="text-xs text-emerald-800 font-medium">📦 Empaque: {item.empaque}</p>
+                        )}
                         {item.dedicatoria && (
                           <p className="text-xs text-frambuesa-700 font-semibold italic mt-0.5">
                             Dedicatoria: "{item.dedicatoria}"
