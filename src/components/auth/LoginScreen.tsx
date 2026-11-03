@@ -79,7 +79,7 @@ export const LoginScreen: React.FC = () => {
     }
   };
 
-  const getRoleBadge = (rol: UserRole) => {
+  const getRoleBadge = (rol: UserRole | string) => {
     switch (rol) {
       case 'admin':
         return {
@@ -93,6 +93,7 @@ export const LoginScreen: React.FC = () => {
           color: 'bg-blue-100 text-blue-800 border-blue-200',
           icon: <ShieldCheck className="w-3 h-3 text-blue-700" />,
         };
+      case 'pastelero':
       case 'cocina':
         return {
           label: 'Cocina',

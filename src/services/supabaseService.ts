@@ -289,7 +289,8 @@ export async function fetchAllFromSupabase(): Promise<{
           tiempo_elaboracion_min: item.tiempo_elaboracion_min ?? (costoMeta?.tiempo_elaboracion_min !== undefined ? Number(costoMeta.tiempo_elaboracion_min) : (costoMeta?.tiempo !== undefined ? Number(costoMeta.tiempo) : undefined)),
         };
       }),
-    }));
+    };
+  });
 
     const pedidos: Pedido[] = (pedidosDb || []).map((p: any) => ({
       id: Number(p.id),
