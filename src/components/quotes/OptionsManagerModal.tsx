@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Modal } from '../ui/Modal';
 import { OpcionConfigurable, getExtraCategory } from './QuoteBuilderModal';
 import { CotizacionExtra, CategoriaExtra } from '../../types';
 import { formatCurrency } from '../../utils/formatters';
-import { Plus, Trash2, Edit2, RotateCcw, Check, Sparkles, AlertCircle, Database, Cloud } from 'lucide-react';
+import { Plus, Trash2, Edit2, RotateCcw, Check, Sparkles, AlertCircle, Database, Cloud, Loader2 } from 'lucide-react';
 
 export type CategoriaOpcion = 'masas' | 'rellenos' | 'decoraciones' | 'empaques' | 'extras';
 
@@ -22,8 +22,8 @@ interface OptionsManagerModalProps {
     decoraciones: OpcionConfigurable[];
     empaques: OpcionConfigurable[];
     extras: CotizacionExtra[];
-  }) => void;
-  onResetDefaults: () => void;
+  }) => Promise<boolean | void> | boolean | void;
+  onResetDefaults: () => Promise<boolean | void> | boolean | void;
   isSaving?: boolean;
 }
 
@@ -51,17 +51,33 @@ export const OptionsManagerModal: React.FC<OptionsManagerModalProps> = ({
   // Filtro secundario para la pestaña de extras
   const [filterExtrasTab, setFilterExtrasTab] = useState<'all' | CategoriaExtra>('all');
 
-  // Sincronizar estado cuando se abre el modal o cambian los items
+  // Control de aislamiento del borrador: solo inicializar al abrir para que eventos de Supabase no borren lo que se está editando
+  const wasOpenRef = useRef(false);
+  const isDirtyRef = useRef(false);
+  const [isLocalSaving, setIsLocalSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && !wasOpenRef.current) {
+      // Apertura fresca del modal: cargar datos iniciales y aislar el borrador
       setMasas(initialMasas);
       setRellenos(initialRellenos);
       setDecoraciones(initialDecoraciones);
       setEmpaques(initialEmpaques || []);
       setExtras(initialExtras);
       setActiveTab(initialTab);
+      setIsAdding(false);
+      setEditingId(null);
+      setSaveError(null);
+      isDirtyRef.current = false;
+      wasOpenRef.current = true;
+    } else if (!isOpen) {
+      wasOpenRef.current = false;
+      setEditingId(null);
+      setIsAdding(false);
+      setSaveError(null);
     }
-  }, [isOpen, initialTab, initialMasas, initialRellenos, initialDecoraciones, initialEmpaques, initialExtras]);
+  }, [isOpen, initialTab]);
 
   // Estado para crear nueva opción
   const [isAdding, setIsAdding] = useState(false);
@@ -90,6 +106,7 @@ export const OptionsManagerModal: React.FC<OptionsManagerModalProps> = ({
   const handleSaveEdit = () => {
     if (!editingId || !editName.trim()) return;
     const finalPrice = typeof editPrice === 'number' ? editPrice : 0;
+    isDirtyRef.current = true;
 
     if (activeTab === 'masas') {
       setMasas(prev => prev.map(m => m.id === editingId ? { ...m, nombre: editName.trim(), precio_adicional_base: finalPrice, descripcion: editDesc.trim() } : m));
@@ -107,6 +124,7 @@ export const OptionsManagerModal: React.FC<OptionsManagerModalProps> = ({
   };
 
   const handleDelete = (id: string) => {
+    isDirtyRef.current = true;
     if (activeTab === 'masas') {
       if (masas.length <= 1) return alert('Debes mantener al menos una opción');
       setMasas(prev => prev.filter(m => m.id !== id));
@@ -128,6 +146,7 @@ export const OptionsManagerModal: React.FC<OptionsManagerModalProps> = ({
     if (!newName.trim()) return;
     const finalPrice = typeof newPrice === 'number' ? newPrice : 0;
     const id = `${activeTab}_${Date.now()}`;
+    isDirtyRef.current = true;
 
     if (activeTab === 'extras') {
       setExtras(prev => [...prev, { id, nombre: newName.trim(), precio: finalPrice, categoria: newCategoriaExtra }]);
@@ -150,9 +169,56 @@ export const OptionsManagerModal: React.FC<OptionsManagerModalProps> = ({
     setIsAdding(false);
   };
 
-  const handleApplyAll = () => {
-    onSave({ masas, rellenos, decoraciones, empaques, extras });
-    onClose();
+  // Forzar guardado persistente en la Base de Datos de Supabase
+  const handleApplyAll = async () => {
+    setSaveError(null);
+    let finalMasas = masas;
+    let finalRellenos = rellenos;
+    let finalDecoraciones = decoraciones;
+    let finalEmpaques = empaques;
+    let finalExtras = extras;
+
+    // Si había una edición de fila pendiente sin confirmar el check, auto-comitearla antes de guardar
+    if (editingId && editName.trim()) {
+      const finalPrice = typeof editPrice === 'number' ? editPrice : 0;
+      if (activeTab === 'masas') {
+        finalMasas = finalMasas.map(m => m.id === editingId ? { ...m, nombre: editName.trim(), precio_adicional_base: finalPrice, descripcion: editDesc.trim() } : m);
+      } else if (activeTab === 'rellenos') {
+        finalRellenos = finalRellenos.map(r => r.id === editingId ? { ...r, nombre: editName.trim(), precio_adicional_base: finalPrice, descripcion: editDesc.trim() } : r);
+      } else if (activeTab === 'decoraciones') {
+        finalDecoraciones = finalDecoraciones.map(d => d.id === editingId ? { ...d, nombre: editName.trim(), precio_adicional_base: finalPrice, descripcion: editDesc.trim() } : d);
+      } else if (activeTab === 'empaques') {
+        finalEmpaques = finalEmpaques.map(e => e.id === editingId ? { ...e, nombre: editName.trim(), precio_adicional_base: finalPrice, descripcion: editDesc.trim() } : e);
+      } else if (activeTab === 'extras') {
+        finalExtras = finalExtras.map(e => e.id === editingId ? { ...e, nombre: editName.trim(), precio: finalPrice, categoria: editCategoriaExtra } : e);
+      }
+      setEditingId(null);
+    }
+
+    setIsLocalSaving(true);
+    try {
+      const res = await onSave({
+        masas: finalMasas,
+        rellenos: finalRellenos,
+        decoraciones: finalDecoraciones,
+        empaques: finalEmpaques,
+        extras: finalExtras,
+      });
+
+      // Si la función retorna explícitamente false, no cerrar el modal para no perder los datos
+      if (res === false) {
+        setSaveError('No se pudo guardar en la base de datos de Supabase. Revisa tu conexión a internet.');
+        return;
+      }
+
+      isDirtyRef.current = false;
+      onClose();
+    } catch (err: any) {
+      console.error('Error guardando opciones en Supabase:', err);
+      setSaveError(err.message || 'Error inesperado al guardar en Supabase.');
+    } finally {
+      setIsLocalSaving(false);
+    }
   };
 
   const currentItems = activeTab === 'masas'
@@ -555,29 +621,54 @@ export const OptionsManagerModal: React.FC<OptionsManagerModalProps> = ({
           )}
         </div>
 
+        {/* Alerta de Error al Guardar (si ocurriese) */}
+        {saveError && (
+          <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-xl text-red-700 text-xs font-medium">
+            <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
+            <span className="flex-1">{saveError}</span>
+            <button
+              type="button"
+              onClick={() => setSaveError(null)}
+              className="text-red-700 font-bold hover:underline ml-2"
+            >
+              Entendido
+            </button>
+          </div>
+        )}
+
         {/* Footer del Modal */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3 border-t border-trigo-200">
           <p className="text-[11px] text-emerald-700 font-semibold flex items-center gap-1.5">
             <Cloud className="w-4 h-4 text-emerald-600 shrink-0" />
-            <span>Sincronización en la Nube: Se guardará de inmediato en la base de datos de Supabase.</span>
+            <span>Sincronización Centralizada: Se forzará el guardado directo en la base de datos de Supabase.</span>
           </p>
 
           <div className="flex items-center gap-2 self-end sm:self-auto">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 rounded-xl text-xs font-bold text-chocolate-700 hover:bg-crema"
+              disabled={isSaving || isLocalSaving}
+              className="px-4 py-2 rounded-xl text-xs font-bold text-chocolate-700 hover:bg-crema disabled:opacity-50"
             >
               Cerrar
             </button>
             <button
               type="button"
               onClick={handleApplyAll}
-              disabled={isSaving}
+              disabled={isSaving || isLocalSaving}
               className="px-5 py-2 rounded-xl bg-frambuesa-600 hover:bg-frambuesa-700 disabled:opacity-50 text-white text-xs font-bold shadow-sm transition-all flex items-center gap-1.5"
             >
-              <Check className="w-4 h-4" />
-              <span>{isSaving ? 'Guardando en BD...' : 'Guardar en Base de Datos'}</span>
+              {isSaving || isLocalSaving ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>Guardando en Supabase...</span>
+                </>
+              ) : (
+                <>
+                  <Check className="w-4 h-4" />
+                  <span>Guardar en Base de Datos</span>
+                </>
+              )}
             </button>
           </div>
         </div>

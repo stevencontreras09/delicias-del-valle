@@ -1587,21 +1587,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     showToast('info', 'Estado Actualizado', `Cotización marcada como "${estado}".`);
   };
 
-  // Guardar y sincronizar opciones personalizadas de cotizador en Supabase
+  // Guardar y sincronizar opciones personalizadas de cotizador forzando persistencia en Supabase
   const saveQuoteOptions = async (newOptions: QuoteCustomOptions): Promise<boolean> => {
-    setQuoteOptions(newOptions);
-    localStorage.setItem('delicias_custom_quote_options', JSON.stringify(newOptions));
-
     if (isSupabaseConfigured()) {
       const res = await saveQuoteOptionsToSupabase(newOptions);
       if (!res.success) {
-        showToast('error', 'Error al Guardar Opciones en BD', res.error || 'No se pudieron sincronizar las opciones con Supabase.');
+        showToast('error', 'Error al Guardar en Supabase', res.error || 'No se pudieron sincronizar las opciones con la base de datos central.');
         return false;
       }
+      setQuoteOptions(newOptions);
+      localStorage.setItem('delicias_custom_quote_options', JSON.stringify(newOptions));
       broadcastChange('actualizó', 'las opciones de cotizador', 'masas, rellenos, decoraciones y empaques');
-      showToast('success', 'Opciones Guardadas en BD', 'Las opciones de cotización quedaron guardadas en la base de datos de Supabase.');
+      showToast('success', 'Guardado en Base de Datos', 'Las opciones quedaron guardadas en Supabase y sincronizadas para todas tus PCs.');
       return true;
     } else {
+      setQuoteOptions(newOptions);
+      localStorage.setItem('delicias_custom_quote_options', JSON.stringify(newOptions));
       showToast('info', 'Guardado Local', 'Opciones guardadas localmente. Conecta Supabase para sincronizar con tu otra PC.');
       return true;
     }

@@ -257,6 +257,8 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
     setIsOptionsManagerOpen(true);
   };
 
+  const [isOptionsSaving, setIsOptionsSaving] = useState(false);
+
   const handleSaveCustomOptions = async (data: {
     masas: OpcionConfigurable[];
     rellenos: OpcionConfigurable[];
@@ -264,11 +266,23 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
     empaques: OpcionConfigurable[];
     extras: CotizacionExtra[];
   }) => {
-    await saveQuoteOptions(data);
+    setIsOptionsSaving(true);
+    try {
+      const res = await saveQuoteOptions(data);
+      return res;
+    } finally {
+      setIsOptionsSaving(false);
+    }
   };
 
   const handleResetCustomOptions = async () => {
-    await resetQuoteOptions();
+    setIsOptionsSaving(true);
+    try {
+      const res = await resetQuoteOptions();
+      return res;
+    } finally {
+      setIsOptionsSaving(false);
+    }
   };
 
   const [masaBase, setMasaBase] = useState(OPCIONES_MASA_DETALLADAS[0].nombre);
@@ -400,52 +414,72 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // Control de aislamiento del borrador de la cotización:
+  // Solo poblar campos al abrir el modal o al cambiar explícitamente de cotización a editar.
+  // Evita que un evento en tiempo real de Supabase limpie lo que el usuario está escribiendo.
+  const prevQuoteIdRef = useRef<number | string | null | undefined>(undefined);
+  const wasQuoteModalOpenRef = useRef(false);
+
   useEffect(() => {
-    if (initialCotizacion) {
-      setClienteNombre(initialCotizacion.cliente_nombre);
-      setClienteTelefono(initialCotizacion.cliente_telefono);
-      setClienteEmail(initialCotizacion.cliente_email || '');
-      setFechaEvento(initialCotizacion.fecha_evento || '');
-      setValidezDias(initialCotizacion.validez_dias || 5);
-      setCostoEnvio(initialCotizacion.costo_delivery ?? initialCotizacion.costo_envio ?? 0);
-      setDescuento(initialCotizacion.descuento || 0);
-      setNotas(initialCotizacion.notas || '');
-      setItems(initialCotizacion.items);
-      setTipoDespacho(initialCotizacion.tipo_despacho || (Number(initialCotizacion.costo_delivery || initialCotizacion.costo_envio || 0) > 0 ? 'delivery' : 'retiro'));
-      setZonaDeliveryId(initialCotizacion.zona_delivery_id || '');
-      setDireccionEntrega(initialCotizacion.direccion_entrega || '');
-      setPuntoReferencia(initialCotizacion.punto_referencia || '');
-      setRepartidorNombre(initialCotizacion.repartidor_nombre || '');
-      setRepartidorTelefono(initialCotizacion.repartidor_telefono || '');
-      setMetodoPago(initialCotizacion.metodo_pago || 'transferencia');
-      setPagoDelivery(initialCotizacion.pago_delivery || (initialCotizacion.cobro_delivery_al_recibir ? 'efectivo_aparte' : 'completo'));
-      setCobroContraEntrega(Boolean(initialCotizacion.cobro_contra_entrega));
-      setIsWhatsAppBoxOpen(false);
-      setWhatsAppInputText('');
-      setDetectedMapsLink(initialCotizacion.maps_url || null);
-      setIsMapPreviewOpen(false);
+    const isOpening = isOpen && !wasQuoteModalOpenRef.current;
+    const currentQuoteId = initialCotizacion?.id ?? (initialCotizacion ? 'editing_quote' : null);
+    const quoteIdChanged = currentQuoteId !== prevQuoteIdRef.current;
+
+    if (isOpen) {
+      if (isOpening || quoteIdChanged) {
+        prevQuoteIdRef.current = currentQuoteId;
+        wasQuoteModalOpenRef.current = true;
+
+        if (initialCotizacion) {
+          setClienteNombre(initialCotizacion.cliente_nombre);
+          setClienteTelefono(initialCotizacion.cliente_telefono);
+          setClienteEmail(initialCotizacion.cliente_email || '');
+          setFechaEvento(initialCotizacion.fecha_evento || '');
+          setValidezDias(initialCotizacion.validez_dias || 5);
+          setCostoEnvio(initialCotizacion.costo_delivery ?? initialCotizacion.costo_envio ?? 0);
+          setDescuento(initialCotizacion.descuento || 0);
+          setNotas(initialCotizacion.notas || '');
+          setItems(initialCotizacion.items);
+          setTipoDespacho(initialCotizacion.tipo_despacho || (Number(initialCotizacion.costo_delivery || initialCotizacion.costo_envio || 0) > 0 ? 'delivery' : 'retiro'));
+          setZonaDeliveryId(initialCotizacion.zona_delivery_id || '');
+          setDireccionEntrega(initialCotizacion.direccion_entrega || '');
+          setPuntoReferencia(initialCotizacion.punto_referencia || '');
+          setRepartidorNombre(initialCotizacion.repartidor_nombre || '');
+          setRepartidorTelefono(initialCotizacion.repartidor_telefono || '');
+          setMetodoPago(initialCotizacion.metodo_pago || 'transferencia');
+          setPagoDelivery(initialCotizacion.pago_delivery || (initialCotizacion.cobro_delivery_al_recibir ? 'efectivo_aparte' : 'completo'));
+          setCobroContraEntrega(Boolean(initialCotizacion.cobro_contra_entrega));
+          setIsWhatsAppBoxOpen(false);
+          setWhatsAppInputText('');
+          setDetectedMapsLink(initialCotizacion.maps_url || null);
+          setIsMapPreviewOpen(false);
+        } else {
+          setClienteNombre('');
+          setClienteTelefono('');
+          setClienteEmail('');
+          setFechaEvento('');
+          setValidezDias(5);
+          setCostoEnvio(0);
+          setDescuento(0);
+          setNotas('');
+          setItems([]);
+          setTipoDespacho('retiro');
+          setZonaDeliveryId('');
+          setDireccionEntrega('');
+          setPuntoReferencia('');
+          setRepartidorNombre('');
+          setRepartidorTelefono('');
+          setMetodoPago('transferencia');
+          setPagoDelivery('completo');
+          setCobroContraEntrega(false);
+          setIsWhatsAppBoxOpen(false);
+          setWhatsAppInputText('');
+          setDetectedMapsLink(null);
+        }
+      }
     } else {
-      setClienteNombre('');
-      setClienteTelefono('');
-      setClienteEmail('');
-      setFechaEvento('');
-      setValidezDias(5);
-      setCostoEnvio(0);
-      setDescuento(0);
-      setNotas('');
-      setItems([]);
-      setTipoDespacho('retiro');
-      setZonaDeliveryId('');
-      setDireccionEntrega('');
-      setPuntoReferencia('');
-      setRepartidorNombre('');
-      setRepartidorTelefono('');
-      setMetodoPago('transferencia');
-      setPagoDelivery('completo');
-      setCobroContraEntrega(false);
-      setIsWhatsAppBoxOpen(false);
-      setWhatsAppInputText('');
-      setDetectedMapsLink(null);
+      wasQuoteModalOpenRef.current = false;
+      prevQuoteIdRef.current = undefined;
     }
   }, [initialCotizacion, isOpen]);
 
@@ -3234,6 +3268,7 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
         extras={extrasOpciones}
         onSave={handleSaveCustomOptions}
         onResetDefaults={handleResetCustomOptions}
+        isSaving={isOptionsSaving}
       />
 
       {/* Modal de Vista Previa y Corrección de Ubicación con Google Maps */}
