@@ -1385,8 +1385,3 @@ export async function fetchBazaarEventsFromSupabase(): Promise<BazaarEvent[]> {
     return [];
   }
 }
-  }
-}
-
-
-
