@@ -12,6 +12,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, Record<ActiveTab, boolean>> = {
     quotes: true,
     orders: true,
     clients: true,
+    catalog: true,
     kitchen: true,
     delivery: true,
     bazaar: true,
@@ -25,6 +26,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, Record<ActiveTab, boolean>> = {
     quotes: true,
     orders: true,
     clients: true,
+    catalog: true,
     kitchen: true,
     delivery: true,
     bazaar: true,
@@ -38,6 +40,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, Record<ActiveTab, boolean>> = {
     quotes: false,    // Restricción: no tiene acceso a presupuestos comerciales
     orders: true,     // Consulta de pedidos en producción
     clients: false,
+    catalog: false,
     kitchen: true,    // Acceso completo al Modo Cocina / Display
     delivery: false,
     bazaar: true,     // Puede registrar ventas en el bazar
@@ -51,6 +54,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, Record<ActiveTab, boolean>> = {
     quotes: true,     // Elaboración y emisión de cotizaciones
     orders: true,     // Registro de pedidos, anticipos y cobros
     clients: true,    // Gestión de cartera de clientes y envío de catálogo
+    catalog: true,    // Gestión de catálogo público y solicitudes de clientes
     kitchen: false,   // Restricción: no opera en cocina
     delivery: false,
     bazaar: true,     // Acceso completo a caja y ventas de bazar
@@ -64,6 +68,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, Record<ActiveTab, boolean>> = {
     quotes: false,
     orders: true,
     clients: true,
+    catalog: true,
     kitchen: true,
     delivery: false,
     bazaar: true,
@@ -77,6 +82,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, Record<ActiveTab, boolean>> = {
     quotes: false,    // Restricción: sin presupuestos comerciales
     orders: false,    // Restricción: utiliza exclusivamente el Modo Delivery simplificado
     clients: true,    // Puede consultar ubicaciones y referencias de entrega de clientes
+    catalog: false,
     kitchen: false,   // Restricción: no opera en línea de horneado
     delivery: true,   // Acceso exclusivo al Modo Delivery móvil y táctil
     bazaar: false,

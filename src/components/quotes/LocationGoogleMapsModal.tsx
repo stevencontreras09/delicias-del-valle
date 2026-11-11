@@ -87,15 +87,13 @@ export const LocationGoogleMapsModal: React.FC<LocationGoogleMapsModalProps> = (
   };
 
   const handleApply = () => {
-    const finalDir = inputDireccion.trim();
-    if (!finalDir) {
-      alert('Por favor escribe una dirección exacta o selecciona un punto en el mapa de Google.');
-      return;
-    }
-
     const finalMapsUrl =
       inputMapsUrl.trim() ||
       `https://www.google.com/maps?q=${coords.lat.toFixed(6)},${coords.lng.toFixed(6)}`;
+
+    const finalDir =
+      inputDireccion.trim() ||
+      `Ubicación GPS (${coords.lat.toFixed(5)}, ${coords.lng.toFixed(5)})`;
 
     onSave({
       direccion: finalDir,

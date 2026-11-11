@@ -90,6 +90,7 @@ export type ActiveTab =
   | 'quotes'
   | 'orders'
   | 'clients'
+  | 'catalog'
   | 'kitchen'
   | 'delivery'
   | 'bazaar'
@@ -438,6 +439,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const pendingPedidoEditsRef = useRef<Map<number | string, { pedido: Pedido; timestamp: number }>>(new Map());
   const pendingCotizacionEditsRef = useRef<Map<number | string, { cotizacion: Cotizacion; timestamp: number }>>(new Map());
   const pendingInsumoEditsRef = useRef<Map<number, { insumo: Insumo; timestamp: number }>>(new Map());
+  const pendingClienteEditsRef = useRef<Map<number, { cliente: Cliente; timestamp: number }>>(new Map());
   const lastLocalMutationTimeRef = useRef<number>(0);
 
   // Venta de Bazar & Pop-Up Events State
@@ -1001,7 +1003,38 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         try {
           const dbClientes = await fetchClientesFromSupabase();
           if (dbClientes && dbClientes.length > 0) {
-            setClientes(dbClientes);
+            setClientes((prev) => {
+              const now = Date.now();
+              const prevMap = new Map<number, Cliente>(prev.map((c) => [c.id, c]));
+              const mergedMap = new Map<number, Cliente>();
+
+              dbClientes.forEach((remote) => {
+                const pending = pendingClienteEditsRef.current.get(remote.id);
+                if (pending && now - pending.timestamp < 60000) {
+                  mergedMap.set(remote.id, pending.cliente);
+                  return;
+                }
+                const local = prevMap.get(remote.id);
+                mergedMap.set(remote.id, {
+                  ...remote,
+                  direccion: remote.direccion || local?.direccion,
+                  punto_referencia: remote.punto_referencia || local?.punto_referencia,
+                  maps_url: remote.maps_url || local?.maps_url,
+                  zona_delivery_id: remote.zona_delivery_id ?? local?.zona_delivery_id ?? null,
+                });
+              });
+
+              // Preservar clientes creados o modificados localmente en tránsito
+              prev.forEach((local) => {
+                const pending = pendingClienteEditsRef.current.get(local.id);
+                const isRecent = Boolean(local.created_at && now - new Date(local.created_at).getTime() < 45000);
+                if (!mergedMap.has(local.id) && (isRecent || (pending && now - pending.timestamp < 60000))) {
+                  mergedMap.set(local.id, pending ? pending.cliente : local);
+                }
+              });
+
+              return Array.from(mergedMap.values());
+            });
           }
         } catch {}
         if (res.data.zonasDelivery && res.data.zonasDelivery.length > 0) {
@@ -1615,11 +1648,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           zona_delivery_id: data.zona_delivery_id !== undefined ? data.zona_delivery_id : existing.zona_delivery_id,
           updated_at: new Date().toISOString(),
         };
+        lastLocalMutationTimeRef.current = Date.now();
+        pendingClienteEditsRef.current.set(updated.id, { cliente: updated, timestamp: Date.now() });
         if (isSupabaseConfigured()) {
           syncClienteToSupabase(updated);
         }
         const newList = [...prev];
         newList[existingIndex] = updated;
+        try {
+          localStorage.setItem(`${STORAGE_KEY}_clientes`, JSON.stringify(newList));
+        } catch {}
         return newList;
       } else {
         const newId = prev.length > 0 ? Math.max(...prev.map((c) => c.id)) + 1 : 1;
@@ -1634,11 +1672,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           zona_delivery_id: data.zona_delivery_id || null,
           total_pedidos: 0,
           created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
         };
+        lastLocalMutationTimeRef.current = Date.now();
+        pendingClienteEditsRef.current.set(nuevo.id, { cliente: nuevo, timestamp: Date.now() });
         if (isSupabaseConfigured()) {
           syncClienteToSupabase(nuevo);
         }
-        return [nuevo, ...prev];
+        const newList = [nuevo, ...prev];
+        try {
+          localStorage.setItem(`${STORAGE_KEY}_clientes`, JSON.stringify(newList));
+        } catch {}
+        return newList;
       }
     });
   };
@@ -1802,9 +1847,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       ...data,
       id: newId,
       created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
       total_pedidos: data.total_pedidos || 0,
     };
-    setClientes((prev) => [nuevo, ...prev]);
+    lastLocalMutationTimeRef.current = Date.now();
+    pendingClienteEditsRef.current.set(newId, { cliente: nuevo, timestamp: Date.now() });
+    setClientes((prev) => {
+      const next = [nuevo, ...prev];
+      try {
+        localStorage.setItem(`${STORAGE_KEY}_clientes`, JSON.stringify(next));
+      } catch {}
+      return next;
+    });
     if (isSupabaseConfigured()) {
       syncClienteToSupabase(nuevo);
       broadcastChange('registró', 'el cliente', nuevo.nombre, nuevo.id);
@@ -1817,19 +1871,25 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     let cliNombre = '';
     let prevNombre = '';
     let prevTelefono = '';
-    setClientes((prev) =>
-      prev.map((c) => {
+    lastLocalMutationTimeRef.current = Date.now();
+    setClientes((prev) => {
+      const next = prev.map((c) => {
         if (c.id !== id) return c;
         prevNombre = c.nombre;
         prevTelefono = c.telefono;
         const updated = { ...c, ...data, updated_at: new Date().toISOString() };
         cliNombre = updated.nombre;
+        pendingClienteEditsRef.current.set(id, { cliente: updated, timestamp: Date.now() });
         if (isSupabaseConfigured()) {
           syncClienteToSupabase(updated);
         }
         return updated;
-      })
-    );
+      });
+      try {
+        localStorage.setItem(`${STORAGE_KEY}_clientes`, JSON.stringify(next));
+      } catch {}
+      return next;
+    });
 
     // Si se actualizaron datos de dirección o ubicación, propagar a pedidos activos y cotizaciones del cliente
     if (

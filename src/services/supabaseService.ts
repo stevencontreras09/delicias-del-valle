@@ -1,5 +1,5 @@
 import { getSupabaseClient } from '../utils/supabaseClient';
-import { Insumo, Merma, Receta, Cotizacion, Pedido, Usuario, Cliente, FormatoPresentacion, ZonaDelivery, QuoteCustomOptions, BazaarEvent } from '../types';
+import { Insumo, Merma, Receta, Cotizacion, Pedido, Usuario, Cliente, FormatoPresentacion, ZonaDelivery, QuoteCustomOptions, BazaarEvent, CatalogProductItem, CatalogOrderRequest } from '../types';
 
 export interface SyncResult {
   success: boolean;
@@ -160,13 +160,31 @@ export async function fetchAllFromSupabase(): Promise<{
       console.warn('Tabla zonas_delivery no disponible en Supabase:', e);
     }
 
-    // 7. Cargar configuraciones adicionales (tipo_costo de insumos, eventos de bazar)
+    // 7. Cargar configuraciones adicionales (tipo_costo de insumos, eventos de bazar, ubicaciones GPS)
     let tipoCostoMap: Record<string, 'fijo' | 'variable'> = {};
     let bazaarEventsRemote: BazaarEvent[] = [];
+    let ubicacionesMeta: {
+      clientes: Record<string, any>;
+      pedidos: Record<string, any>;
+      cotizaciones: Record<string, any>;
+    } = { clientes: {}, pedidos: {}, cotizaciones: {} };
     try {
       const localTc = localStorage.getItem('delicias_insumos_tipo_costo');
       if (localTc) {
         try { tipoCostoMap = { ...JSON.parse(localTc) }; } catch {}
+      }
+      const localUbi = localStorage.getItem('delicias_ubicaciones_gps_meta');
+      if (localUbi) {
+        try {
+          const parsedUbi = JSON.parse(localUbi);
+          if (parsedUbi && typeof parsedUbi === 'object') {
+            ubicacionesMeta = {
+              clientes: { ...(parsedUbi.clientes || {}) },
+              pedidos: { ...(parsedUbi.pedidos || {}) },
+              cotizaciones: { ...(parsedUbi.cotizaciones || {}) },
+            };
+          }
+        } catch {}
       }
       const { data: configDb } = await client.from('configuracion').select('clave, valor');
       if (configDb && Array.isArray(configDb)) {
@@ -177,6 +195,17 @@ export async function fetchAllFromSupabase(): Promise<{
         const bzConfig = configDb.find((c: any) => c.clave === 'bazaar_events');
         if (bzConfig && Array.isArray(bzConfig.valor)) {
           bazaarEventsRemote = bzConfig.valor;
+        }
+        const ubiConfig = configDb.find((c: any) => c.clave === 'ubicaciones_gps_meta');
+        if (ubiConfig && ubiConfig.valor && typeof ubiConfig.valor === 'object') {
+          ubicacionesMeta = {
+            clientes: { ...ubicacionesMeta.clientes, ...(ubiConfig.valor.clientes || {}) },
+            pedidos: { ...ubicacionesMeta.pedidos, ...(ubiConfig.valor.pedidos || {}) },
+            cotizaciones: { ...ubicacionesMeta.cotizaciones, ...(ubiConfig.valor.cotizaciones || {}) },
+          };
+          try {
+            localStorage.setItem('delicias_ubicaciones_gps_meta', JSON.stringify(ubicacionesMeta));
+          } catch {}
         }
       }
     } catch (e) {
@@ -284,12 +313,12 @@ export async function fetchAllFromSupabase(): Promise<{
         tipo_despacho: (c.tipo_despacho as any) || (Number(c.costo_delivery || c.costo_envio || 0) > 0 ? 'delivery' : 'retiro'),
         zona_delivery_id: c.zona_delivery_id ? Number(c.zona_delivery_id) : undefined,
         costo_delivery: Number(c.costo_delivery ?? c.costo_envio ?? 0),
-        direccion_entrega: c.direccion_entrega || '',
-        punto_referencia: c.punto_referencia || '',
+        direccion_entrega: c.direccion_entrega || ubicacionesMeta.cotizaciones[String(c.id)]?.direccion_entrega || ubicacionesMeta.cotizaciones[c.codigo]?.direccion_entrega || '',
+        punto_referencia: c.punto_referencia || ubicacionesMeta.cotizaciones[String(c.id)]?.punto_referencia || ubicacionesMeta.cotizaciones[c.codigo]?.punto_referencia || '',
         repartidor_nombre: c.repartidor_nombre || '',
         repartidor_telefono: c.repartidor_telefono || '',
         direccion_confirmada: Boolean(c.direccion_confirmada),
-        maps_url: c.maps_url || undefined,
+        maps_url: c.maps_url || ubicacionesMeta.cotizaciones[String(c.id)]?.maps_url || ubicacionesMeta.cotizaciones[c.codigo]?.maps_url || undefined,
         metodo_pago: c.metodo_pago || 'transferencia',
         pago_delivery: c.pago_delivery || (c.cobro_delivery_al_recibir ? 'efectivo_aparte' : 'completo'),
         cobro_delivery_al_recibir: Boolean(c.cobro_delivery_al_recibir || c.pago_delivery === 'efectivo_aparte'),
@@ -376,11 +405,11 @@ export async function fetchAllFromSupabase(): Promise<{
       tipo_despacho: (p.tipo_despacho as any) || (p.tipo_entrega === 'domicilio' ? 'delivery' : 'retiro'),
       zona_delivery_id: p.zona_delivery_id ? Number(p.zona_delivery_id) : undefined,
       costo_delivery: Number(p.costo_delivery ?? p.costo_envio ?? 0),
-      punto_referencia: p.punto_referencia || '',
+      punto_referencia: p.punto_referencia || ubicacionesMeta.pedidos[String(p.id)]?.punto_referencia || ubicacionesMeta.pedidos[p.numero_factura]?.punto_referencia || '',
       repartidor_nombre: p.repartidor_nombre || '',
       repartidor_telefono: p.repartidor_telefono || '',
       cobro_delivery_al_recibir: Boolean(p.cobro_delivery_al_recibir),
-      maps_url: p.maps_url || undefined,
+      maps_url: p.maps_url || ubicacionesMeta.pedidos[String(p.id)]?.maps_url || ubicacionesMeta.pedidos[p.numero_factura]?.maps_url || undefined,
       created_at: p.created_at || new Date().toISOString(),
       items: (p.pedido_items || []).map((item: any) => {
         const isExtra = !item.receta_id && (
@@ -694,6 +723,15 @@ export async function syncPedidoToSupabase(pedido: Pedido): Promise<boolean> {
       cobro_delivery_al_recibir: Boolean(pedido.cobro_delivery_al_recibir),
       updated_at: new Date().toISOString(),
     };
+    if (pedido.maps_url || pedido.direccion_entrega || pedido.punto_referencia) {
+      await persistUbicacionMetaInSupabase('pedidos', String(pedido.id), {
+        maps_url: pedido.maps_url || undefined,
+        direccion_entrega: pedido.direccion_entrega || undefined,
+        punto_referencia: pedido.punto_referencia || undefined,
+        zona_delivery_id: pedido.zona_delivery_id ?? null,
+        updated_at: new Date().toISOString(),
+      }, pedido.numero_factura ? [pedido.numero_factura] : []);
+    }
     if (pedido.maps_url) payload.maps_url = pedido.maps_url;
 
     let { data: pedDb, error: pedErr } = await client.from('pedidos').upsert(payload).select().single();
@@ -821,6 +859,15 @@ export async function syncCotizacionToSupabase(
     if (cotizacion.pago_delivery) payload.pago_delivery = cotizacion.pago_delivery;
     if (cotizacion.cobro_delivery_al_recibir !== undefined) payload.cobro_delivery_al_recibir = cotizacion.cobro_delivery_al_recibir;
     if (cotizacion.cobro_contra_entrega !== undefined) payload.cobro_contra_entrega = cotizacion.cobro_contra_entrega;
+    if (cotizacion.maps_url || cotizacion.direccion_entrega || cotizacion.punto_referencia) {
+      await persistUbicacionMetaInSupabase('cotizaciones', String(cotizacion.id), {
+        maps_url: cotizacion.maps_url || undefined,
+        direccion_entrega: cotizacion.direccion_entrega || undefined,
+        punto_referencia: cotizacion.punto_referencia || undefined,
+        zona_delivery_id: cotizacion.zona_delivery_id ?? null,
+        updated_at: new Date().toISOString(),
+      }, cotizacion.codigo ? [cotizacion.codigo] : []);
+    }
     if (cotizacion.maps_url) payload.maps_url = cotizacion.maps_url;
 
     let { data: cotDb, error: cotErr } = await client.from('cotizaciones').upsert(payload).select().single();
@@ -1128,38 +1175,233 @@ export async function deleteUsuarioFromSupabase(id: number): Promise<boolean> {
 }
 
 // ==============================================================================
-// MINI CRM: CLIENTES FRECUENTES
+// MINI CRM: CLIENTES FRECUENTES & METADATOS DE UBICACIÓN GPS EN SUPABASE
 // ==============================================================================
 
+const UBICACIONES_META_LOCAL_KEY = 'delicias_ubicaciones_gps_meta';
+
+function readLocalUbicacionesMeta(): {
+  clientes: Record<string, any>;
+  pedidos: Record<string, any>;
+  cotizaciones: Record<string, any>;
+} {
+  try {
+    const raw = localStorage.getItem(UBICACIONES_META_LOCAL_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed && typeof parsed === 'object') {
+        return {
+          clientes: { ...(parsed.clientes || {}) },
+          pedidos: { ...(parsed.pedidos || {}) },
+          cotizaciones: { ...(parsed.cotizaciones || {}) },
+        };
+      }
+    }
+  } catch {}
+  return { clientes: {}, pedidos: {}, cotizaciones: {} };
+}
+
+function writeLocalUbicacionesMeta(meta: {
+  clientes: Record<string, any>;
+  pedidos: Record<string, any>;
+  cotizaciones: Record<string, any>;
+}) {
+  try {
+    localStorage.setItem(UBICACIONES_META_LOCAL_KEY, JSON.stringify(meta));
+  } catch {}
+}
+
+export async function persistUbicacionMetaInSupabase(
+  bucket: 'clientes' | 'pedidos' | 'cotizaciones',
+  primaryKey: string,
+  entry: Record<string, any>,
+  extraKeys: string[] = []
+): Promise<boolean> {
+  const localMeta = readLocalUbicacionesMeta();
+  localMeta[bucket][primaryKey] = {
+    ...(localMeta[bucket][primaryKey] || {}),
+    ...entry,
+  };
+  extraKeys.forEach((k) => {
+    if (k && k.trim()) {
+      localMeta[bucket][k.trim()] = {
+        ...(localMeta[bucket][k.trim()] || {}),
+        ...entry,
+      };
+    }
+  });
+  writeLocalUbicacionesMeta(localMeta);
+
+  const client = getSupabaseClient();
+  if (!client) return true;
+
+  try {
+    const { data: currentRow } = await client
+      .from('configuracion')
+      .select('valor')
+      .eq('clave', 'ubicaciones_gps_meta')
+      .maybeSingle();
+
+    const remoteVal = currentRow?.valor && typeof currentRow.valor === 'object' ? currentRow.valor : {};
+    const merged = {
+      clientes: { ...(remoteVal.clientes || {}), ...localMeta.clientes },
+      pedidos: { ...(remoteVal.pedidos || {}), ...localMeta.pedidos },
+      cotizaciones: { ...(remoteVal.cotizaciones || {}), ...localMeta.cotizaciones },
+    };
+    merged[bucket][primaryKey] = {
+      ...(merged[bucket][primaryKey] || {}),
+      ...entry,
+    };
+    extraKeys.forEach((k) => {
+      if (k && k.trim()) {
+        merged[bucket][k.trim()] = {
+          ...(merged[bucket][k.trim()] || {}),
+          ...entry,
+        };
+      }
+    });
+
+    writeLocalUbicacionesMeta(merged);
+
+    const { error } = await client.from('configuracion').upsert(
+      {
+        clave: 'ubicaciones_gps_meta',
+        valor: merged,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: 'clave' }
+    );
+    return !error;
+  } catch (err) {
+    console.warn('Error sincronizando ubicaciones_gps_meta en Supabase:', err);
+    return false;
+  }
+}
+
 /**
- * Obtiene todos los clientes desde Supabase
+ * Obtiene todos los clientes desde Supabase fusionando sus ubicaciones GPS (maps_url, punto_referencia, zona_delivery_id)
  */
 export async function fetchClientesFromSupabase(): Promise<Cliente[]> {
   const client = getSupabaseClient();
   if (!client) return [];
 
   try {
-    const { data, error } = await client
-      .from('clientes')
-      .select('*')
-      .order('nombre', { ascending: true });
+    const [clientesRes, ubiConfigRes] = await Promise.all([
+      client.from('clientes').select('*').order('nombre', { ascending: true }),
+      client.from('configuracion').select('valor').eq('clave', 'ubicaciones_gps_meta').maybeSingle(),
+    ]);
 
-    if (error || !data) return [];
-    return data.map((c: any) => ({
-      ...c,
-      total_pedidos: c.total_pedidos ?? c.total_pedidos_historico ?? 0,
-      total_pedidos_historico: c.total_pedidos_historico ?? c.total_pedidos ?? 0,
-      cumpleanos_familiar: c.cumpleanos_familiar || (c.fecha_cumpleanos ? String(c.fecha_cumpleanos) : ''),
-    })) as Cliente[];
+    const localMeta = readLocalUbicacionesMeta();
+    const remoteClientesMeta =
+      ubiConfigRes.data?.valor && typeof ubiConfigRes.data.valor === 'object'
+        ? ubiConfigRes.data.valor.clientes || {}
+        : {};
+
+    const clientesMeta: Record<string, any> = {
+      ...localMeta.clientes,
+      ...remoteClientesMeta,
+    };
+
+    if (ubiConfigRes.data?.valor && typeof ubiConfigRes.data.valor === 'object') {
+      writeLocalUbicacionesMeta({
+        clientes: clientesMeta,
+        pedidos: { ...localMeta.pedidos, ...(ubiConfigRes.data.valor.pedidos || {}) },
+        cotizaciones: { ...localMeta.cotizaciones, ...(ubiConfigRes.data.valor.cotizaciones || {}) },
+      });
+    }
+
+    const dbRows = Array.isArray(clientesRes.data) ? clientesRes.data : [];
+    const seenIds = new Set<number>();
+
+    const mergedList: Cliente[] = dbRows.map((c: any) => {
+      const idNum = Number(c.id);
+      seenIds.add(idNum);
+      const normNameKey = c.nombre ? `name:${String(c.nombre).trim().toLowerCase()}` : '';
+      const digitsTel = c.telefono ? String(c.telefono).replace(/\D/g, '') : '';
+      const phoneKey = digitsTel.length >= 7 ? `tel:${digitsTel}` : '';
+
+      const meta =
+        clientesMeta[String(c.id)] ||
+        (normNameKey ? clientesMeta[normNameKey] : undefined) ||
+        (phoneKey ? clientesMeta[phoneKey] : undefined) ||
+        {};
+
+      return {
+        ...c,
+        id: idNum,
+        direccion: c.direccion || meta.direccion || undefined,
+        punto_referencia: c.punto_referencia || meta.punto_referencia || undefined,
+        maps_url: c.maps_url || meta.maps_url || undefined,
+        zona_delivery_id: c.zona_delivery_id ?? meta.zona_delivery_id ?? null,
+        total_pedidos: c.total_pedidos ?? c.total_pedidos_historico ?? meta.total_pedidos ?? 0,
+        total_pedidos_historico: c.total_pedidos_historico ?? c.total_pedidos ?? meta.total_pedidos ?? 0,
+        cumpleanos_familiar:
+          c.cumpleanos_familiar || meta.cumpleanos_familiar || (c.fecha_cumpleanos ? String(c.fecha_cumpleanos) : ''),
+      } as Cliente;
+    });
+
+    // Incluir clientes guardados en clientesMeta con ID numérico que aún no estén en la tabla clientes
+    Object.entries(clientesMeta).forEach(([key, val]) => {
+      if (/^\d+$/.test(key) && val && typeof val === 'object' && val.nombre && ! val._deleted) {
+        const numId = Number(key);
+        if (!seenIds.has(numId)) {
+          seenIds.add(numId);
+          mergedList.push({
+            id: numId,
+            nombre: val.nombre,
+            telefono: val.telefono || 'N/A',
+            email: val.email || undefined,
+            direccion: val.direccion || undefined,
+            punto_referencia: val.punto_referencia || undefined,
+            maps_url: val.maps_url || undefined,
+            zona_delivery_id: val.zona_delivery_id ?? null,
+            alergias_preferencias: val.alergias_preferencias || undefined,
+            cumpleanos_familiar: val.cumpleanos_familiar || undefined,
+            total_pedidos: val.total_pedidos || 0,
+            ultimo_pedido: val.ultimo_pedido || undefined,
+            created_at: val.created_at || val.updated_at || new Date().toISOString(),
+            updated_at: val.updated_at,
+          });
+        }
+      }
+    });
+
+    return mergedList.sort((a, b) => a.nombre.localeCompare(b.nombre));
   } catch {
     return [];
   }
 }
 
 /**
- * Guarda o actualiza un cliente en Supabase
+ * Guarda o actualiza un cliente en Supabase (tabla clientes + ubicaciones_gps_meta en configuracion)
  */
 export async function syncClienteToSupabase(cliente: Cliente): Promise<boolean> {
+  const normNameKey = cliente.nombre ? `name:${cliente.nombre.trim().toLowerCase()}` : '';
+  const digitsTel = (cliente.telefono || '').replace(/\D/g, '');
+  const phoneKey = digitsTel.length >= 7 ? `tel:${digitsTel}` : '';
+
+  // 1. Persistir siempre en ubicaciones_gps_meta (localStorage + tabla configuracion de Supabase)
+  await persistUbicacionMetaInSupabase(
+    'clientes',
+    String(cliente.id),
+    {
+      id: cliente.id,
+      nombre: cliente.nombre,
+      telefono: cliente.telefono,
+      email: cliente.email || null,
+      direccion: cliente.direccion || null,
+      punto_referencia: cliente.punto_referencia || null,
+      maps_url: cliente.maps_url || null,
+      zona_delivery_id: cliente.zona_delivery_id ?? null,
+      alergias_preferencias: cliente.alergias_preferencias || null,
+      cumpleanos_familiar: cliente.cumpleanos_familiar || null,
+      total_pedidos: cliente.total_pedidos || cliente.total_pedidos_historico || 0,
+      ultimo_pedido: cliente.ultimo_pedido || null,
+      updated_at: new Date().toISOString(),
+    },
+    [normNameKey, phoneKey].filter(Boolean)
+  );
+
   const client = getSupabaseClient();
   if (!client) return false;
 
@@ -1203,6 +1445,7 @@ export async function syncClienteToSupabase(cliente: Cliente): Promise<boolean> 
  * Elimina un cliente de Supabase
  */
 export async function deleteClienteFromSupabase(id: number): Promise<boolean> {
+  await persistUbicacionMetaInSupabase('clientes', String(id), { _deleted: true, maps_url: null, punto_referencia: null });
   const client = getSupabaseClient();
   if (!client) return false;
 
@@ -1417,5 +1660,147 @@ export async function fetchBazaarEventsFromSupabase(): Promise<BazaarEvent[]> {
     return local ? JSON.parse(local) : [];
   } catch {
     return [];
+  }
+}
+
+// ==============================================================================
+// CATÁLOGO VISUAL PÚBLICO & SOLICITUDES DE PEDIDO (SIN PRECIOS)
+// ==============================================================================
+
+export async function fetchCatalogItemsFromSupabase(): Promise<CatalogProductItem[]> {
+  const client = getSupabaseClient();
+  if (client) {
+    try {
+      const { data, error } = await client
+        .from('configuracion')
+        .select('valor')
+        .eq('clave', 'catalogo_publico_items')
+        .maybeSingle();
+
+      if (!error && data?.valor && Array.isArray(data.valor)) {
+        try {
+          localStorage.setItem('delicias_catalogo_items', JSON.stringify(data.valor));
+        } catch {}
+        return data.valor as CatalogProductItem[];
+      }
+    } catch (err) {
+      console.warn('Error cargando catalogo_publico_items de Supabase:', err);
+    }
+  }
+
+  try {
+    const local = localStorage.getItem('delicias_catalogo_items');
+    return local ? JSON.parse(local) : [];
+  } catch {
+    return [];
+  }
+}
+
+export async function syncCatalogItemsToSupabase(items: CatalogProductItem[]): Promise<boolean> {
+  try {
+    localStorage.setItem('delicias_catalogo_items', JSON.stringify(items));
+  } catch {}
+
+  const client = getSupabaseClient();
+  if (!client) return true;
+
+  try {
+    const { error } = await client.from('configuracion').upsert(
+      {
+        clave: 'catalogo_publico_items',
+        valor: items,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: 'clave' }
+    );
+    return !error;
+  } catch (err) {
+    console.warn('Error guardando catalogo_publico_items en Supabase:', err);
+    return false;
+  }
+}
+
+export async function fetchCatalogOrdersFromSupabase(): Promise<CatalogOrderRequest[]> {
+  const client = getSupabaseClient();
+  if (client) {
+    try {
+      const { data, error } = await client
+        .from('configuracion')
+        .select('valor')
+        .eq('clave', 'solicitudes_catalogo')
+        .maybeSingle();
+
+      if (!error && data?.valor && Array.isArray(data.valor)) {
+        try {
+          localStorage.setItem('delicias_solicitudes_catalogo', JSON.stringify(data.valor));
+        } catch {}
+        return data.valor as CatalogOrderRequest[];
+      }
+    } catch (err) {
+      console.warn('Error cargando solicitudes_catalogo de Supabase:', err);
+    }
+  }
+
+  try {
+    const local = localStorage.getItem('delicias_solicitudes_catalogo');
+    return local ? JSON.parse(local) : [];
+  } catch {
+    return [];
+  }
+}
+
+export async function syncCatalogOrdersToSupabase(orders: CatalogOrderRequest[]): Promise<boolean> {
+  try {
+    localStorage.setItem('delicias_solicitudes_catalogo', JSON.stringify(orders));
+  } catch {}
+
+  const client = getSupabaseClient();
+  if (!client) return true;
+
+  try {
+    const { error } = await client.from('configuracion').upsert(
+      {
+        clave: 'solicitudes_catalogo',
+        valor: orders,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: 'clave' }
+    );
+    return !error;
+  } catch (err) {
+    console.warn('Error guardando solicitudes_catalogo en Supabase:', err);
+    return false;
+  }
+}
+
+export async function submitPublicCatalogOrderToSupabase(
+  newOrder: CatalogOrderRequest
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const currentOrders = await fetchCatalogOrdersFromSupabase();
+    const updated = [newOrder, ...currentOrders.filter((o) => o.id !== newOrder.id)];
+    const ok = await syncCatalogOrdersToSupabase(updated);
+
+    // También registrar o actualizar al cliente y su ubicación GPS en Supabase
+    if (newOrder.cliente_nombre && newOrder.cliente_telefono) {
+      await persistUbicacionMetaInSupabase(
+        'clientes',
+        `name:${newOrder.cliente_nombre.trim().toLowerCase()}`,
+        {
+          nombre: newOrder.cliente_nombre.trim(),
+          telefono: newOrder.cliente_telefono.trim(),
+          email: newOrder.cliente_email?.trim() || null,
+          direccion: newOrder.direccion_entrega?.trim() || null,
+          punto_referencia: newOrder.punto_referencia?.trim() || null,
+          maps_url: newOrder.maps_url?.trim() || null,
+          updated_at: new Date().toISOString(),
+        },
+        [`tel:${newOrder.cliente_telefono.replace(/\D/g, '')}`]
+      );
+    }
+
+    return { success: ok };
+  } catch (err: any) {
+    return { success: false, error: err?.message || 'Error enviando pedido del catálogo' };
   }
 }

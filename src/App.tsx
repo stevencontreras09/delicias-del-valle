@@ -13,6 +13,8 @@ import { DatabaseViewer } from './components/database/DatabaseViewer';
 import { UserManager } from './components/users/UserManager';
 import { BazaarManager } from './components/bazaar/BazaarManager';
 import { ClientPortfolioManager } from './components/clients/ClientPortfolioManager';
+import { CatalogManager } from './components/catalog/CatalogManager';
+import { PublicCatalogPage } from './components/catalog/PublicCatalogPage';
 import { canAccessTab, getDefaultTabForRole } from './utils/security';
 import { ShieldAlert } from 'lucide-react';
 import { PublicOrderTrackingPage } from './components/delivery/PublicOrderTrackingPage';
@@ -20,8 +22,30 @@ import { PublicOrderTrackingPage } from './components/delivery/PublicOrderTracki
 export const App: React.FC = () => {
   const { activeTab, setActiveTab, currentUser } = useApp();
 
-  // Detección de enlace público de rastreo en tiempo real para clientes
+  // Detección de enlaces públicos (Rastreo GPS en vivo y Catálogo Interactivo para Clientes)
   const searchParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+  const isPublicCatalog =
+    Boolean(searchParams?.get('catalogo')) ||
+    Boolean(searchParams?.get('catalog')) ||
+    (typeof window !== 'undefined' &&
+      (window.location.pathname === '/catalogo' || window.location.pathname.startsWith('/catalogo/')));
+
+  if (isPublicCatalog) {
+    return (
+      <PublicCatalogPage
+        onBackToApp={
+          currentUser
+            ? () => {
+                if (typeof window !== 'undefined') {
+                  window.location.href = '/';
+                }
+              }
+            : undefined
+        }
+      />
+    );
+  }
+
   const rastreoQuery =
     searchParams?.get('rastreo') ||
     searchParams?.get('tracking') ||
@@ -86,6 +110,8 @@ export const App: React.FC = () => {
         return <OrderManager />;
       case 'clients':
         return <ClientPortfolioManager />;
+      case 'catalog':
+        return <CatalogManager />;
       case 'bazaar':
         return <BazaarManager />;
       case 'kitchen':

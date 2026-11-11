@@ -13,8 +13,6 @@ import {
   Loader2,
   AlertTriangle,
   Crosshair,
-  KeyRound,
-  Check,
   ExternalLink,
 } from 'lucide-react';
 import { DELICIAS_WORKSHOP_COORDS } from '../../utils/routeOptimizer';
@@ -310,10 +308,8 @@ const GoogleMapsSdkView: React.FC<
 
 export const MapLocationPicker: React.FC<MapLocationPickerProps> = (props) => {
   const { latitude, longitude, address, onChangeLocation } = props;
-  const [apiKey, setApiKey] = useState<string>(() => getResolvedGoogleMapsApiKey());
+  const apiKey = getResolvedGoogleMapsApiKey();
   const [useFallbackMap, setUseFallbackMap] = useState<boolean>(false);
-  const [showKeyConfig, setShowKeyConfig] = useState<boolean>(false);
-  const [tempKeyInput, setTempKeyInput] = useState<string>(apiKey);
 
   // Buscador de lugares (Photon / Nominatim RD) para modo híbrido / sin llave JS
   const [searchQuery, setSearchQuery] = useState<string>(address || '');
@@ -412,16 +408,6 @@ export const MapLocationPicker: React.FC<MapLocationPickerProps> = (props) => {
     );
   };
 
-  const handleSaveApiKey = () => {
-    saveGoogleMapsApiKey(tempKeyInput);
-    setApiKey(tempKeyInput.trim());
-    setUseFallbackMap(false);
-    setShowKeyConfig(false);
-    if (tempKeyInput.trim()) {
-      window.location.reload();
-    }
-  };
-
   const googleEmbedUrl = `https://maps.google.com/maps?q=${encodeURIComponent(
     hasCustomCoords
       ? `${currentCoords.lat},${currentCoords.lng}`
@@ -451,40 +437,7 @@ export const MapLocationPicker: React.FC<MapLocationPickerProps> = (props) => {
               >
                 Buscar Calle, Sector o Residencial (Google Maps & Geocoder RD)
               </label>
-              <button
-                type="button"
-                onClick={() => setShowKeyConfig(!showKeyConfig)}
-                className="text-[10px] font-bold text-frambuesa-700 hover:underline inline-flex items-center gap-1"
-              >
-                <KeyRound className="w-3 h-3" />
-                <span>{apiKey ? 'Cambiar API Key JS' : 'Configurar API Key Google Maps JS'}</span>
-              </button>
             </div>
-
-            {showKeyConfig && (
-              <div className="mb-2.5 p-3 rounded-xl bg-amber-50/90 border border-amber-200 text-xs space-y-2">
-                <p className="text-[11px] text-amber-900 font-medium">
-                  Ingresa tu clave <code>VITE_GOOGLE_MAPS_API_KEY</code> (<code>AIzaSy...</code>) para activar el pin arrastrable nativo de Google Maps JS SDK:
-                </p>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="text"
-                    placeholder="AIzaSy..."
-                    value={tempKeyInput}
-                    onChange={(e) => setTempKeyInput(e.target.value)}
-                    className="flex-1 px-3 py-1.5 rounded-lg border border-amber-300 bg-white font-mono text-xs"
-                  />
-                  <button
-                    type="button"
-                    onClick={handleSaveApiKey}
-                    className="px-3 py-1.5 rounded-lg bg-chocolate-800 hover:bg-chocolate-900 text-white font-bold text-xs inline-flex items-center gap-1"
-                  >
-                    <Check className="w-3.5 h-3.5" />
-                    <span>Guardar y Activar</span>
-                  </button>
-                </div>
-              </div>
-            )}
 
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-chocolate-400">

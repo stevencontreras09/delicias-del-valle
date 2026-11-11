@@ -17,6 +17,7 @@ import {
   Trash2,
   Truck,
   Contact,
+  ShoppingBag,
 } from 'lucide-react';
 import { canAccessTab, getDefaultTabForRole } from '../../utils/security';
 
@@ -76,6 +77,11 @@ export const Navbar: React.FC = () => {
       id: 'clients',
       label: 'Clientes',
       icon: <Contact className="w-3.5 h-3.5" />,
+    },
+    {
+      id: 'catalog',
+      label: 'Catálogo',
+      icon: <ShoppingBag className="w-3.5 h-3.5" />,
     },
     { id: 'kitchen', label: 'Cocina', icon: <ChefHat className="w-3.5 h-3.5" /> },
     {

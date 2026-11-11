@@ -24,14 +24,12 @@ import {
   AlertCircle,
   Download,
   RefreshCw,
-  KeyRound,
   Compass,
   Gift,
   FileText,
   Truck,
 } from 'lucide-react';
 import { formatCurrency } from '../../utils/formatters';
-import { calcularCostosReceta } from '../../utils/calculations';
 import { sanitizeDominicanPhone } from '../../utils/whatsappHelper';
 import { DELICIAS_WORKSHOP_COORDS } from '../../utils/routeOptimizer';
 import { Modal } from '../ui/Modal';
@@ -39,7 +37,6 @@ import { LocationGoogleMapsModal } from '../quotes/LocationGoogleMapsModal';
 import {
   MapLocationPicker,
   getResolvedGoogleMapsApiKey,
-  saveGoogleMapsApiKey,
 } from '../maps/MapLocationPicker';
 
 const LIBRARIES: ('places')[] = ['places'];
@@ -119,9 +116,9 @@ export const ClientPortfolioManager: React.FC = () => {
     cotizaciones,
     bazaarEvents,
     recetas,
-    insumosMap,
     zonasDelivery,
     showToast,
+    setActiveTab,
   } = useApp();
 
   type PortfolioSubTab = 'cartera' | 'catalogo' | 'mapa';
@@ -148,10 +145,11 @@ export const ClientPortfolioManager: React.FC = () => {
   // Modal de Ubicación Google Maps rápido para un cliente específico
   const [locationModalClient, setLocationModalClient] = useState<Cliente | null>(null);
 
-  // Configuración de Google Maps API Key
-  const [isApiKeyModalOpen, setIsApiKeyModalOpen] = useState(false);
-  const [apiKeyInput, setApiKeyInput] = useState<string>(() => getResolvedGoogleMapsApiKey());
   const activeApiKey = getResolvedGoogleMapsApiKey();
+  const publicCatalogUrl =
+    typeof window !== 'undefined'
+      ? `${window.location.origin}/?catalogo=1`
+      : 'https://delicias-del-valle.vercel.app/?catalogo=1';
 
   // Estados de Difusión de Catálogo Disponible
   const [includeRecetario, setIncludeRecetario] = useState(true);
@@ -160,7 +158,11 @@ export const ClientPortfolioManager: React.FC = () => {
     'Te compartimos nuestro *Catálogo Disponible* de pastelería artesanal recién horneada en *Delicias del Valle* 🍰✨:'
   );
   const [catalogFooter, setCatalogFooter] = useState(
-    '🛵 Contamos con *entrega a domicilio* y retiro en taller.\n📲 Responde a este mensaje para reservar tu pedido o cotizar tu evento especial.'
+    `📲 *Haz clic en nuestro Catálogo Interactivo para ver fotos, personalizar tu pedido a tu gusto y confirmarlo en línea:*\n👉 ${
+      typeof window !== 'undefined'
+        ? `${window.location.origin}/?catalogo=1`
+        : 'https://delicias-del-valle.vercel.app/?catalogo=1'
+    }\n\n🛵 Contamos con *entrega a domicilio* y retiro en taller.`
   );
   const [sentClientIds, setSentClientIds] = useState<number[]>([]);
   const [copiedCatalogText, setCopiedCatalogText] = useState(false);
@@ -388,21 +390,16 @@ export const ClientPortfolioManager: React.FC = () => {
     lines.push('');
 
     if (includeRecetario && recetas.length > 0) {
-      lines.push('🎂 *CATÁLOGO DE PASTELERÍA & POSTRES ARTESANALES:*');
+      lines.push('🎂 *NUESTRAS ESPECIALIDADES ARTESANALES:*');
       const activas = recetas.filter((r) => r.activa !== false);
-      const porCategoria = new Map<string, { nombre: string; precio: number; unidad: string }[]>();
+      const porCategoria = new Map<string, { nombre: string; unidad: string }[]>();
 
       activas.forEach((rec) => {
-        const costos = calcularCostosReceta(rec, insumosMap);
-        const precio = Math.round(
-          costos.precio_sugerido_margen_venta || costos.precio_sugerido_venta || 150
-        );
         const cat = rec.categoria || 'Especialidades';
         const grupo = porCategoria.get(cat) || [];
         grupo.push({
           nombre: rec.nombre,
-          precio,
-          unidad: rec.rendimiento_unidad || 'Estándar',
+          unidad: rec.rendimiento_unidad || 'Personalizable',
         });
         porCategoria.set(cat, grupo);
       });
@@ -412,7 +409,7 @@ export const ClientPortfolioManager: React.FC = () => {
         .forEach(([categoria, items]) => {
           lines.push(`\n✨ *${categoria}:*`);
           items.slice(0, 6).forEach((item) => {
-            lines.push(`• ${item.nombre} (${item.unidad}): *${formatCurrency(item.precio)}*`);
+            lines.push(`• ${item.nombre} (${item.unidad})`);
           });
         });
       lines.push('');
@@ -428,9 +425,9 @@ export const ClientPortfolioManager: React.FC = () => {
       } catch {}
 
       if (bazaarItems.length > 0) {
-        lines.push('🧁 *PORCIONES & POSTRES RÁPIDOS DISPONIBLES:*');
+        lines.push('🧁 *PORCIONES & POSTRES DISPONIBLES:*');
         bazaarItems.forEach((prod) => {
-          lines.push(`• ${prod.icono || '🍰'} ${prod.nombre}: *${formatCurrency(prod.precio)}*`);
+          lines.push(`• ${prod.icono || '🍰'} ${prod.nombre}`);
         });
         lines.push('');
       }
@@ -573,12 +570,12 @@ export const ClientPortfolioManager: React.FC = () => {
 
             <button
               type="button"
-              onClick={() => setIsApiKeyModalOpen(true)}
+              onClick={() => setActiveTab('catalog')}
               className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-sky-50 hover:bg-sky-100 text-sky-800 border border-sky-200 text-xs font-bold transition-colors"
-              title="Configurar llave de Google Maps API"
+              title="Abrir el gestor del Catálogo Visual Interactivo (con fotos y sin precios)"
             >
-              <KeyRound className="w-3.5 h-3.5 text-sky-600" />
-              <span>API Google Maps</span>
+              <BookOpen className="w-3.5 h-3.5 text-sky-600" />
+              <span>Catálogo Interactivo</span>
             </button>
 
             <button
@@ -1511,65 +1508,6 @@ export const ClientPortfolioManager: React.FC = () => {
           }}
         />
       )}
-
-      {/* Modal para Configurar Google Maps API Key */}
-      <Modal
-        isOpen={isApiKeyModalOpen}
-        onClose={() => setIsApiKeyModalOpen(false)}
-        title="Configuración de la API de Google Maps"
-        subtitle="Activa el SDK oficial de Google Maps JavaScript API, Places Autocomplete y Geocoding para toda la aplicación."
-        maxWidth="md"
-      >
-        <div className="space-y-4 text-xs">
-          <div className="p-3.5 rounded-2xl bg-sky-50 border border-sky-200 text-sky-900 space-y-1.5">
-            <p className="font-bold flex items-center gap-1.5">
-              <Sparkles className="w-4 h-4 text-sky-600 shrink-0" />
-              <span>Integración Híbrida de Google Maps Activa</span>
-            </p>
-            <p className="text-[11px] leading-relaxed">
-              Puedes pegar aquí tu clave pública <code>VITE_GOOGLE_MAPS_API_KEY</code> (<code>AIzaSy...</code>) de Google Cloud Console para activar el mapa vectorial con marcador arrastrable y Google Places Autocomplete en Cotizaciones, Pedidos, Modo Delivery y Cartera de Clientes.
-            </p>
-          </div>
-
-          <div>
-            <label htmlFor="gmaps-api-key-modal-input" className="font-semibold text-chocolate-700 block mb-1">
-              Google Maps API Key (Opcional si usas el mapa interactivo embebido)
-            </label>
-            <input
-              id="gmaps-api-key-modal-input"
-              type="text"
-              placeholder="AIzaSy..."
-              value={apiKeyInput}
-              onChange={(e) => setApiKeyInput(e.target.value)}
-              className="w-full border border-trigo-300 rounded-xl px-3 py-2 bg-canvas font-mono text-xs"
-            />
-          </div>
-
-          <div className="flex items-center justify-end gap-2 pt-2">
-            <button
-              type="button"
-              onClick={() => setIsApiKeyModalOpen(false)}
-              className="px-4 py-2 rounded-xl bg-canvas hover:bg-crema text-chocolate-700 font-bold border border-trigo-300"
-            >
-              Cerrar
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                saveGoogleMapsApiKey(apiKeyInput);
-                showToast('success', 'API de Google Maps Guardada', 'La configuración de Google Maps se actualizó.');
-                setIsApiKeyModalOpen(false);
-                if (apiKeyInput.trim()) {
-                  window.location.reload();
-                }
-              }}
-              className="px-5 py-2 rounded-xl bg-frambuesa-600 hover:bg-frambuesa-700 text-white font-bold shadow-sm"
-            >
-              Guardar Clave API
-            </button>
-          </div>
-        </div>
-      </Modal>
     </div>
   );
 };

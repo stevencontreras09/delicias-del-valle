@@ -359,6 +359,7 @@ export type ActiveTab =
   | 'quotes'
   | 'orders'
   | 'clients'
+  | 'catalog'
   | 'kitchen'
   | 'delivery'
   | 'bazaar'
@@ -470,3 +471,60 @@ export interface Cliente {
 // MODO COCINA PRO
 // ==========================================
 export type EstacionCocina = 'todas' | 'horneado' | 'decoracion';
+
+// ==========================================
+// CATÁLOGO VISUAL PÚBLICO & SOLICITUDES DE PEDIDO (SIN PRECIOS)
+// ==========================================
+export interface CatalogProductItem {
+  id: string;
+  receta_id?: number;
+  nombre: string;
+  categoria: string;
+  descripcion: string;
+  imagen_url?: string;
+  galeria_urls?: string[];
+  tamanos_disponibles: string[];
+  masas_disponibles: string[];
+  rellenos_disponibles: string[];
+  decoraciones_disponibles: string[];
+  permite_personalizacion: boolean;
+  permite_dedicatoria: boolean;
+  destacado?: boolean;
+  activo: boolean;
+  orden?: number;
+  updated_at?: string;
+}
+
+export interface CatalogOrderItemSelection {
+  id: string;
+  catalog_item_id: string;
+  receta_id?: number;
+  producto_nombre: string;
+  imagen_url?: string;
+  cantidad: number;
+  tamano_porciones: string;
+  masa_base: string;
+  relleno: string;
+  decoracion: string;
+  dedicatoria?: string;
+  notas_personalizacion?: string;
+}
+
+export interface CatalogOrderRequest {
+  id: string;
+  folio: string;
+  cliente_nombre: string;
+  cliente_telefono: string;
+  cliente_email?: string;
+  fecha_entrega_deseada: string;
+  hora_entrega_deseada?: string;
+  tipo_despacho: 'retiro' | 'delivery';
+  direccion_entrega?: string;
+  punto_referencia?: string;
+  maps_url?: string;
+  notas_generales?: string;
+  items: CatalogOrderItemSelection[];
+  estado: 'pendiente' | 'cotizado' | 'confirmado' | 'descartado';
+  cotizacion_id?: number;
+  created_at: string;
+}

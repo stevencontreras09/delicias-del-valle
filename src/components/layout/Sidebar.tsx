@@ -12,6 +12,7 @@ import {
   Truck,
   Users,
   Contact,
+  ShoppingBag,
   LogOut,
   Menu,
   X,
@@ -98,9 +99,15 @@ export const Sidebar: React.FC<SidebarProps> = () => {
     {
       id: 'clients',
       label: 'Clientes',
-      description: 'Cartera, Mapa & Catálogo',
+      description: 'Cartera & Ubicaciones',
       icon: Contact,
       badge: clientes.length > 0 ? clientes.length : undefined,
+    },
+    {
+      id: 'catalog',
+      label: 'Catálogo',
+      description: 'Fotos & Pedidos Online',
+      icon: ShoppingBag,
     },
     {
       id: 'bazaar',
