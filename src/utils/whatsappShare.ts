@@ -1,17 +1,6 @@
 import { Cotizacion, Pedido } from '../types';
 import { formatCurrency, formatDate, formatDisplayTamano } from './formatters';
-
-/**
- * Normaliza números telefónicos para WhatsApp en República Dominicana / Internacional.
- */
-function sanitizePhone(phone: string): string {
-  if (!phone) return '';
-  let cleaned = phone.replace(/\D/g, '');
-  if (cleaned.length === 10 && (cleaned.startsWith('809') || cleaned.startsWith('829') || cleaned.startsWith('849'))) {
-    cleaned = '1' + cleaned;
-  }
-  return cleaned;
-}
+import { buildWhatsAppUrl, sanitizeWhatsAppText } from './whatsappHelper';
 
 export interface OpcionesMensajeCotizacion {
   incluirPoliticas?: boolean;
@@ -170,9 +159,8 @@ export function generarMensajeCotizacionWhatsApp(
 
   texto += `Si deseas confirmar tu pedido o tienes alguna duda, respóndenos a este mensaje. ¡Será un honor endulzar tu momento especial! 🍓❤️`;
 
-  const fullMessage = texto;
-  const phoneClean = sanitizePhone(cotizacion.cliente_telefono);
-  const url = `https://wa.me/${phoneClean}?text=${encodeURIComponent(fullMessage)}`;
+  const fullMessage = sanitizeWhatsAppText(texto);
+  const url = buildWhatsAppUrl(cotizacion.cliente_telefono, fullMessage);
 
   return { mensaje: fullMessage, url };
 }
@@ -181,26 +169,25 @@ export function generarMensajeCotizacionWhatsApp(
  * Genera un mensaje formateado y enlace de WhatsApp para enviar confirmación / recibo de Pedido
  */
 export function generarMensajePedidoWhatsApp(pedido: Pedido): { mensaje: string; url: string } {
-  let texto = `🎂 *DELICIAS DEL VALLE - CONFIRMACIÓN DE PEDIDO* 🍰\n\n`;
+  let texto = `✨ *DELICIAS DEL VALLE - CONFIRMACIÓN DE PEDIDO* ❤️\n\n`;
   texto += `¡Hola, *${pedido.cliente_nombre}*! Tu pedido ha sido registrado con éxito.\n\n`;
-  texto += `🧾 *Factura/Pedido N°:* ${pedido.numero_factura}\n`;
-  texto += `📅 *Fecha de Entrega:* ${formatDate(pedido.fecha_entrega)} - *Hora:* ${pedido.hora_entrega}\n`;
-  texto += `📍 *Tipo de Entrega:* ${pedido.tipo_entrega === 'domicilio' ? `Domicilio (${pedido.direccion_entrega || 'Dirección acordada'})` : 'Recogida en taller'}\n`;
-  texto += `📊 *Estado Actual:* ${pedido.estado.toUpperCase()}\n\n`;
+  texto += `• *Factura/Pedido N°:* ${pedido.numero_factura}\n`;
+  texto += `• *Fecha de Entrega:* ${formatDate(pedido.fecha_entrega)} - *Hora:* ${pedido.hora_entrega}\n`;
+  texto += `• *Tipo de Entrega:* ${pedido.tipo_entrega === 'domicilio' ? `Domicilio (${pedido.direccion_entrega || 'Dirección acordada'})` : 'Recogida en taller'}\n`;
+  texto += `• *Estado Actual:* ${pedido.estado.toUpperCase()}\n\n`;
 
   texto += `✨ *RESUMEN:* ✨\n`;
   pedido.items.forEach((item, index) => {
     texto += `${index + 1}. *${item.receta_nombre}* (${formatDisplayTamano(item.tamano_porciones)}) x${item.cantidad} = ${formatCurrency(item.subtotal)}\n`;
   });
 
-  texto += `\n💰 *Total:* ${formatCurrency(pedido.total)}\n`;
-  texto += `✅ *Anticipo Pagado (50%):* ${formatCurrency(pedido.anticipo_pagado)}\n`;
-  texto += `⏳ *Saldo Pendiente:* *${formatCurrency(pedido.saldo_pendiente)}*\n\n`;
-  texto += `¡Muchas gracias por tu confianza! Estamos preparando todo con el mayor amor y dedicación. ❤️👩‍🍳`;
+  texto += `\n✦ *Total:* ${formatCurrency(pedido.total)}\n`;
+  texto += `✔️ *Anticipo Pagado (50%):* ${formatCurrency(pedido.anticipo_pagado)}\n`;
+  texto += `• *Saldo Pendiente:* *${formatCurrency(pedido.saldo_pendiente)}*\n\n`;
+  texto += `¡Muchas gracias por tu confianza! Estamos preparando todo con el mayor amor y dedicación. ❤️`;
 
-  const fullMessage = texto;
-  const phoneClean = sanitizePhone(pedido.cliente_telefono);
-  const url = `https://wa.me/${phoneClean}?text=${encodeURIComponent(fullMessage)}`;
+  const fullMessage = sanitizeWhatsAppText(texto);
+  const url = buildWhatsAppUrl(pedido.cliente_telefono, fullMessage);
 
   return { mensaje: fullMessage, url };
 }

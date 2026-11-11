@@ -12,6 +12,7 @@ import {
 } from '../../services/supabaseService';
 import { MapLocationPicker } from '../maps/MapLocationPicker';
 import { DELICIAS_WORKSHOP_COORDS } from '../../utils/routeOptimizer';
+import { buildWhatsAppUrl } from '../../utils/whatsappHelper';
 import {
   Sparkles,
   ShoppingBag,
@@ -428,7 +429,7 @@ export const PublicCatalogPage: React.FC<PublicCatalogPageProps> = ({ onBackToAp
 
           <div className="space-y-2.5 pt-2">
             <a
-              href={`https://wa.me/?text=${encodeURIComponent(waText)}`}
+              href={buildWhatsAppUrl('', waText)}
               target="_blank"
               rel="noopener noreferrer"
               className="w-full py-3.5 px-5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs sm:text-sm shadow-md flex items-center justify-center gap-2 transition-all"

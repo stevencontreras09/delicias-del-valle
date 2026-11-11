@@ -7,10 +7,8 @@ import { formatCurrency, formatDate, formatDisplayTamano } from './formatters';
  */
 export function sanitizeDominicanPhone(phone: string): string {
   if (!phone) return '';
-  // Remover todo excepto dígitos
   let cleaned = phone.replace(/\D/g, '');
 
-  // Si tiene 10 dígitos (ej. 8095551234, 829..., 849...)
   if (cleaned.length === 10) {
     if (cleaned.startsWith('809') || cleaned.startsWith('829') || cleaned.startsWith('849')) {
       cleaned = '1' + cleaned;
@@ -21,27 +19,96 @@ export function sanitizeDominicanPhone(phone: string): string {
 }
 
 /**
- * Genera el enlace wa.me para enviar la comanda / confirmación de pedido al cliente
+ * Reemplaza emojis de 4 bytes (pares sustitutos UTF-16 > U+FFFF que WhatsApp Desktop/Web
+ * corrompe como "") por emojis e iconos Unicode BMP (<= U+FFFF) 100% compatibles con WhatsApp.
+ */
+export function sanitizeWhatsAppText(text: string): string {
+  if (!text) return '';
+
+  const emojiMap: Record<string, string> = {
+    '🎂': '✨',
+    '🍰': '✨',
+    '🧁': '✨',
+    '🍓': '✨',
+    '🎉': '✨',
+    '🥳': '✨',
+    '💖': '❤️',
+    '💕': '❤️',
+    '😍': '❤️',
+    '👉': '➡️',
+    '👋': '✨',
+    '🛵': '✔️',
+    '🏬': '✦',
+    '🏪': '✦',
+    '🏠': '•',
+    '📍': '•',
+    '📅': '•',
+    '📄': '•',
+    '📋': '•',
+    '🧾': '•',
+    '💵': '•',
+    '💰': '•',
+    '💳': '•',
+    '🏦': '•',
+    '⏳': '•',
+    '📊': '•',
+    '📝': '•',
+    '🏷️': '•',
+    '🛡️': '•',
+    '🛍️': '✨',
+  };
+
+  let result = text.normalize('NFC');
+
+  for (const [surrogateEmoji, safeEmoji] of Object.entries(emojiMap)) {
+    result = result.split(surrogateEmoji).join(safeEmoji);
+  }
+
+  // Reemplazar cualquier otro par sustituto restante (> U+FFFF) por ✨ para evitar el símbolo ""
+  result = result.replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g, '✨');
+  // Limpiar selectores de variación huérfanos o caracteres de reemplazo
+  result = result.replace(/\uFFFD/g, '');
+
+  return result;
+}
+
+/**
+ * Construye una URL oficial de api.whatsapp.com/send con codificación UTF-8 segura
+ * evitando el redireccionamiento de wa.me que corrompe los emojis en Windows y WhatsApp Web.
+ */
+export function buildWhatsAppUrl(phone: string, rawMessage: string): string {
+  const cleanPhone = sanitizeDominicanPhone(phone);
+  const safeMessage = sanitizeWhatsAppText(rawMessage);
+  if (cleanPhone) {
+    return `https://api.whatsapp.com/send?phone=${cleanPhone}&text=${encodeURIComponent(safeMessage)}`;
+  }
+  return `https://api.whatsapp.com/send?text=${encodeURIComponent(safeMessage)}`;
+}
+
+/**
+ * Genera el enlace de WhatsApp para enviar la comanda / confirmación de pedido al cliente
  */
 export function generateOrderWhatsAppUrl(pedido: Pedido): string {
-  const phone = sanitizeDominicanPhone(pedido.cliente_telefono);
-
   const lines: string[] = [];
-  lines.push(`¡Hola *${pedido.cliente_nombre.trim()}*! 👋 Te saludamos de *Delicias del Valle* 🍰✨`);
+  lines.push(`¡Hola *${pedido.cliente_nombre.trim()}*! ✨ Te saludamos de *Delicias del Valle* ❤️`);
   lines.push('');
   lines.push('Te compartimos el detalle y comprobante de tu pedido:');
-  lines.push(`📄 *Factura:* ${pedido.numero_factura}`);
-  lines.push(`📅 *Fecha de Entrega:* ${formatDate(pedido.fecha_entrega)} a las ${pedido.hora_entrega || '12:00 PM'}`);
-  lines.push(`📍 *Modalidad:* ${pedido.tipo_entrega === 'domicilio' ? '🛵 A Domicilio' : '🏪 Retiro en Taller'}`);
+  lines.push(`• *Factura:* ${pedido.numero_factura}`);
+  lines.push(`• *Fecha de Entrega:* ${formatDate(pedido.fecha_entrega)} a las ${pedido.hora_entrega || '12:00 PM'}`);
+  lines.push(`• *Modalidad:* ${pedido.tipo_entrega === 'domicilio' ? '✔️ A Domicilio' : '✦ Retiro en Taller'}`);
 
   if (pedido.direccion_entrega) {
-    lines.push(`🏠 *Dirección:* ${pedido.direccion_entrega}`);
+    lines.push(`• *Dirección:* ${pedido.direccion_entrega}`);
   }
 
   lines.push('');
-  lines.push('🎂 *Detalle de Productos & Extras:*');
+  lines.push('✨ *Detalle de Productos & Extras:*');
   pedido.items.forEach((item) => {
-    const isExtra = item.es_extra || (!item.receta_id && (Boolean(item.tamano_porciones?.toLowerCase().includes('extra')) || Boolean(item.extras_texto?.toLowerCase().includes('extra'))));
+    const isExtra =
+      item.es_extra ||
+      (!item.receta_id &&
+        (Boolean(item.tamano_porciones?.toLowerCase().includes('extra')) ||
+          Boolean(item.extras_texto?.toLowerCase().includes('extra'))));
     if (isExtra) {
       lines.push(`• *${item.cantidad}x [EXTRA DE LA ORDEN] ${item.receta_nombre}*`);
       if (item.dedicatoria) {
@@ -49,16 +116,32 @@ export function generateOrderWhatsAppUrl(pedido: Pedido): string {
       }
     } else {
       lines.push(`• *${item.cantidad}x ${item.receta_nombre}* (${item.tamano_porciones})`);
-      if (item.masa_base && !item.masa_base.toLowerCase().startsWith('ningun') && !item.masa_base.toLowerCase().startsWith('no aplica')) {
+      if (
+        item.masa_base &&
+        !item.masa_base.toLowerCase().startsWith('ningun') &&
+        !item.masa_base.toLowerCase().startsWith('no aplica')
+      ) {
         lines.push(`   - Masa: ${item.masa_base}`);
       }
-      if (item.relleno && !item.relleno.toLowerCase().startsWith('ningun') && !item.relleno.toLowerCase().startsWith('no aplica')) {
+      if (
+        item.relleno &&
+        !item.relleno.toLowerCase().startsWith('ningun') &&
+        !item.relleno.toLowerCase().startsWith('no aplica')
+      ) {
         lines.push(`   - Relleno: ${item.relleno}`);
       }
-      if (item.decoracion && !item.decoracion.toLowerCase().startsWith('ningun') && !item.decoracion.toLowerCase().startsWith('no aplica')) {
+      if (
+        item.decoracion &&
+        !item.decoracion.toLowerCase().startsWith('ningun') &&
+        !item.decoracion.toLowerCase().startsWith('no aplica')
+      ) {
         lines.push(`   - Cobertura: ${item.decoracion}`);
       }
-      if (item.empaque && !item.empaque.toLowerCase().startsWith('ningun') && !item.empaque.toLowerCase().startsWith('no aplica')) {
+      if (
+        item.empaque &&
+        !item.empaque.toLowerCase().startsWith('ningun') &&
+        !item.empaque.toLowerCase().startsWith('no aplica')
+      ) {
         lines.push(`   - Empaque: ${item.empaque}`);
       }
       if (item.dedicatoria) {
@@ -71,83 +154,122 @@ export function generateOrderWhatsAppUrl(pedido: Pedido): string {
   });
 
   lines.push('');
-  lines.push('💵 *Resumen Financiero (50% / 50%):*');
+  lines.push('✦ *Resumen Financiero (50% / 50%):*');
   lines.push(`• *Total:* ${formatCurrency(pedido.total)}`);
   lines.push(`• *Anticipo Recibido:* ${formatCurrency(pedido.anticipo_pagado)}`);
   lines.push(`• *Saldo Contra Entrega:* *${formatCurrency(pedido.saldo_pendiente)}*`);
 
   lines.push('');
-  lines.push('🏦 *Cuentas Bancarias Disponibles:*');
+  lines.push('✦ *Cuentas Bancarias Disponibles:*');
   lines.push('• Banco Popular: *812-345678-9* (Cta. Corriente)');
   lines.push('• Banreservas: *960-123456-7* (Cta. Ahorros)');
   lines.push('• Banco BHD: *023-456789-0* (Cta. Corriente)');
   lines.push('Titular: Delicias del Valle SRL • RNC: 131-99887-1');
 
   lines.push('');
-  lines.push('¡Muchas gracias por permitirnos endulzar tu ocasión especial! 💕');
+  lines.push('¡Muchas gracias por permitirnos endulzar tu ocasión especial! ❤️');
 
   const fullMessage = lines.join('\n');
-  return `https://wa.me/${phone}?text=${encodeURIComponent(fullMessage)}`;
+  return buildWhatsAppUrl(pedido.cliente_telefono, fullMessage);
 }
 
 /**
- * Genera el enlace wa.me para enviar una cotización formal al cliente
+ * Genera el enlace de WhatsApp para enviar una cotización formal al cliente
  */
 export function generateQuoteWhatsAppUrl(cotizacion: Cotizacion): string {
-  const phone = sanitizeDominicanPhone(cotizacion.cliente_telefono);
-
   const lines: string[] = [];
-  lines.push(`¡Hola *${cotizacion.cliente_nombre.trim()}*! 👋 Te saludamos de *Delicias del Valle* 🍰`);
+  lines.push(`¡Hola *${cotizacion.cliente_nombre.trim()}*! ✨ Te saludamos de *Delicias del Valle* ❤️`);
   lines.push('');
   lines.push('Te enviamos la cotización solicitada para tu evento:');
-  lines.push(`📄 *Cotización N°:* ${cotizacion.codigo}`);
+  lines.push(`• *Cotización N°:* ${cotizacion.codigo}`);
   if (cotizacion.descripcion) {
-    lines.push(`✨ *Concepto:* ${cotizacion.descripcion}`);
+    lines.push(`• *Concepto:* ${cotizacion.descripcion}`);
   }
   if (cotizacion.fecha_evento) {
-    lines.push(`📅 *Fecha de Evento:* ${formatDate(cotizacion.fecha_evento)}`);
+    lines.push(`• *Fecha de Evento:* ${formatDate(cotizacion.fecha_evento)}`);
   }
-  lines.push(`⏳ *Validez:* ${cotizacion.validez_dias || 5} días naturales`);
+  lines.push(`• *Validez:* ${cotizacion.validez_dias || 5} días naturales`);
 
   lines.push('');
-  lines.push('🎂 *Productos & Extras Cotizados:*');
+  lines.push('✨ *Productos & Extras Cotizados:*');
   cotizacion.items.forEach((item) => {
-    const isExtra = item.es_extra || (!item.receta_id && Boolean(item.tamano_porciones?.toLowerCase().includes('extra')));
+    const isExtra =
+      item.es_extra ||
+      (!item.receta_id && Boolean(item.tamano_porciones?.toLowerCase().includes('extra')));
     if (isExtra) {
-      lines.push(`• *${item.cantidad}x [EXTRA DE LA ORDEN] ${item.receta_nombre}* - ${formatCurrency(item.subtotal)}`);
+      lines.push(
+        `• *${item.cantidad}x [EXTRA DE LA ORDEN] ${item.receta_nombre}* - ${formatCurrency(
+          item.subtotal
+        )}`
+      );
       if (item.dedicatoria) {
         lines.push(`   - Detalle / Dedicatoria: "${item.dedicatoria}"`);
       }
     } else {
-      lines.push(`• *${item.cantidad}x ${item.receta_nombre}* (${formatDisplayTamano(item.tamano_porciones)}) - ${formatCurrency(item.subtotal)}`);
-      if (item.masa_base && !item.masa_base.toLowerCase().startsWith('ningun') && !item.masa_base.toLowerCase().startsWith('no aplica')) {
+      lines.push(
+        `• *${item.cantidad}x ${item.receta_nombre}* (${formatDisplayTamano(
+          item.tamano_porciones
+        )}) - ${formatCurrency(item.subtotal)}`
+      );
+      if (
+        item.masa_base &&
+        !item.masa_base.toLowerCase().startsWith('ningun') &&
+        !item.masa_base.toLowerCase().startsWith('no aplica')
+      ) {
         lines.push(`   - Masa: ${item.masa_base}`);
       }
-      if (item.relleno && !item.relleno.toLowerCase().startsWith('ningun') && !item.relleno.toLowerCase().startsWith('no aplica')) {
+      if (
+        item.relleno &&
+        !item.relleno.toLowerCase().startsWith('ningun') &&
+        !item.relleno.toLowerCase().startsWith('no aplica')
+      ) {
         lines.push(`   - Relleno: ${item.relleno}`);
       }
-      if (item.decoracion && !item.decoracion.toLowerCase().startsWith('ningun') && !item.decoracion.toLowerCase().startsWith('no aplica')) {
+      if (
+        item.decoracion &&
+        !item.decoracion.toLowerCase().startsWith('ningun') &&
+        !item.decoracion.toLowerCase().startsWith('no aplica')
+      ) {
         lines.push(`   - Cobertura: ${item.decoracion}`);
       }
-      if (item.empaque && !item.empaque.toLowerCase().startsWith('ningun') && !item.empaque.toLowerCase().startsWith('no aplica')) {
+      if (
+        item.empaque &&
+        !item.empaque.toLowerCase().startsWith('ningun') &&
+        !item.empaque.toLowerCase().startsWith('no aplica')
+      ) {
         lines.push(`   - Empaque: ${item.empaque}`);
       }
       if (item.dedicatoria) {
         lines.push(`   - Dedicatoria: "${item.dedicatoria}"`);
       }
       if (item.extras && item.extras.length > 0) {
-        lines.push(`   - Extras: ${item.extras.map((e) => `${e.nombre}${e.cantidad && e.cantidad > 1 ? ` (x${e.cantidad})` : ''} (${formatCurrency(e.precio * (e.cantidad || 1))})`).join(', ')}`);
+        lines.push(
+          `   - Extras: ${item.extras
+            .map(
+              (e) =>
+                `${e.nombre}${e.cantidad && e.cantidad > 1 ? ` (x${e.cantidad})` : ''} (${formatCurrency(
+                  e.precio * (e.cantidad || 1)
+                )})`
+            )
+            .join(', ')}`
+        );
       }
     }
   });
 
   lines.push('');
-  lines.push(`💰 *Total Cotizado:* *${formatCurrency(cotizacion.total)}*`);
-  lines.push(`• Reserva con el 50% de anticipo (${formatCurrency(cotizacion.total * 0.5)}) y salda el 50% restante al recibir.`);
+  lines.push(`✦ *Total Cotizado:* *${formatCurrency(cotizacion.total)}*`);
+  lines.push(
+    `• Reserva con el 50% de anticipo (${formatCurrency(
+      cotizacion.total * 0.5
+    )}) y salda el 50% restante al recibir.`
+  );
 
   lines.push('');
-  lines.push('¿Deseas que confirmemos tu pedido y apartemos la fecha en taller? ¡Escríbenos por aquí! 👩‍🍳');
+  lines.push(
+    '¿Deseas que confirmemos tu pedido y apartemos la fecha en taller? ¡Escríbenos por aquí! ❤️'
+  );
 
   const fullMessage = lines.join('\n');
-  return `https://wa.me/${phone}?text=${encodeURIComponent(fullMessage)}`;
+  return buildWhatsAppUrl(cotizacion.cliente_telefono, fullMessage);
 }

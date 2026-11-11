@@ -35,7 +35,10 @@ import {
   syncCatalogOrdersToSupabase,
 } from '../../services/supabaseService';
 import { calcularCostosReceta } from '../../utils/calculations';
-import { sanitizeDominicanPhone } from '../../utils/whatsappHelper';
+import {
+  sanitizeDominicanPhone,
+  buildWhatsAppUrl,
+} from '../../utils/whatsappHelper';
 
 // Determina si una cotización provino del Catálogo Público Interactivo
 export function isCatalogOriginQuote(cot: Cotizacion): boolean {
@@ -458,9 +461,10 @@ export const QuoteManager: React.FC = () => {
                       <div className="flex items-center gap-2 flex-wrap">
                         {cleanPhone.length >= 10 && (
                           <a
-                            href={`https://wa.me/${cleanPhone}?text=${encodeURIComponent(
-                              `¡Hola *${req.cliente_nombre}*! 🍰 Recibimos tu orden *#${req.folio}* desde nuestro catálogo de *Delicias del Valle*. En breve te confirmamos el monto total y los detalles de entrega.`
-                            )}`}
+                            href={buildWhatsAppUrl(
+                              cleanPhone,
+                              `¡Hola *${req.cliente_nombre}*! ✨ Recibimos tu orden *#${req.folio}* desde nuestro catálogo de *Delicias del Valle* ❤️. En breve te confirmamos el monto total y los detalles de entrega.`
+                            )}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center gap-1.5"

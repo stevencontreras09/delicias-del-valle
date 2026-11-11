@@ -29,7 +29,11 @@ import {
   Truck,
 } from 'lucide-react';
 import { formatCurrency } from '../../utils/formatters';
-import { sanitizeDominicanPhone } from '../../utils/whatsappHelper';
+import {
+  sanitizeDominicanPhone,
+  buildWhatsAppUrl,
+  sanitizeWhatsAppText,
+} from '../../utils/whatsappHelper';
 import { DELICIAS_WORKSHOP_COORDS } from '../../utils/routeOptimizer';
 import { Modal } from '../ui/Modal';
 import { LocationGoogleMapsModal } from '../quotes/LocationGoogleMapsModal';
@@ -99,10 +103,10 @@ export const ClientPortfolioManager: React.FC = () => {
 
   // Estados de Difusión de Catálogo Disponible (Mensaje persuasivo + Enlace exclusivo al Catálogo Interactivo)
   const [catalogIntro, setCatalogIntro] = useState(
-    '✨ *¡Endulza tus momentos especiales con Delicias del Valle!* 🎂🍰\n\nTe invitamos a entrar a nuestro nuevo *Catálogo Interactivo*, donde podrás ver las fotos de todos nuestros postres, elegir tus favoritos, personalizarlos totalmente a tu gusto (tamaño, masa, relleno, cobertura y dedicatoria) y confirmar tu pedido en segundos:'
+    '✨ *¡Endulza tus momentos especiales con Delicias del Valle!* ❤️\n\nTe invitamos a entrar a nuestro nuevo *Catálogo Interactivo*, donde podrás ver las fotos de todos nuestros postres, elegir tus favoritos, personalizarlos totalmente a tu gusto (tamaño, masa, relleno, cobertura y dedicatoria) y confirmar tu pedido en segundos:'
   );
   const [catalogFooter, setCatalogFooter] = useState(
-    '🛵 Contamos con *entrega a domicilio* y retiro en nuestro taller. ¡Toca el enlace y arma tu orden ideal hoy mismo! 💖'
+    '✔️ Contamos con *entrega a domicilio* y retiro en nuestro taller. ¡Toca el enlace y arma tu orden ideal hoy mismo! ❤️'
   );
   const [sentClientIds, setSentClientIds] = useState<number[]>([]);
   const [copiedCatalogText, setCopiedCatalogText] = useState(false);
@@ -321,25 +325,25 @@ export const ClientPortfolioManager: React.FC = () => {
   const buildCatalogMessage = (clientName?: string): string => {
     const lines: string[] = [];
     const saludo = clientName
-      ? `¡Hola *${clientName.trim()}*! 👋`
-      : '¡Hola! 👋';
+      ? `¡Hola *${clientName.trim()}*! ✨`
+      : '¡Hola! ✨';
     lines.push(saludo);
     lines.push('');
 
     if (catalogIntro.trim()) {
-      lines.push(catalogIntro.trim());
+      lines.push(sanitizeWhatsAppText(catalogIntro.trim()));
       lines.push('');
     }
 
-    lines.push(`👉 *Accede a nuestro Catálogo Interactivo aquí:*`);
+    lines.push(`➡️ *Accede a nuestro Catálogo Interactivo aquí:*`);
     lines.push(publicCatalogUrl);
 
     if (catalogFooter.trim()) {
       lines.push('');
-      lines.push(catalogFooter.trim());
+      lines.push(sanitizeWhatsAppText(catalogFooter.trim()));
     }
 
-    return lines.join('\n');
+    return sanitizeWhatsAppText(lines.join('\n'));
   };
 
   const handleSendCatalogToClient = (cliente: Cliente) => {
@@ -349,7 +353,10 @@ export const ClientPortfolioManager: React.FC = () => {
       return;
     }
     const text = buildCatalogMessage(cliente.nombre);
-    const url = `https://wa.me/${phone}?text=${encodeURIComponent(text)}`;
+    try {
+      navigator.clipboard?.writeText(text);
+    } catch {}
+    const url = buildWhatsAppUrl(phone, text);
     window.open(url, '_blank', 'noopener,noreferrer');
     if (!sentClientIds.includes(cliente.id)) {
       setSentClientIds((prev) => [...prev, cliente.id]);
@@ -878,10 +885,10 @@ export const ClientPortfolioManager: React.FC = () => {
                     type="button"
                     onClick={() => {
                       setCatalogIntro(
-                        '✨ *¡Endulza tus momentos especiales con Delicias del Valle!* 🎂🍰\n\nTe invitamos a entrar a nuestro nuevo *Catálogo Interactivo*, donde podrás ver las fotos de todos nuestros postres, elegir tus favoritos, personalizarlos totalmente a tu gusto (tamaño, masa, relleno, cobertura y dedicatoria) y confirmar tu pedido en segundos:'
+                        '✨ *¡Endulza tus momentos especiales con Delicias del Valle!* ❤️\n\nTe invitamos a entrar a nuestro nuevo *Catálogo Interactivo*, donde podrás ver las fotos de todos nuestros postres, elegir tus favoritos, personalizarlos totalmente a tu gusto (tamaño, masa, relleno, cobertura y dedicatoria) y confirmar tu pedido en segundos:'
                       );
                       setCatalogFooter(
-                        '🛵 Contamos con *entrega a domicilio* y retiro en nuestro taller. ¡Toca el enlace y arma tu orden ideal hoy mismo! 💖'
+                        '✔️ Contamos con *entrega a domicilio* y retiro en nuestro taller. ¡Toca el enlace y arma tu orden ideal hoy mismo! ❤️'
                       );
                     }}
                     className="px-3 py-1.5 rounded-xl bg-crema hover:bg-trigo-200 text-chocolate-900 border border-trigo-300 font-bold text-[11px] transition-colors"
@@ -893,30 +900,30 @@ export const ClientPortfolioManager: React.FC = () => {
                     type="button"
                     onClick={() => {
                       setCatalogIntro(
-                        '🎉 *¿Tienes un cumpleaños o celebración cerca?* 🎂🥳\n\nEn *Delicias del Valle* ya puedes diseñar tu pastel o postre soñado desde tu celular. Entra a nuestro *Catálogo Interactivo*, mira las fotos de nuestras especialidades y configura tu pedido a tu gusto:'
+                        '⭐ *¿Tienes un cumpleaños o celebración cerca?* ✨\n\nEn *Delicias del Valle* ya puedes diseñar tu pastel o postre soñado desde tu celular. Entra a nuestro *Catálogo Interactivo*, mira las fotos de nuestras especialidades y configura tu pedido a tu gusto:'
                       );
                       setCatalogFooter(
-                        '🛵 Te lo llevamos directo a tu puerta o puedes retirarlo en nuestro taller. ¡Reserva tu fecha desde el enlace! ✨'
+                        '✔️ Te lo llevamos directo a tu puerta o puedes retirarlo en nuestro taller. ¡Reserva tu fecha desde el enlace! ❤️'
                       );
                     }}
                     className="px-3 py-1.5 rounded-xl bg-crema hover:bg-trigo-200 text-chocolate-900 border border-trigo-300 font-bold text-[11px] transition-colors"
                   >
-                    🎂 Especial Cumpleaños & Eventos
+                    ⭐ Especial Cumpleaños & Eventos
                   </button>
 
                   <button
                     type="button"
                     onClick={() => {
                       setCatalogIntro(
-                        '🍓 *¡Hoy horneamos delicias frescas para ti en Delicias del Valle!* 🧁✨\n\nDate un gusto hoy mismo: entra a nuestro *Catálogo Digital*, explora nuestras fotos, personaliza tus postres favoritos y confirma tu orden en línea:'
+                        '✨ *¡Hoy horneamos delicias frescas para ti en Delicias del Valle!* ❤️\n\nDate un gusto hoy mismo: entra a nuestro *Catálogo Digital*, explora nuestras fotos, personaliza tus postres favoritos y confirma tu orden en línea:'
                       );
                       setCatalogFooter(
-                        '🛵 Envíos rápidos a domicilio con ruta GPS. ¡Haz clic en el enlace y pide el tuyo antes de que se agoten! 😍'
+                        '✔️ Envíos rápidos a domicilio con ruta GPS. ¡Haz clic en el enlace y pide el tuyo antes de que se agoten! ✨'
                       );
                     }}
                     className="px-3 py-1.5 rounded-xl bg-crema hover:bg-trigo-200 text-chocolate-900 border border-trigo-300 font-bold text-[11px] transition-colors"
                   >
-                    🧁 Antojo de Fin de Semana
+                    ❤️ Antojo de Fin de Semana
                   </button>
                 </div>
               </div>

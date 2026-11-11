@@ -12,7 +12,10 @@ import {
   syncCatalogOrdersToSupabase,
 } from '../../services/supabaseService';
 import { calcularCostosReceta } from '../../utils/calculations';
-import { sanitizeDominicanPhone } from '../../utils/whatsappHelper';
+import {
+  sanitizeDominicanPhone,
+  buildWhatsAppUrl,
+} from '../../utils/whatsappHelper';
 import { Modal } from '../ui/Modal';
 import { PublicCatalogPage } from './PublicCatalogPage';
 import {
@@ -867,9 +870,10 @@ export const CatalogManager: React.FC = () => {
                       <div className="flex items-center gap-2 flex-wrap">
                         {cleanPhone.length >= 10 && (
                           <a
-                            href={`https://wa.me/${cleanPhone}?text=${encodeURIComponent(
-                              `¡Hola *${req.cliente_nombre}*! 🍰 Recibimos tu pedido personalizado *#${req.folio}* desde nuestro catálogo de *Delicias del Valle*. Te compartimos la cotización y confirmación:`
-                            )}`}
+                            href={buildWhatsAppUrl(
+                              cleanPhone,
+                              `¡Hola *${req.cliente_nombre}*! ✨ Recibimos tu pedido personalizado *#${req.folio}* desde nuestro catálogo de *Delicias del Valle* ❤️. Te compartimos la cotización y confirmación:`
+                            )}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center gap-1.5"
