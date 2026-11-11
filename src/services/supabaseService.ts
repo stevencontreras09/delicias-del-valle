@@ -43,6 +43,39 @@ export async function testSupabaseConnection(): Promise<{ connected: boolean; me
 }
 
 /**
+ * Infiere la clasificación por defecto de un insumo:
+ * - Empaques, cajas, fundas, stickers, domos, cintas -> 'variable'
+ * - Materias primas base (harina, huevos, mantequilla, leche, etc.) -> 'fijo'
+ */
+export function inferDefaultTipoCosto(insumo: { nombre?: string; categoria?: string }): 'fijo' | 'variable' {
+  const cat = (insumo.categoria || '').toLowerCase();
+  const nom = (insumo.nombre || '').toLowerCase();
+  if (
+    cat.includes('empaque') ||
+    cat.includes('desechable') ||
+    nom.includes('caja') ||
+    nom.includes('bolsa') ||
+    nom.includes('funda') ||
+    nom.includes('sticker') ||
+    nom.includes('etiqueta') ||
+    nom.includes('domo') ||
+    nom.includes('topper') ||
+    nom.includes('lazo') ||
+    nom.includes('cinta') ||
+    nom.includes('capacillo') ||
+    nom.includes('blonda') ||
+    nom.includes('envase') ||
+    nom.includes('vasito') ||
+    nom.includes('cucharita') ||
+    nom.includes('plato') ||
+    nom.includes('papel')
+  ) {
+    return 'variable';
+  }
+  return 'fijo';
+}
+
+/**
  * Descarga todo el dataset desde Supabase a la aplicación web
  */
 export async function fetchAllFromSupabase(): Promise<{
@@ -152,7 +185,8 @@ export async function fetchAllFromSupabase(): Promise<{
 
     // Transformar a tipos de la aplicación
     const insumos: Insumo[] = (insumosDb || []).map((i: any) => {
-      const resolvedTipo = (i.tipo_costo || tipoCostoMap[String(i.id)] || tipoCostoMap[Number(i.id)] || 'variable') as 'fijo' | 'variable';
+      const explicit = i.tipo_costo || tipoCostoMap[String(i.id)] || tipoCostoMap[Number(i.id)];
+      const resolvedTipo = (explicit || inferDefaultTipoCosto(i)) as 'fijo' | 'variable';
       return {
         id: Number(i.id),
         nombre: i.nombre,
@@ -529,7 +563,7 @@ export async function syncInsumoToSupabase(insumo: Insumo): Promise<boolean> {
       stock_actual: insumo.stock_actual,
       stock_minimo: insumo.stock_minimo,
       activo: insumo.activo,
-      tipo_costo: insumo.tipo_costo || 'variable',
+      tipo_costo: insumo.tipo_costo || inferDefaultTipoCosto(insumo),
       updated_at: new Date().toISOString(),
     };
 

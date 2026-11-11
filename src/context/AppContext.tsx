@@ -62,6 +62,7 @@ import {
   cancelarPedidoConInventarioRpc,
   syncZonaDeliveryToSupabase,
   deleteZonaDeliveryFromSupabase,
+  inferDefaultTipoCosto,
   fetchQuoteOptionsFromSupabase,
   saveQuoteOptionsToSupabase,
   syncBazaarEventsToSupabase,
@@ -317,17 +318,29 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // Estados de datos operacionales
   const [insumos, setInsumos] = useState<Insumo[]>(() => {
+    let list = INITIAL_INSUMOS;
     const saved = localStorage.getItem(`${STORAGE_KEY}_insumos`);
     if (saved) {
       try {
         const parsed: Insumo[] = JSON.parse(saved);
         const totalStock = parsed.reduce((acc, i) => acc + (i.stock_actual || 0), 0);
         if (totalStock > 1000 && parsed.length >= 90) {
-          return parsed;
+          list = parsed;
         }
       } catch {}
     }
-    return INITIAL_INSUMOS;
+
+    let tcMap: Record<string, 'fijo' | 'variable'> = {};
+    try {
+      const savedTc = localStorage.getItem('delicias_insumos_tipo_costo');
+      if (savedTc) tcMap = JSON.parse(savedTc);
+    } catch {}
+
+    return list.map((i) => {
+      const explicit = tcMap[String(i.id)] || tcMap[Number(i.id)];
+      const resolved = explicit || inferDefaultTipoCosto(i);
+      return { ...i, tipo_costo: resolved };
+    });
   });
 
   const [mermas, setMermas] = useState<Merma[]>(() => {
@@ -909,7 +922,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               const local = prevMap.get(remote.id);
               return {
                 ...remote,
-                tipo_costo: remote.tipo_costo || local?.tipo_costo || 'variable',
+                tipo_costo: remote.tipo_costo || local?.tipo_costo || inferDefaultTipoCosto(remote),
               };
             });
           });
