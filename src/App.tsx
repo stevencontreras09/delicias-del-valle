@@ -11,6 +11,7 @@ import { KitchenMode } from './components/kitchen/KitchenMode';
 import { DeliveryMode } from './components/delivery/DeliveryMode';
 import { DatabaseViewer } from './components/database/DatabaseViewer';
 import { UserManager } from './components/users/UserManager';
+import { BazaarManager } from './components/bazaar/BazaarManager';
 import { canAccessTab, getDefaultTabForRole } from './utils/security';
 import { ShieldAlert } from 'lucide-react';
 import { PublicOrderTrackingPage } from './components/delivery/PublicOrderTrackingPage';
@@ -82,6 +83,8 @@ export const App: React.FC = () => {
         return <QuoteManager />;
       case 'orders':
         return <OrderManager />;
+      case 'bazaar':
+        return <BazaarManager />;
       case 'kitchen':
         return <KitchenMode />;
       case 'delivery':

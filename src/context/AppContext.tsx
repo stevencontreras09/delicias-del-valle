@@ -15,6 +15,10 @@ import {
   ZonaDelivery,
   TipoDespacho,
   QuoteCustomOptions,
+  BazaarEvent,
+  BazaarVenta,
+  BazaarGasto,
+  BazaarItemStock,
 } from '../types';
 import {
   INITIAL_INSUMOS,
@@ -60,6 +64,7 @@ import {
   deleteZonaDeliveryFromSupabase,
   fetchQuoteOptionsFromSupabase,
   saveQuoteOptionsToSupabase,
+  syncBazaarEventsToSupabase,
 } from '../services/supabaseService';
 import {
   getDefaultQuoteOptions,
@@ -85,6 +90,7 @@ export type ActiveTab =
   | 'orders'
   | 'kitchen'
   | 'delivery'
+  | 'bazaar'
   | 'database'
   | 'users';
 
@@ -177,6 +183,18 @@ interface AppContextType {
   showToast: (type: 'success' | 'warning' | 'error' | 'info' | 'collaborative', title: string, message: string) => void;
   removeToast: (id: string) => void;
   broadcastChange: (action: string, entityType: string, entityName: string, entityId?: number | string) => void;
+  // Venta de Bazar & Pop-Up Events
+  bazaarEvents: BazaarEvent[];
+  activeBazaar: BazaarEvent | null;
+  setActiveBazaarId: (id: string | null) => void;
+  crearBazaarEvent: (nombre: string, fecha: string, fondoInicial: number, ubicacion?: string, notas?: string) => BazaarEvent;
+  actualizarBazaarEvent: (id: string, updates: Partial<BazaarEvent>) => void;
+  agregarVentaBazaar: (bazaarId: string, venta: Omit<BazaarVenta, 'id' | 'folio' | 'bazaar_id' | 'hora'>) => BazaarVenta;
+  agregarGastoBazaar: (bazaarId: string, gasto: Omit<BazaarGasto, 'id' | 'bazaar_id' | 'hora'>) => BazaarGasto;
+  actualizarStockBazaar: (bazaarId: string, inventario: BazaarItemStock[]) => void;
+  finalizarBazaar: (bazaarId: string, notasCierre?: string) => void;
+  importarBazaarAContabilidadGeneral: (bazaarId: string) => Promise<boolean>;
+  eliminarBazaarEvent: (bazaarId: string) => void;
   // Utilidades de Datos & Supabase Sync
   resetAllData: () => void;
   exportDatabaseJSON: () => void;
@@ -401,6 +419,51 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   useEffect(() => {
     localStorage.setItem('delicias_custom_quote_options', JSON.stringify(quoteOptions));
   }, [quoteOptions]);
+
+  // Protección de mutaciones locales contra sobreescritura por polling (especialmente en móviles y conexiones lentas)
+  const pendingPedidoEditsRef = useRef<Map<number | string, { pedido: Pedido; timestamp: number }>>(new Map());
+  const pendingCotizacionEditsRef = useRef<Map<number | string, { cotizacion: Cotizacion; timestamp: number }>>(new Map());
+  const pendingInsumoEditsRef = useRef<Map<number, { insumo: Insumo; timestamp: number }>>(new Map());
+  const lastLocalMutationTimeRef = useRef<number>(0);
+
+  // Venta de Bazar & Pop-Up Events State
+  const [bazaarEvents, setBazaarEvents] = useState<BazaarEvent[]>(() => {
+    const saved = localStorage.getItem('delicias_bazaar_events');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) return parsed;
+      } catch {}
+    }
+    return [];
+  });
+
+  const [activeBazaarId, setActiveBazaarId] = useState<string | null>(() => {
+    return localStorage.getItem('delicias_bazaar_active_id') || null;
+  });
+
+  useEffect(() => {
+    localStorage.setItem('delicias_bazaar_events', JSON.stringify(bazaarEvents));
+    if (isSupabaseConfigured()) {
+      syncBazaarEventsToSupabase(bazaarEvents);
+    }
+  }, [bazaarEvents]);
+
+  useEffect(() => {
+    if (activeBazaarId) {
+      localStorage.setItem('delicias_bazaar_active_id', activeBazaarId);
+    } else {
+      localStorage.removeItem('delicias_bazaar_active_id');
+    }
+  }, [activeBazaarId]);
+
+  const activeBazaar = useMemo(() => {
+    if (activeBazaarId) {
+      const found = bazaarEvents.find((b) => b.id === activeBazaarId);
+      if (found) return found;
+    }
+    return bazaarEvents.find((b) => b.estado === 'activo') || null;
+  }, [bazaarEvents, activeBazaarId]);
 
   const [timers, setTimers] = useState<KitchenTimerState[]>([
     {
@@ -835,7 +898,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (res.success && res.data) {
         const { insumos: dbInsumos, recetas: dbRecetas, cotizaciones: dbCotizaciones, pedidos: dbPedidos, mermas: dbMermas } = res.data;
         if (dbInsumos && dbInsumos.length > 0) {
-          setInsumos(dbInsumos);
+          setInsumos((prev) => {
+            const now = Date.now();
+            const prevMap = new Map(prev.map((i) => [i.id, i]));
+            return dbInsumos.map((remote) => {
+              const pending = pendingInsumoEditsRef.current.get(remote.id);
+              if (pending && now - pending.timestamp < 60000) {
+                return pending.insumo;
+              }
+              const local = prevMap.get(remote.id);
+              return {
+                ...remote,
+                tipo_costo: remote.tipo_costo || local?.tipo_costo || 'variable',
+              };
+            });
+          });
         }
         if (dbRecetas && dbRecetas.length > 0) {
           setRecetas((prev) => {
@@ -857,10 +934,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             const map = new Map<string, Cotizacion>();
             dbCotizaciones.forEach((c) => map.set(c.codigo, c));
             const now = Date.now();
-            // Preservar solo cotizaciones locales recientes (< 25s) en tránsito para no borrarlas al crearlas
+            // Preservar cotizaciones locales creadas o modificadas recientemente (< 60s) en móviles
             prev.forEach((local) => {
-              const isRecent = local.created_at && (now - new Date(local.created_at).getTime() < 25000);
-              if (!map.has(local.codigo) && isRecent) {
+              const isRecent = local.created_at && (now - new Date(local.created_at).getTime() < 35000);
+              const pendingEdit = pendingCotizacionEditsRef.current.get(local.id) || pendingCotizacionEditsRef.current.get(local.codigo);
+              const isLocallyModified = pendingEdit && (now - pendingEdit.timestamp < 60000);
+
+              if (isLocallyModified && pendingEdit) {
+                map.set(local.codigo, pendingEdit.cotizacion);
+              } else if (!map.has(local.codigo) && isRecent) {
                 map.set(local.codigo, local);
               }
             });
@@ -872,14 +954,33 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             const map = new Map<string, Pedido>();
             dbPedidos.forEach((p) => map.set(p.numero_factura, p));
             const now = Date.now();
-            // Preservar solo pedidos locales recientes (< 25s) en tránsito para no borrarlos al crearlos
+            // Preservar pedidos locales creados o con cambios recientes de estado (< 60s) en móviles
             prev.forEach((local) => {
-              const isRecent = local.created_at && (now - new Date(local.created_at).getTime() < 25000);
-              if (!map.has(local.numero_factura) && isRecent) {
+              const isRecent = local.created_at && (now - new Date(local.created_at).getTime() < 35000);
+              const pendingEdit = pendingPedidoEditsRef.current.get(local.id) || pendingPedidoEditsRef.current.get(local.numero_factura);
+              const isLocallyModified = pendingEdit && (now - pendingEdit.timestamp < 60000);
+
+              if (isLocallyModified && pendingEdit) {
+                map.set(local.numero_factura, pendingEdit.pedido);
+              } else if (!map.has(local.numero_factura) && isRecent) {
                 map.set(local.numero_factura, local);
               }
             });
             return Array.from(map.values()).sort((a, b) => b.id - a.id);
+          });
+        }
+        const remoteBazaars = res.data.bazaarEvents;
+        if (remoteBazaars && remoteBazaars.length > 0) {
+          setBazaarEvents((prev) => {
+            const remoteMap = new Map<string, BazaarEvent>(remoteBazaars.map((b) => [b.id, b]));
+            prev.forEach((local) => {
+              if (!remoteMap.has(local.id)) {
+                remoteMap.set(local.id, local);
+              }
+            });
+            return Array.from(remoteMap.values()).sort(
+              (a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime()
+            );
           });
         }
         if (dbMermas) setMermas(dbMermas);
@@ -1168,7 +1269,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     // Re-sincronizar automáticamente en cuanto el usuario vuelve a abrir la app o desbloquea el móvil
     const handleFocus = () => {
       if (document.visibilityState === 'visible') {
-        syncFromSupabase(true);
+        if (Date.now() - lastLocalMutationTimeRef.current > 6000) {
+          syncFromSupabase(true);
+        }
       }
     };
     window.addEventListener('visibilitychange', handleFocus);
@@ -1177,7 +1280,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     // Latido regular (Heartbeat) cada 15 segundos para asegurar datos frescos
     const heartbeat = setInterval(() => {
       if (document.visibilityState === 'visible') {
-        syncFromSupabase(true);
+        if (Date.now() - lastLocalMutationTimeRef.current > 6000) {
+          syncFromSupabase(true);
+        }
       }
     }, 15000);
 
@@ -1258,6 +1363,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           updated.factor_conversion = pres;
         }
         insumoNombre = updated.nombre;
+        lastLocalMutationTimeRef.current = Date.now();
+        pendingInsumoEditsRef.current.set(id, { insumo: updated, timestamp: Date.now() });
         if (isSupabaseConfigured()) {
           syncInsumoToSupabase(updated);
         }
@@ -1578,6 +1685,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (!existing) return false;
     const updated: Cotizacion = { ...existing, ...data };
 
+    lastLocalMutationTimeRef.current = Date.now();
+    pendingCotizacionEditsRef.current.set(id, { cotizacion: updated, timestamp: Date.now() });
+    pendingCotizacionEditsRef.current.set(updated.codigo, { cotizacion: updated, timestamp: Date.now() });
+
     // Auto-actualizar cliente en el Mini CRM
     upsertClienteFromOrderOrQuote({
       nombre: updated.cliente_nombre,
@@ -1600,9 +1711,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       broadcastChange('actualizó', 'la cotización', `${updated.codigo} (${updated.cliente_nombre})`, id);
     }
 
-    setCotizaciones((prev) =>
-      prev.map((c) => (c.id === id ? updated : c))
-    );
+    setCotizaciones((prev) => {
+      const nextList = prev.map((c) => (c.id === id ? updated : c));
+      localStorage.setItem(`${STORAGE_KEY}_cotizaciones`, JSON.stringify(nextList));
+      return nextList;
+    });
     showToast('info', 'Cotización Actualizada', 'Cambios guardados exitosamente.');
     return true;
   };
@@ -1619,16 +1732,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const cambiarEstadoCotizacion = (id: number, estado: EstadoCotizacion) => {
     const cot = cotizaciones.find((c) => c.id === id);
-    setCotizaciones((prev) =>
-      prev.map((c) => {
+    lastLocalMutationTimeRef.current = Date.now();
+    setCotizaciones((prev) => {
+      const nextList = prev.map((c) => {
         if (c.id !== id) return c;
         const updated = { ...c, estado };
+        pendingCotizacionEditsRef.current.set(id, { cotizacion: updated, timestamp: Date.now() });
+        pendingCotizacionEditsRef.current.set(updated.codigo, { cotizacion: updated, timestamp: Date.now() });
         if (isSupabaseConfigured()) {
           syncCotizacionToSupabase(updated);
         }
         return updated;
-      })
-    );
+      });
+      localStorage.setItem(`${STORAGE_KEY}_cotizaciones`, JSON.stringify(nextList));
+      return nextList;
+    });
     if (isSupabaseConfigured()) {
       broadcastChange(`marcó como "${estado.toUpperCase()}"`, 'la cotización', cot?.codigo || `ID ${id}`, id);
     }
@@ -2053,8 +2171,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     let pedFactura = '';
     let updatedPedidoObj: Pedido | null = null;
-    setPedidos((prev) =>
-      prev.map((p) => {
+    lastLocalMutationTimeRef.current = Date.now();
+    setPedidos((prev) => {
+      const nextList = prev.map((p) => {
         if (p.id !== id) return p;
         const updated = {
           ...p,
@@ -2066,12 +2185,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         };
         pedFactura = updated.numero_factura;
         updatedPedidoObj = updated;
+        pendingPedidoEditsRef.current.set(id, { pedido: updated, timestamp: Date.now() });
+        pendingPedidoEditsRef.current.set(updated.numero_factura, { pedido: updated, timestamp: Date.now() });
         if (isSupabaseConfigured()) {
           syncPedidoToSupabase(updated);
         }
         return updated;
-      })
-    );
+      });
+      localStorage.setItem(`${STORAGE_KEY}_pedidos`, JSON.stringify(nextList));
+      return nextList;
+    });
 
     // Actualizar cliente en CRM si hay datos de contacto o logística
     if (updatedPedidoObj) {
@@ -2105,8 +2228,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       pedido.inventario_descontado = true;
     }
 
-    setPedidos((prev) =>
-      prev.map((p) => {
+    lastLocalMutationTimeRef.current = Date.now();
+    setPedidos((prev) => {
+      const nextList = prev.map((p) => {
         if (p.id !== id) return p;
         const updated = {
           ...p,
@@ -2117,12 +2241,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               ? p.fecha_entregado || new Date().toISOString()
               : p.fecha_entregado,
         };
+        pendingPedidoEditsRef.current.set(id, { pedido: updated, timestamp: Date.now() });
+        pendingPedidoEditsRef.current.set(updated.numero_factura, { pedido: updated, timestamp: Date.now() });
         if (isSupabaseConfigured()) {
           syncPedidoToSupabase(updated);
         }
         return updated;
-      })
-    );
+      });
+      localStorage.setItem(`${STORAGE_KEY}_pedidos`, JSON.stringify(nextList));
+      return nextList;
+    });
 
     if (isSupabaseConfigured()) {
       broadcastChange(`cambió el estado a "${nuevoEstado.toUpperCase()}" de`, 'el pedido', `${pedido.numero_factura} (${pedido.cliente_nombre})`, id);
@@ -2439,6 +2567,295 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   // ==========================================
+  // VENTA DE BAZAR & EVENTOS POP-UP
+  // ==========================================
+  const crearBazaarEvent = (
+    nombre: string,
+    fecha: string,
+    fondoInicial: number,
+    ubicacion?: string,
+    notas?: string
+  ): BazaarEvent => {
+    const newEvent: BazaarEvent = {
+      id: `bazaar-${Date.now()}`,
+      nombre: sanitizeInput(nombre),
+      fecha,
+      fondo_caja_inicial: fondoInicial,
+      ubicacion: ubicacion ? sanitizeInput(ubicacion) : undefined,
+      estado: 'activo',
+      gastos: [],
+      ventas: [],
+      inventario: [],
+      notas: notas ? sanitizeInput(notas) : undefined,
+      importado_a_central: false,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+
+    setBazaarEvents((prev) => [newEvent, ...prev]);
+    setActiveBazaarId(newEvent.id);
+    showToast('success', '¡Bazar Creado!', `Se inició "${newEvent.nombre}" con fondo de caja de RD$${fondoInicial.toLocaleString()}.`);
+    playSuccessChime();
+    return newEvent;
+  };
+
+  const actualizarBazaarEvent = (id: string, updates: Partial<BazaarEvent>) => {
+    setBazaarEvents((prev) =>
+      prev.map((b) => (b.id === id ? { ...b, ...updates, updated_at: new Date().toISOString() } : b))
+    );
+  };
+
+  const agregarVentaBazaar = (
+    bazaarId: string,
+    venta: Omit<BazaarVenta, 'id' | 'folio' | 'bazaar_id' | 'hora'>
+  ): BazaarVenta => {
+    const bz = bazaarEvents.find((b) => b.id === bazaarId);
+    const ventaNum = (bz?.ventas.length || 0) + 1;
+    const now = new Date();
+    const hora = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+    const nuevaVenta: BazaarVenta = {
+      ...venta,
+      id: `venta-bz-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+      bazaar_id: bazaarId,
+      folio: `BZ-${ventaNum.toString().padStart(3, '0')}`,
+      hora,
+      cliente_nombre: venta.cliente_nombre ? sanitizeInput(venta.cliente_nombre) : undefined,
+      cliente_telefono: venta.cliente_telefono ? sanitizeInput(venta.cliente_telefono) : undefined,
+      notas: venta.notas ? sanitizeInput(venta.notas) : undefined,
+    };
+
+    // Auto-registrar cliente en CRM si se capturó contacto
+    if (nuevaVenta.cliente_nombre && nuevaVenta.cliente_telefono && nuevaVenta.cliente_telefono !== 'N/A') {
+      upsertClienteFromOrderOrQuote({
+        nombre: nuevaVenta.cliente_nombre,
+        telefono: nuevaVenta.cliente_telefono,
+        punto_referencia: `Cliente captado en Bazar ${bz?.nombre || ''}`,
+      });
+    }
+
+    setBazaarEvents((prev) =>
+      prev.map((b) => {
+        if (b.id !== bazaarId) return b;
+        const updatedInventario = [...b.inventario];
+        nuevaVenta.items.forEach((item) => {
+          const stockItem = updatedInventario.find(
+            (st) => st.producto_nombre.toLowerCase() === item.producto_nombre.toLowerCase()
+          );
+          if (stockItem) {
+            stockItem.cantidad_vendida = (stockItem.cantidad_vendida || 0) + item.cantidad;
+            stockItem.cantidad_sobrante = Math.max(0, stockItem.cantidad_inicial - stockItem.cantidad_vendida - (stockItem.cantidad_degustacion || 0));
+          }
+        });
+
+        return {
+          ...b,
+          ventas: [nuevaVenta, ...b.ventas],
+          inventario: updatedInventario,
+          updated_at: new Date().toISOString(),
+        };
+      })
+    );
+
+    playSuccessChime();
+    showToast('success', '¡Venta Despachada!', `${nuevaVenta.folio}: RD$${nuevaVenta.total.toLocaleString()} (${nuevaVenta.metodo_pago.toUpperCase()})`);
+    return nuevaVenta;
+  };
+
+  const agregarGastoBazaar = (
+    bazaarId: string,
+    gasto: Omit<BazaarGasto, 'id' | 'bazaar_id' | 'hora'>
+  ): BazaarGasto => {
+    const now = new Date();
+    const hora = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+    const nuevoGasto: BazaarGasto = {
+      ...gasto,
+      id: `gasto-bz-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+      bazaar_id: bazaarId,
+      concepto: sanitizeInput(gasto.concepto),
+      hora,
+    };
+
+    setBazaarEvents((prev) =>
+      prev.map((b) => {
+        if (b.id !== bazaarId) return b;
+        return {
+          ...b,
+          gastos: [nuevoGasto, ...b.gastos],
+          updated_at: new Date().toISOString(),
+        };
+      })
+    );
+
+    showToast('info', 'Gasto Registrado', `${nuevoGasto.concepto}: RD$${nuevoGasto.monto.toLocaleString()}`);
+    return nuevoGasto;
+  };
+
+  const actualizarStockBazaar = (bazaarId: string, inventario: BazaarItemStock[]) => {
+    setBazaarEvents((prev) =>
+      prev.map((b) => (b.id === bazaarId ? { ...b, inventario, updated_at: new Date().toISOString() } : b))
+    );
+    showToast('success', 'Stock de Bazar Actualizado', 'Control de productos llevado vs devuelto guardado.');
+  };
+
+  const finalizarBazaar = (bazaarId: string, notasCierre?: string) => {
+    setBazaarEvents((prev) =>
+      prev.map((b) => {
+        if (b.id !== bazaarId) return b;
+        return {
+          ...b,
+          estado: 'finalizado',
+          notas: notasCierre ? sanitizeInput(notasCierre) : b.notas,
+          updated_at: new Date().toISOString(),
+        };
+      })
+    );
+    playNotificationChime();
+    showToast('info', 'Bazar Finalizado', 'El evento ha sido cerrado. Puedes exportar el reporte o importarlo a Contabilidad General.');
+  };
+
+  const importarBazaarAContabilidadGeneral = async (bazaarId: string): Promise<boolean> => {
+    const bz = bazaarEvents.find((b) => b.id === bazaarId);
+    if (!bz) return false;
+
+    if (bz.importado_a_central) {
+      showToast('warning', 'Ya Importado', 'Este bazar ya fue importado a la contabilidad general.');
+      return false;
+    }
+
+    const totalVentas = bz.ventas.reduce((acc, v) => acc + v.total, 0);
+    const totalGastos = bz.gastos.reduce((acc, g) => acc + g.monto, 0);
+    const gananciaNeta = totalVentas - totalGastos;
+    const ventasEfectivo = bz.ventas.filter(v => v.metodo_pago === 'efectivo').reduce((acc, v) => acc + v.total, 0);
+    const ventasDigitales = totalVentas - ventasEfectivo;
+
+    // Generar consolidado de items vendidos
+    const itemMap = new Map<string, { cantidad: number; subtotal: number; precio_unitario: number; receta_id?: number }>();
+    bz.ventas.forEach((v) => {
+      v.items.forEach((item) => {
+        const key = item.producto_nombre;
+        const current = itemMap.get(key) || {
+          cantidad: 0,
+          subtotal: 0,
+          precio_unitario: item.precio_unitario,
+          receta_id: item.receta_id,
+        };
+        current.cantidad += item.cantidad;
+        current.subtotal += item.subtotal;
+        itemMap.set(key, current);
+      });
+    });
+
+    const consolidatedItems = Array.from(itemMap.entries()).map(([nombre, data], idx) => ({
+      id: `item-bazaar-imp-${Date.now()}-${idx}`,
+      receta_id: data.receta_id,
+      receta_nombre: `[Bazar] ${nombre}`,
+      tamano_porciones: `${data.cantidad} unid. vendidas`,
+      masa_base: 'Estándar',
+      relleno: 'N/A',
+      decoracion: 'N/A',
+      cantidad: data.cantidad,
+      precio_unitario: data.precio_unitario,
+      subtotal: data.subtotal,
+      factor_receta: 1,
+    }));
+
+    const nextId = pedidos.length > 0 ? Math.max(...pedidos.map((p) => p.id)) + 1 : 1;
+    const numero_factura = `BAZAR-${bz.fecha.replace(/-/g, '')}-${nextId.toString().padStart(3, '0')}`;
+
+    const pagosBazar: PagoRegistro[] = [];
+    if (ventasEfectivo > 0) {
+      pagosBazar.push({
+        id: `pago-bz-ef-${Date.now()}`,
+        pedido_id: nextId,
+        monto: ventasEfectivo,
+        metodo: 'efectivo',
+        referencia: `Ventas Efectivo Bazar: ${bz.nombre}`,
+        tipo_pago: 'pago_completo',
+        fecha: bz.fecha,
+      });
+    }
+    if (ventasDigitales > 0) {
+      pagosBazar.push({
+        id: `pago-bz-dig-${Date.now()}`,
+        pedido_id: nextId,
+        monto: ventasDigitales,
+        metodo: 'transferencia',
+        referencia: `Ventas Transferencia/Tarjeta Bazar: ${bz.nombre}`,
+        tipo_pago: 'pago_completo',
+        fecha: bz.fecha,
+      });
+    }
+
+    const nuevoPedidoCentral: Pedido = {
+      id: nextId,
+      numero_factura,
+      cliente_nombre: `Venta General: ${bz.nombre}`,
+      cliente_telefono: '809-555-0100',
+      cliente_email: 'ventas@deliciasdelvalle.do',
+      fecha_pedido: bz.fecha,
+      fecha_entrega: bz.fecha,
+      hora_entrega: '20:00',
+      tipo_entrega: 'recogida_local',
+      tipo_despacho: 'retiro',
+      items: consolidatedItems,
+      subtotal: totalVentas,
+      costo_envio: 0,
+      total: totalVentas,
+      anticipo_pagado: totalVentas,
+      saldo_pendiente: 0,
+      estado: 'entregado',
+      fecha_entregado: new Date().toISOString(),
+      inventario_descontado: true,
+      pagos: pagosBazar,
+      notas_cocina: `Ventas consolidadas del Bazar "${bz.nombre}". Gastos directos deducidos del evento: RD$${totalGastos.toLocaleString()}. Beneficio neto: RD$${gananciaNeta.toLocaleString()}.`,
+      created_at: new Date().toISOString(),
+    };
+
+    lastLocalMutationTimeRef.current = Date.now();
+    pendingPedidoEditsRef.current.set(nextId, { pedido: nuevoPedidoCentral, timestamp: Date.now() });
+    pendingPedidoEditsRef.current.set(numero_factura, { pedido: nuevoPedidoCentral, timestamp: Date.now() });
+
+    setPedidos((prev) => {
+      const nextList = [nuevoPedidoCentral, ...prev];
+      localStorage.setItem(`${STORAGE_KEY}_pedidos`, JSON.stringify(nextList));
+      return nextList;
+    });
+
+    if (isSupabaseConfigured()) {
+      syncPedidoToSupabase(nuevoPedidoCentral);
+    }
+
+    const fechaImportado = new Date().toISOString();
+    actualizarBazaarEvent(bazaarId, {
+      importado_a_central: true,
+      fecha_importado: fechaImportado,
+    });
+
+    playSuccessChime();
+    confetti({ particleCount: 80, spread: 70, origin: { y: 0.6 } });
+    showToast(
+      'success',
+      '¡Bazar Importado a Contabilidad General!',
+      `Se registraron RD$${totalVentas.toLocaleString()} en la facturación central (Factura ${numero_factura}).`
+    );
+    return true;
+  };
+
+  const eliminarBazaarEvent = (bazaarId: string) => {
+    const bz = bazaarEvents.find((b) => b.id === bazaarId);
+    if (!bz) return;
+    if (confirm(`¿Estás seguro de que deseas eliminar el historial del evento "${bz.nombre}"?`)) {
+      setBazaarEvents((prev) => prev.filter((b) => b.id !== bazaarId));
+      if (activeBazaarId === bazaarId) {
+        setActiveBazaarId(null);
+      }
+      showToast('info', 'Bazar Eliminado', `El registro de "${bz.nombre}" fue retirado.`);
+    }
+  };
+
+  // ==========================================
   // RESET Y EXPORTACIÓN
   // ==========================================
   const resetAllData = () => {
@@ -2543,6 +2960,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         showToast,
         removeToast,
         broadcastChange,
+        bazaarEvents,
+        activeBazaar,
+        setActiveBazaarId,
+        crearBazaarEvent,
+        actualizarBazaarEvent,
+        agregarVentaBazaar,
+        agregarGastoBazaar,
+        actualizarStockBazaar,
+        finalizarBazaar,
+        importarBazaarAContabilidadGeneral,
+        eliminarBazaarEvent,
         resetAllData,
         exportDatabaseJSON,
         isSupabaseOnline,

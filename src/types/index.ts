@@ -360,8 +360,78 @@ export type ActiveTab =
   | 'orders'
   | 'kitchen'
   | 'delivery'
+  | 'bazaar'
   | 'users'
   | 'database';
+
+// ==========================================
+// VENTA DE BAZAR & EVENTOS POP-UP
+// ==========================================
+export interface BazaarVentaItem {
+  id: string;
+  producto_nombre: string;
+  precio_unitario: number;
+  cantidad: number;
+  subtotal: number;
+  receta_id?: number;
+}
+
+export type MetodoPagoBazaar = 'efectivo' | 'transferencia' | 'tarjeta';
+
+export interface BazaarVenta {
+  id: string;
+  bazaar_id: string;
+  folio: string;
+  hora: string;
+  items: BazaarVentaItem[];
+  total: number;
+  metodo_pago: MetodoPagoBazaar;
+  dinero_recibido?: number;
+  cambio_devuelto?: number;
+  cliente_nombre?: string;
+  cliente_telefono?: string;
+  notas?: string;
+}
+
+export type CategoriaGastoBazaar = 'stand_mesa' | 'transporte_gasolina' | 'hielo_insumos' | 'empaques' | 'merienda_socias' | 'otro';
+
+export interface BazaarGasto {
+  id: string;
+  bazaar_id: string;
+  concepto: string;
+  monto: number;
+  categoria: CategoriaGastoBazaar;
+  hora: string;
+  pagado_con: 'caja_efectivo' | 'cuenta_banco';
+}
+
+export interface BazaarItemStock {
+  id: string;
+  producto_nombre: string;
+  precio_unitario: number;
+  cantidad_inicial: number;
+  cantidad_vendida: number;
+  cantidad_sobrante: number;
+  cantidad_degustacion: number; // Muestras de prueba / sampling para clientes
+  receta_id?: number;
+}
+
+export interface BazaarEvent {
+  id: string;
+  nombre: string;
+  fecha: string;
+  ubicacion?: string;
+  fondo_caja_inicial: number;
+  estado: 'activo' | 'finalizado';
+  gastos: BazaarGasto[];
+  ventas: BazaarVenta[];
+  inventario: BazaarItemStock[];
+  notas?: string;
+  importado_a_central?: boolean;
+  fecha_importado?: string;
+  created_at: string;
+  updated_at: string;
+}
 
 // ==========================================
 // CLIENTES FRECUENTES (MINI CRM)

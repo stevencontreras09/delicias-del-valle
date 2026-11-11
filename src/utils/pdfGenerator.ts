@@ -13,6 +13,48 @@ declare module 'jspdf' {
 }
 
 /**
+ * Descarga el PDF de manera segura y compatible con iOS Safari y navegadores móviles
+ * evitando que la pestaña actual sea reemplazada o forzada a recargar.
+ */
+function descargarPdfSeguro(doc: jsPDF, nombreArchivo: string) {
+  try {
+    const isIOS = typeof navigator !== 'undefined' && (
+      /iPad|iPhone|iPod/.test(navigator.userAgent || '') ||
+      (navigator.platform === 'MacIntel' && (navigator.maxTouchPoints || 0) > 1)
+    );
+
+    const blob = doc.output('blob');
+    const blobUrl = URL.createObjectURL(blob);
+
+    if (isIOS) {
+      // En iOS Safari, abrir explícitamente en una nueva ventana sin sobrescribir la app
+      const nuevaPestana = window.open(blobUrl, '_blank', 'noopener,noreferrer');
+      if (!nuevaPestana) {
+        const link = document.createElement('a');
+        link.href = blobUrl;
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+        link.download = nombreArchivo;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
+    } else {
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = nombreArchivo;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 15000);
+    }
+  } catch (err) {
+    console.warn('Fallback a doc.save:', err);
+    doc.save(nombreArchivo);
+  }
+}
+
+/**
  * Genera y descarga un PDF profesional de Cotización
  */
 export function generarPdfCotizacion(cotizacion: Cotizacion): void {
@@ -479,7 +521,7 @@ export function generarPdfCotizacion(cotizacion: Cotizacion): void {
   }
 
   // Guardar archivo
-  doc.save(`Cotizacion_${cotizacion.codigo}_Delicias_del_Valle.pdf`);
+  descargarPdfSeguro(doc, `Cotizacion_${cotizacion.codigo}_Delicias_del_Valle.pdf`);
 }
 
 /**
@@ -827,5 +869,5 @@ export function generarPdfPedido(pedido: Pedido): void {
     { align: 'center' }
   );
 
-  doc.save(`Factura_${pedido.numero_factura}_Delicias_del_Valle.pdf`);
+  descargarPdfSeguro(doc, `Factura_${pedido.numero_factura}_Delicias_del_Valle.pdf`);
 }

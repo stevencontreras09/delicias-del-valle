@@ -1,5 +1,5 @@
 import { getSupabaseClient } from '../utils/supabaseClient';
-import { Insumo, Merma, Receta, Cotizacion, Pedido, Usuario, Cliente, FormatoPresentacion, ZonaDelivery, QuoteCustomOptions } from '../types';
+import { Insumo, Merma, Receta, Cotizacion, Pedido, Usuario, Cliente, FormatoPresentacion, ZonaDelivery, QuoteCustomOptions, BazaarEvent } from '../types';
 
 export interface SyncResult {
   success: boolean;
@@ -56,6 +56,7 @@ export async function fetchAllFromSupabase(): Promise<{
     mermas: Merma[];
     usuarios?: Usuario[];
     zonasDelivery?: ZonaDelivery[];
+    bazaarEvents?: BazaarEvent[];
   };
 }> {
   const client = getSupabaseClient();
@@ -126,21 +127,48 @@ export async function fetchAllFromSupabase(): Promise<{
       console.warn('Tabla zonas_delivery no disponible en Supabase:', e);
     }
 
+    // 7. Cargar configuraciones adicionales (tipo_costo de insumos, eventos de bazar)
+    let tipoCostoMap: Record<string, 'fijo' | 'variable'> = {};
+    let bazaarEventsRemote: BazaarEvent[] = [];
+    try {
+      const localTc = localStorage.getItem('delicias_insumos_tipo_costo');
+      if (localTc) {
+        try { tipoCostoMap = { ...JSON.parse(localTc) }; } catch {}
+      }
+      const { data: configDb } = await client.from('configuracion').select('clave, valor');
+      if (configDb && Array.isArray(configDb)) {
+        const tcConfig = configDb.find((c: any) => c.clave === 'insumos_tipo_costo');
+        if (tcConfig && tcConfig.valor && typeof tcConfig.valor === 'object') {
+          tipoCostoMap = { ...tipoCostoMap, ...tcConfig.valor };
+        }
+        const bzConfig = configDb.find((c: any) => c.clave === 'bazaar_events');
+        if (bzConfig && Array.isArray(bzConfig.valor)) {
+          bazaarEventsRemote = bzConfig.valor;
+        }
+      }
+    } catch (e) {
+      console.warn('Error leyendo configuraciones de Supabase:', e);
+    }
+
     // Transformar a tipos de la aplicación
-    const insumos: Insumo[] = (insumosDb || []).map((i: any) => ({
-      id: Number(i.id),
-      nombre: i.nombre,
-      categoria: i.categoria,
-      unidad_compra: i.unidad_compra,
-      precio_compra: Number(i.precio_compra),
-      presentacion_empaque: Number(i.presentacion_empaque),
-      unidad_base: i.unidad_base,
-      factor_conversion: Number(i.factor_conversion),
-      costo_unitario_base: Number(i.costo_unitario_base),
-      stock_actual: Number(i.stock_actual),
-      stock_minimo: Number(i.stock_minimo),
-      activo: Boolean(i.activo),
-    }));
+    const insumos: Insumo[] = (insumosDb || []).map((i: any) => {
+      const resolvedTipo = (i.tipo_costo || tipoCostoMap[String(i.id)] || tipoCostoMap[Number(i.id)] || 'variable') as 'fijo' | 'variable';
+      return {
+        id: Number(i.id),
+        nombre: i.nombre,
+        categoria: i.categoria,
+        unidad_compra: i.unidad_compra,
+        precio_compra: Number(i.precio_compra),
+        presentacion_empaque: Number(i.presentacion_empaque),
+        unidad_base: i.unidad_base,
+        factor_conversion: Number(i.factor_conversion),
+        costo_unitario_base: Number(i.costo_unitario_base),
+        stock_actual: Number(i.stock_actual),
+        stock_minimo: Number(i.stock_minimo),
+        activo: Boolean(i.activo),
+        tipo_costo: resolvedTipo,
+      };
+    });
 
     const recetas: Receta[] = (recetasDb || []).map((r: any) => {
       let formatosPermitidos: FormatoPresentacion[] = ['libra', 'porcion', 'mini'];
@@ -439,6 +467,7 @@ export async function fetchAllFromSupabase(): Promise<{
         mermas,
         usuarios,
         zonasDelivery,
+        bazaarEvents: bazaarEventsRemote,
       },
     };
   } catch (err: any) {
@@ -455,7 +484,39 @@ export async function syncInsumoToSupabase(insumo: Insumo): Promise<boolean> {
   if (!client) return false;
 
   try {
-    const { error } = await client.from('insumos').upsert({
+    // 1. Guardar mapeo tipo_costo en localStorage y en la tabla configuracion de Supabase
+    if (insumo.tipo_costo) {
+      try {
+        let tcMap: Record<string, string> = {};
+        const localTc = localStorage.getItem('delicias_insumos_tipo_costo');
+        if (localTc) {
+          try { tcMap = JSON.parse(localTc); } catch {}
+        }
+        tcMap[String(insumo.id)] = insumo.tipo_costo;
+        localStorage.setItem('delicias_insumos_tipo_costo', JSON.stringify(tcMap));
+
+        // Obtener configuración actual de Supabase y hacer merge
+        const { data: currentConfig } = await client
+          .from('configuracion')
+          .select('valor')
+          .eq('clave', 'insumos_tipo_costo')
+          .maybeSingle();
+
+        const remoteMap = currentConfig?.valor && typeof currentConfig.valor === 'object' ? currentConfig.valor : {};
+        remoteMap[String(insumo.id)] = insumo.tipo_costo;
+
+        await client.from('configuracion').upsert({
+          clave: 'insumos_tipo_costo',
+          valor: remoteMap,
+          updated_at: new Date().toISOString(),
+        }, { onConflict: 'clave' });
+      } catch (err) {
+        console.warn('Advertencia al sincronizar tipo_costo en configuracion:', err);
+      }
+    }
+
+    // 2. Intentar guardar en insumos con tipo_costo; si Postgres no tiene la columna, reintentar sin ella
+    const payloadWithTipo: any = {
       id: insumo.id,
       nombre: insumo.nombre,
       categoria: insumo.categoria,
@@ -468,8 +529,17 @@ export async function syncInsumoToSupabase(insumo: Insumo): Promise<boolean> {
       stock_actual: insumo.stock_actual,
       stock_minimo: insumo.stock_minimo,
       activo: insumo.activo,
+      tipo_costo: insumo.tipo_costo || 'variable',
       updated_at: new Date().toISOString(),
-    });
+    };
+
+    let { error } = await client.from('insumos').upsert(payloadWithTipo);
+    if (error && (error.code === 'PGRST204' || error.message?.includes('tipo_costo'))) {
+      const { tipo_costo: _, ...payloadWithoutTipo } = payloadWithTipo;
+      const resFallback = await client.from('insumos').upsert(payloadWithoutTipo);
+      error = resFallback.error;
+    }
+
     return !error;
   } catch {
     return false;
@@ -1245,6 +1315,76 @@ export async function saveQuoteOptionsToSupabase(
   } catch (err: any) {
     console.error('Excepción guardando opciones en Supabase configuracion:', err);
     return { success: false, error: err?.message || 'Error de conexión' };
+  }
+}
+
+/**
+ * Sincroniza la lista de eventos de bazar (ventas express, gastos e inventario) con Supabase
+ */
+export async function syncBazaarEventsToSupabase(events: BazaarEvent[]): Promise<boolean> {
+  try {
+    localStorage.setItem('delicias_bazaar_events', JSON.stringify(events));
+  } catch {}
+
+  const client = getSupabaseClient();
+  if (!client) return true;
+
+  try {
+    const { error } = await client.from('configuracion').upsert({
+      clave: 'bazaar_events',
+      valor: events,
+      updated_at: new Date().toISOString(),
+    }, { onConflict: 'clave' });
+
+    if (error) {
+      console.warn('Error al guardar bazaar_events en Supabase:', error.message);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.warn('Excepción al sincronizar bazaar_events:', err);
+    return false;
+  }
+}
+
+/**
+ * Obtiene la lista histórica de eventos de bazar desde Supabase o localStorage
+ */
+export async function fetchBazaarEventsFromSupabase(): Promise<BazaarEvent[]> {
+  const client = getSupabaseClient();
+  if (!client) {
+    try {
+      const local = localStorage.getItem('delicias_bazaar_events');
+      return local ? JSON.parse(local) : [];
+    } catch {
+      return [];
+    }
+  }
+
+  try {
+    const { data, error } = await client
+      .from('configuracion')
+      .select('valor')
+      .eq('clave', 'bazaar_events')
+      .maybeSingle();
+
+    if (!error && data?.valor && Array.isArray(data.valor)) {
+      try {
+        localStorage.setItem('delicias_bazaar_events', JSON.stringify(data.valor));
+      } catch {}
+      return data.valor as BazaarEvent[];
+    }
+  } catch (err) {
+    console.warn('Error al cargar bazaar_events de Supabase:', err);
+  }
+
+  try {
+    const local = localStorage.getItem('delicias_bazaar_events');
+    return local ? JSON.parse(local) : [];
+  } catch {
+    return [];
+  }
+}
   }
 }
 

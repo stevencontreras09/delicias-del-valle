@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { useApp, ActiveTab } from '../../context/AppContext';
+import { useApp } from '../../context/AppContext';
+import { ActiveTab } from '../../types';
 import {
   LayoutDashboard,
   Package,

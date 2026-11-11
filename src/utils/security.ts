@@ -13,6 +13,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, Record<ActiveTab, boolean>> = {
     orders: true,
     kitchen: true,
     delivery: true,
+    bazaar: true,
     users: true,
     database: true,
   },
@@ -24,6 +25,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, Record<ActiveTab, boolean>> = {
     orders: true,
     kitchen: true,
     delivery: true,
+    bazaar: true,
     users: true,
     database: false, // Restricción: credenciales y consola SQL restringidas al Admin Maestro
   },
@@ -35,6 +37,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, Record<ActiveTab, boolean>> = {
     orders: true,     // Consulta de pedidos en producción
     kitchen: true,    // Acceso completo al Modo Cocina / Display
     delivery: false,
+    bazaar: true,     // Puede registrar ventas en el bazar
     users: false,     // Restricción: sin gestión de usuarios
     database: false,  // Restricción: sin acceso a base de datos
   },
@@ -46,6 +49,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, Record<ActiveTab, boolean>> = {
     orders: true,     // Registro de pedidos, anticipos y cobros
     kitchen: false,   // Restricción: no opera en cocina
     delivery: false,
+    bazaar: true,     // Acceso completo a caja y ventas de bazar
     users: false,     // Restricción: sin gestión de usuarios
     database: false,  // Restricción: sin acceso a base de datos
   },
@@ -57,6 +61,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, Record<ActiveTab, boolean>> = {
     orders: true,
     kitchen: true,
     delivery: false,
+    bazaar: true,
     users: false,
     database: false,
   },
@@ -68,6 +73,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, Record<ActiveTab, boolean>> = {
     orders: false,    // Restricción: utiliza exclusivamente el Modo Delivery simplificado
     kitchen: false,   // Restricción: no opera en línea de horneado
     delivery: true,   // Acceso exclusivo al Modo Delivery móvil y táctil
+    bazaar: false,
     users: false,     // Restricción: sin gestión de usuarios
     database: false,  // Restricción: sin acceso a base de datos
   },
