@@ -405,6 +405,14 @@ export interface BazaarGasto {
   pagado_con: 'caja_efectivo' | 'cuenta_banco';
 }
 
+export interface BazaarCatalogoProducto {
+  id: string;
+  nombre: string;
+  precio: number;
+  icono: string;
+  receta_id?: number;
+}
+
 export interface BazaarItemStock {
   id: string;
   producto_nombre: string;
@@ -427,6 +435,7 @@ export interface BazaarEvent {
   gastos: BazaarGasto[];
   ventas: BazaarVenta[];
   inventario: BazaarItemStock[];
+  catalogo_productos?: BazaarCatalogoProducto[];
   notas?: string;
   importado_a_central?: boolean;
   fecha_importado?: string;

@@ -2590,6 +2590,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     notas?: string,
     fechaFin?: string
   ): BazaarEvent => {
+    let savedCatalog = undefined;
+    try {
+      const rawCat = localStorage.getItem('delicias_bazaar_catalogo_productos');
+      if (rawCat) {
+        const parsed = JSON.parse(rawCat);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          savedCatalog = parsed;
+        }
+      }
+    } catch {}
+
     const newEvent: BazaarEvent = {
       id: `bazaar-${Date.now()}`,
       nombre: sanitizeInput(nombre),
@@ -2601,6 +2612,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       gastos: [],
       ventas: [],
       inventario: [],
+      catalogo_productos: savedCatalog,
       notas: notas ? sanitizeInput(notas) : undefined,
       importado_a_central: false,
       created_at: new Date().toISOString(),
