@@ -1,7 +1,6 @@
 import React, { useState, useMemo } from 'react';
-import { GoogleMap, useJsApiLoader, Marker } from '@react-google-maps/api';
 import { useApp } from '../../context/AppContext';
-import { Cliente, BazaarCatalogoProducto } from '../../types';
+import { Cliente } from '../../types';
 import {
   Contact,
   Plus,
@@ -39,8 +38,6 @@ import {
   getResolvedGoogleMapsApiKey,
 } from '../maps/MapLocationPicker';
 
-const LIBRARIES: ('places')[] = ['places'];
-
 // Extraer coordenadas Lat/Lng desde maps_url o dirección
 export function extractCoordsFromCliente(cliente: Cliente): { lat: number; lng: number } | null {
   const source = `${cliente.maps_url || ''} ${cliente.direccion || ''}`;
@@ -56,56 +53,6 @@ export function extractCoordsFromCliente(cliente: Cliente): { lat: number; lng: 
   return null;
 }
 
-const PortfolioGoogleMapCanvas: React.FC<{
-  apiKey: string;
-  mappedClients: { cliente: Cliente; coords: { lat: number; lng: number } }[];
-  selectedClient: Cliente | null;
-  onSelectClient: (c: Cliente) => void;
-}> = ({ apiKey, mappedClients, selectedClient, onSelectClient }) => {
-  const { isLoaded, loadError } = useJsApiLoader({
-    id: 'google-map-script',
-    googleMapsApiKey: apiKey,
-    libraries: LIBRARIES,
-  });
-
-  if (!isLoaded || loadError) return null;
-
-  const selectedCoords = selectedClient ? extractCoordsFromCliente(selectedClient) : null;
-  const center = selectedCoords || DELICIAS_WORKSHOP_COORDS;
-
-  return (
-    <div className="rounded-3xl overflow-hidden border-2 border-trigo-300 shadow-sm">
-      <GoogleMap
-        mapContainerStyle={{ width: '100%', height: '380px' }}
-        center={center}
-        zoom={selectedCoords ? 16 : 13}
-        options={{
-          disableDefaultUI: false,
-          zoomControl: true,
-          streetViewControl: false,
-          mapTypeControl: false,
-          fullscreenControl: true,
-        }}
-      >
-        <Marker
-          position={DELICIAS_WORKSHOP_COORDS}
-          title="Taller Central - Delicias del Valle"
-          icon={{ url: 'https://maps.google.com/mapfiles/ms/icons/red-dot.png' }}
-        />
-
-        {mappedClients.map(({ cliente, coords }) => (
-          <Marker
-            key={cliente.id}
-            position={coords}
-            title={`${cliente.nombre} (${cliente.direccion || 'Ubicación GPS'})`}
-            onClick={() => onSelectClient(cliente)}
-          />
-        ))}
-      </GoogleMap>
-    </div>
-  );
-};
-
 export const ClientPortfolioManager: React.FC = () => {
   const {
     clientes,
@@ -115,7 +62,6 @@ export const ClientPortfolioManager: React.FC = () => {
     pedidos,
     cotizaciones,
     bazaarEvents,
-    recetas,
     zonasDelivery,
     showToast,
     setActiveTab,
@@ -151,18 +97,12 @@ export const ClientPortfolioManager: React.FC = () => {
       ? `${window.location.origin}/?catalogo=1`
       : 'https://delicias-del-valle.vercel.app/?catalogo=1';
 
-  // Estados de Difusión de Catálogo Disponible
-  const [includeRecetario, setIncludeRecetario] = useState(true);
-  const [includeBazaarMenu, setIncludeBazaarMenu] = useState(true);
+  // Estados de Difusión de Catálogo Disponible (Mensaje persuasivo + Enlace exclusivo al Catálogo Interactivo)
   const [catalogIntro, setCatalogIntro] = useState(
-    'Te compartimos nuestro *Catálogo Disponible* de pastelería artesanal recién horneada en *Delicias del Valle* 🍰✨:'
+    '✨ *¡Endulza tus momentos especiales con Delicias del Valle!* 🎂🍰\n\nTe invitamos a entrar a nuestro nuevo *Catálogo Interactivo*, donde podrás ver las fotos de todos nuestros postres, elegir tus favoritos, personalizarlos totalmente a tu gusto (tamaño, masa, relleno, cobertura y dedicatoria) y confirmar tu pedido en segundos:'
   );
   const [catalogFooter, setCatalogFooter] = useState(
-    `📲 *Haz clic en nuestro Catálogo Interactivo para ver fotos, personalizar tu pedido a tu gusto y confirmarlo en línea:*\n👉 ${
-      typeof window !== 'undefined'
-        ? `${window.location.origin}/?catalogo=1`
-        : 'https://delicias-del-valle.vercel.app/?catalogo=1'
-    }\n\n🛵 Contamos con *entrega a domicilio* y retiro en taller.`
+    '🛵 Contamos con *entrega a domicilio* y retiro en nuestro taller. ¡Toca el enlace y arma tu orden ideal hoy mismo! 💖'
   );
   const [sentClientIds, setSentClientIds] = useState<number[]>([]);
   const [copiedCatalogText, setCopiedCatalogText] = useState(false);
@@ -377,63 +317,25 @@ export const ClientPortfolioManager: React.FC = () => {
     setIsClientModalOpen(false);
   };
 
-  // Generación dinámica del texto del Catálogo Disponible
+  // Generación dinámica del mensaje persuasivo con el enlace exclusivo al Catálogo Interactivo
   const buildCatalogMessage = (clientName?: string): string => {
     const lines: string[] = [];
     const saludo = clientName
       ? `¡Hola *${clientName.trim()}*! 👋`
       : '¡Hola! 👋';
     lines.push(saludo);
-    if (catalogIntro.trim()) {
-      lines.push(catalogIntro.trim());
-    }
     lines.push('');
 
-    if (includeRecetario && recetas.length > 0) {
-      lines.push('🎂 *NUESTRAS ESPECIALIDADES ARTESANALES:*');
-      const activas = recetas.filter((r) => r.activa !== false);
-      const porCategoria = new Map<string, { nombre: string; unidad: string }[]>();
-
-      activas.forEach((rec) => {
-        const cat = rec.categoria || 'Especialidades';
-        const grupo = porCategoria.get(cat) || [];
-        grupo.push({
-          nombre: rec.nombre,
-          unidad: rec.rendimiento_unidad || 'Personalizable',
-        });
-        porCategoria.set(cat, grupo);
-      });
-
-      Array.from(porCategoria.entries())
-        .slice(0, 6)
-        .forEach(([categoria, items]) => {
-          lines.push(`\n✨ *${categoria}:*`);
-          items.slice(0, 6).forEach((item) => {
-            lines.push(`• ${item.nombre} (${item.unidad})`);
-          });
-        });
+    if (catalogIntro.trim()) {
+      lines.push(catalogIntro.trim());
       lines.push('');
     }
 
-    if (includeBazaarMenu) {
-      let bazaarItems: BazaarCatalogoProducto[] = [];
-      try {
-        const saved = localStorage.getItem('delicias_bazaar_catalogo_productos');
-        if (saved) {
-          bazaarItems = JSON.parse(saved);
-        }
-      } catch {}
-
-      if (bazaarItems.length > 0) {
-        lines.push('🧁 *PORCIONES & POSTRES DISPONIBLES:*');
-        bazaarItems.forEach((prod) => {
-          lines.push(`• ${prod.icono || '🍰'} ${prod.nombre}`);
-        });
-        lines.push('');
-      }
-    }
+    lines.push(`👉 *Accede a nuestro Catálogo Interactivo aquí:*`);
+    lines.push(publicCatalogUrl);
 
     if (catalogFooter.trim()) {
+      lines.push('');
       lines.push(catalogFooter.trim());
     }
 
@@ -967,35 +869,83 @@ export const ClientPortfolioManager: React.FC = () => {
             </div>
 
             <div className="space-y-3 text-xs">
-              <div className="flex flex-wrap gap-3">
-                <label className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-canvas border border-trigo-200 font-bold text-chocolate-800 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={includeRecetario}
-                    onChange={(e) => setIncludeRecetario(e.target.checked)}
-                    className="rounded text-frambuesa-600"
-                  />
-                  <span>Incluir Catálogo Maestro de Pastelería ({recetas.filter((r) => r.activa !== false).length} prod.)</span>
-                </label>
+              <div>
+                <span className="block font-bold text-chocolate-800 mb-1.5 uppercase tracking-wider text-[10px]">
+                  Plantillas Llamativas Rápidas (1 clic):
+                </span>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCatalogIntro(
+                        '✨ *¡Endulza tus momentos especiales con Delicias del Valle!* 🎂🍰\n\nTe invitamos a entrar a nuestro nuevo *Catálogo Interactivo*, donde podrás ver las fotos de todos nuestros postres, elegir tus favoritos, personalizarlos totalmente a tu gusto (tamaño, masa, relleno, cobertura y dedicatoria) y confirmar tu pedido en segundos:'
+                      );
+                      setCatalogFooter(
+                        '🛵 Contamos con *entrega a domicilio* y retiro en nuestro taller. ¡Toca el enlace y arma tu orden ideal hoy mismo! 💖'
+                      );
+                    }}
+                    className="px-3 py-1.5 rounded-xl bg-crema hover:bg-trigo-200 text-chocolate-900 border border-trigo-300 font-bold text-[11px] transition-colors"
+                  >
+                    ✨ Invitación General al Catálogo
+                  </button>
 
-                <label className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-canvas border border-trigo-200 font-bold text-chocolate-800 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={includeBazaarMenu}
-                    onChange={(e) => setIncludeBazaarMenu(e.target.checked)}
-                    className="rounded text-frambuesa-600"
-                  />
-                  <span>Incluir Menú de Porciones / Bazar</span>
-                </label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCatalogIntro(
+                        '🎉 *¿Tienes un cumpleaños o celebración cerca?* 🎂🥳\n\nEn *Delicias del Valle* ya puedes diseñar tu pastel o postre soñado desde tu celular. Entra a nuestro *Catálogo Interactivo*, mira las fotos de nuestras especialidades y configura tu pedido a tu gusto:'
+                      );
+                      setCatalogFooter(
+                        '🛵 Te lo llevamos directo a tu puerta o puedes retirarlo en nuestro taller. ¡Reserva tu fecha desde el enlace! ✨'
+                      );
+                    }}
+                    className="px-3 py-1.5 rounded-xl bg-crema hover:bg-trigo-200 text-chocolate-900 border border-trigo-300 font-bold text-[11px] transition-colors"
+                  >
+                    🎂 Especial Cumpleaños & Eventos
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCatalogIntro(
+                        '🍓 *¡Hoy horneamos delicias frescas para ti en Delicias del Valle!* 🧁✨\n\nDate un gusto hoy mismo: entra a nuestro *Catálogo Digital*, explora nuestras fotos, personaliza tus postres favoritos y confirma tu orden en línea:'
+                      );
+                      setCatalogFooter(
+                        '🛵 Envíos rápidos a domicilio con ruta GPS. ¡Haz clic en el enlace y pide el tuyo antes de que se agoten! 😍'
+                      );
+                    }}
+                    className="px-3 py-1.5 rounded-xl bg-crema hover:bg-trigo-200 text-chocolate-900 border border-trigo-300 font-bold text-[11px] transition-colors"
+                  >
+                    🧁 Antojo de Fin de Semana
+                  </button>
+                </div>
+              </div>
+
+              <div className="p-3 rounded-2xl bg-sky-50/80 border border-sky-200 flex items-center justify-between gap-2">
+                <div className="min-w-0">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-sky-800 block">
+                    Enlace Único que se Enviará al Cliente:
+                  </span>
+                  <span className="font-mono font-bold text-chocolate-900 text-xs truncate block">
+                    {publicCatalogUrl}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('catalog')}
+                  className="px-3 py-1.5 rounded-xl bg-white hover:bg-sky-100 text-sky-800 border border-sky-300 font-bold text-[11px] shrink-0"
+                >
+                  Editar Fotos del Catálogo
+                </button>
               </div>
 
               <div>
                 <label htmlFor="catalog-intro-input" className="block font-semibold text-chocolate-700 mb-1">
-                  Mensaje de Saludo / Promoción Inicial
+                  Mensaje Llamativo de Invitación (Antes del Enlace)
                 </label>
                 <textarea
                   id="catalog-intro-input"
-                  rows={2}
+                  rows={3}
                   value={catalogIntro}
                   onChange={(e) => setCatalogIntro(e.target.value)}
                   className="w-full border border-trigo-200 rounded-xl p-2.5 bg-canvas focus:ring-2 focus:ring-frambuesa-400"
@@ -1004,7 +954,7 @@ export const ClientPortfolioManager: React.FC = () => {
 
               <div>
                 <label htmlFor="catalog-footer-input" className="block font-semibold text-chocolate-700 mb-1">
-                  Pie de Mensaje (Entregas a Domicilio / Contacto)
+                  Cierre / Llamado a la Acción (Después del Enlace)
                 </label>
                 <textarea
                   id="catalog-footer-input"
@@ -1128,79 +1078,82 @@ export const ClientPortfolioManager: React.FC = () => {
               )}
             </div>
 
-            {activeApiKey ? (
-              <PortfolioGoogleMapCanvas
-                apiKey={activeApiKey}
-                mappedClients={mappedClients}
-                selectedClient={selectedMapClient}
-                onSelectClient={(c) => setSelectedMapClient(c)}
-              />
-            ) : (
-              <div className="rounded-3xl overflow-hidden border-2 border-trigo-300 shadow-sm bg-canvas">
-                <iframe
-                  title="Mapa de Ubicación del Cliente en Google Maps"
-                  src={`https://maps.google.com/maps?q=${encodeURIComponent(
-                    selectedMapClient
-                      ? (() => {
-                          const c = extractCoordsFromCliente(selectedMapClient);
-                          if (c) return `${c.lat},${c.lng}`;
-                          if (selectedMapClient.direccion) {
-                            return `${selectedMapClient.direccion}, Santo Domingo, República Dominicana`;
-                          }
-                          return `${DELICIAS_WORKSHOP_COORDS.lat},${DELICIAS_WORKSHOP_COORDS.lng}`;
-                        })()
-                      : `${DELICIAS_WORKSHOP_COORDS.lat},${DELICIAS_WORKSHOP_COORDS.lng}`
-                  )}&z=15&output=embed`}
-                  width="100%"
-                  height="380"
-                  style={{ border: 0 }}
-                  loading="lazy"
-                  referrerPolicy="no-referrer-when-downgrade"
-                />
-              </div>
-            )}
+            {(() => {
+              const activeClientForMap = selectedMapClient || filteredClientes[0] || null;
+              const activeCoords = activeClientForMap
+                ? extractCoordsFromCliente(activeClientForMap)
+                : null;
 
-            {/* Tarjeta del cliente seleccionado en el mapa */}
-            {selectedMapClient && (
-              <div className="p-4 rounded-2xl bg-crema/70 border border-trigo-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
-                <div>
-                  <span className="font-bold text-chocolate-900 text-sm block">
-                    📍 {selectedMapClient.nombre}
-                  </span>
-                  <span className="text-chocolate-700 font-medium block mt-0.5">
-                    {selectedMapClient.direccion || 'Sin dirección escrita'}
-                  </span>
-                  {selectedMapClient.punto_referencia && (
-                    <span className="text-[11px] text-chocolate-500 block">
-                      Ref: {selectedMapClient.punto_referencia}
-                    </span>
+              return (
+                <>
+                  <MapLocationPicker
+                    latitude={activeCoords?.lat ?? DELICIAS_WORKSHOP_COORDS.lat}
+                    longitude={activeCoords?.lng ?? DELICIAS_WORKSHOP_COORDS.lng}
+                    address={activeClientForMap?.direccion || ''}
+                    puntoReferencia={activeClientForMap?.punto_referencia || ''}
+                    onChangeLocation={(loc) => {
+                      if (!activeClientForMap) return;
+                      const nextMapsUrl =
+                        loc.mapsUrl ||
+                        `https://www.google.com/maps?q=${loc.latitude.toFixed(
+                          6
+                        )},${loc.longitude.toFixed(6)}`;
+                      const nextAddress = loc.address ?? activeClientForMap.direccion;
+                      updateCliente(activeClientForMap.id, {
+                        direccion: nextAddress,
+                        maps_url: nextMapsUrl,
+                      });
+                      setSelectedMapClient({
+                        ...activeClientForMap,
+                        direccion: nextAddress,
+                        maps_url: nextMapsUrl,
+                      });
+                    }}
+                  />
+
+                  {activeClientForMap && (
+                    <div className="p-4 rounded-2xl bg-crema/70 border border-trigo-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                      <div>
+                        <span className="font-bold text-chocolate-900 text-sm block">
+                          📍 Editando Pin en Vivo: {activeClientForMap.nombre}
+                        </span>
+                        <span className="text-chocolate-700 font-medium block mt-0.5">
+                          {activeClientForMap.direccion || 'Arrastra el pin rojo en el mapa para fijar su dirección'}
+                        </span>
+                        {activeClientForMap.punto_referencia && (
+                          <span className="text-[11px] text-chocolate-500 block">
+                            Ref: {activeClientForMap.punto_referencia}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => setLocationModalClient(activeClientForMap)}
+                          className="px-3 py-1.5 rounded-xl bg-white hover:bg-sky-50 text-sky-800 border border-sky-200 font-bold"
+                        >
+                          Detalles / Referencia
+                        </button>
+                        <a
+                          href={
+                            activeClientForMap.maps_url ||
+                            `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+                              activeClientForMap.direccion || activeClientForMap.nombre
+                            )}`
+                          }
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="px-3 py-1.5 rounded-xl bg-chocolate-800 text-white font-bold inline-flex items-center gap-1"
+                        >
+                          <span>Navegar</span>
+                          <ExternalLink className="w-3 h-3" />
+                        </a>
+                      </div>
+                    </div>
                   )}
-                </div>
-                <div className="flex items-center gap-2 shrink-0">
-                  <button
-                    type="button"
-                    onClick={() => setLocationModalClient(selectedMapClient)}
-                    className="px-3 py-1.5 rounded-xl bg-white hover:bg-sky-50 text-sky-800 border border-sky-200 font-bold"
-                  >
-                    Ajustar Pin GPS
-                  </button>
-                  <a
-                    href={
-                      selectedMapClient.maps_url ||
-                      `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-                        selectedMapClient.direccion || selectedMapClient.nombre
-                      )}`
-                    }
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="px-3 py-1.5 rounded-xl bg-chocolate-800 text-white font-bold inline-flex items-center gap-1"
-                  >
-                    <span>Navegar</span>
-                    <ExternalLink className="w-3 h-3" />
-                  </a>
-                </div>
-              </div>
-            )}
+                </>
+              );
+            })()}
           </div>
 
           {/* Lista de Clientes para Ubicar en el Mapa o Armar Ruta de Entrega (5 columnas) */}

@@ -92,6 +92,7 @@ export const CatalogManager: React.FC = () => {
     insumosMap,
     quoteOptions,
     addCotizacion,
+    convertirCotizacionAPedido,
     setActiveTab,
     showToast,
     broadcastChange,
@@ -434,10 +435,97 @@ export const CatalogManager: React.FC = () => {
       await syncCatalogOrdersToSupabase(updatedOrders);
       showToast(
         'success',
-        'Cotización Creada',
-        `Se generó la cotización ${createdQuote.codigo} para ${req.cliente_nombre}.`
+        'Cotización del Catálogo Creada',
+        `Se generó la cotización ${createdQuote.codigo} para ${req.cliente_nombre} en Cotizaciones del Catálogo.`
       );
       setActiveTab('quotes');
+    }
+  };
+
+  const handleConfirmRequestDirectlyToOrder = async (req: CatalogOrderRequest) => {
+    const quoteItems: CotizacionItem[] = req.items.map((sel, idx) => {
+      const matchedReceta =
+        (sel.receta_id ? recetas.find((r) => r.id === sel.receta_id) : undefined) ||
+        recetas.find((r) => r.nombre.trim().toLowerCase() === sel.producto_nombre.trim().toLowerCase());
+
+      let unitPrice = 1200;
+      if (matchedReceta) {
+        const costos = calcularCostosReceta(matchedReceta, insumosMap);
+        unitPrice = Math.round(
+          costos.precio_sugerido_margen_venta || costos.precio_sugerido_venta || 1200
+        );
+      }
+
+      return {
+        id: `item-cat-${Date.now()}-${idx}`,
+        receta_id: matchedReceta?.id,
+        receta_nombre: sel.producto_nombre,
+        tamano_porciones: sel.tamano_porciones,
+        masa_base: sel.masa_base,
+        relleno: sel.relleno,
+        decoracion: sel.decoracion,
+        empaque: 'Estándar de la Receta',
+        dedicatoria: sel.dedicatoria || '',
+        extras: sel.notas_personalizacion
+          ? [{ id: `nota-${idx}`, nombre: `Personalización: ${sel.notas_personalizacion}`, precio: 0 }]
+          : [],
+        cantidad: sel.cantidad,
+        precio_unitario: unitPrice,
+        subtotal: unitPrice * sel.cantidad,
+        factor_receta: 1,
+      };
+    });
+
+    const subtotal = quoteItems.reduce((acc, i) => acc + i.subtotal, 0);
+    const createdQuote = await addCotizacion({
+      descripcion: `Solicitud Catálogo #${req.folio}`,
+      cliente_nombre: req.cliente_nombre,
+      cliente_telefono: req.cliente_telefono,
+      cliente_email: req.cliente_email,
+      fecha_emision: new Date().toISOString().split('T')[0],
+      fecha_evento: req.fecha_entrega_deseada,
+      validez_dias: 7,
+      items: quoteItems,
+      subtotal,
+      descuento: 0,
+      costo_envio: 0,
+      total: subtotal,
+      notas: req.notas_generales || `Pedido configurado por el cliente desde el Catálogo Interactivo (#${req.folio}).`,
+      estado: 'aprobada',
+      tipo_despacho: req.tipo_despacho,
+      direccion_entrega: req.direccion_entrega,
+      punto_referencia: req.punto_referencia,
+      maps_url: req.maps_url,
+    });
+
+    if (createdQuote) {
+      const updatedOrders = catalogOrders.map((o) =>
+        o.id === req.id
+          ? { ...o, estado: 'cotizado' as const, cotizacion_id: createdQuote.id }
+          : o
+      );
+      setCatalogOrders(updatedOrders);
+      await syncCatalogOrdersToSupabase(updatedOrders);
+
+      convertirCotizacionAPedido(
+        createdQuote.id,
+        0,
+        req.fecha_entrega_deseada || new Date().toISOString().split('T')[0],
+        req.hora_entrega_deseada || '14:00',
+        req.tipo_despacho === 'delivery' ? 'domicilio' : 'recogida_local',
+        req.direccion_entrega || '',
+        {
+          punto_referencia: req.punto_referencia,
+          costo_delivery: 0,
+        }
+      );
+
+      showToast(
+        'success',
+        'Orden Confirmada en Pedidos',
+        `La solicitud #${req.folio} de ${req.cliente_nombre} pasó directamente a Pedidos Confirmados.`
+      );
+      setActiveTab('orders');
     }
   };
 
@@ -591,10 +679,10 @@ export const CatalogManager: React.FC = () => {
           }`}
         >
           <ShoppingBag className="w-4 h-4" />
-          <span>Pedidos Confirmados por Clientes ({catalogOrders.length})</span>
+          <span>Órdenes por Confirmar de Clientes ({catalogOrders.length})</span>
           {pendingOrdersCount > 0 && (
             <span className="px-2 py-0.5 rounded-full text-[10px] bg-frambuesa-600 text-white font-black">
-              {pendingOrdersCount} nuevos
+              {pendingOrdersCount} por confirmar
             </span>
           )}
         </button>
@@ -797,7 +885,16 @@ export const CatalogManager: React.FC = () => {
                           className="px-3.5 py-2 rounded-xl bg-chocolate-900 hover:bg-chocolate-800 text-white text-xs font-bold flex items-center gap-1.5"
                         >
                           <FileText className="w-3.5 h-3.5 text-trigo-300" />
-                          <span>Generar Cotización con Precios</span>
+                          <span>Asignar Precios (Cotizar)</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => handleConfirmRequestDirectlyToOrder(req)}
+                          className="px-3.5 py-2 rounded-xl bg-frambuesa-600 hover:bg-frambuesa-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-xs"
+                        >
+                          <Check className="w-3.5 h-3.5" />
+                          <span>Confirmar Directo a Pedido</span>
                         </button>
 
                         <button

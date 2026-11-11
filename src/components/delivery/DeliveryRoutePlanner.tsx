@@ -1,5 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { GoogleMap, useJsApiLoader, Marker, Polyline } from '@react-google-maps/api';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Pedido } from '../../types';
 import {
   DELICIAS_WORKSHOP_COORDS,
@@ -33,94 +32,12 @@ import {
   Check,
 } from 'lucide-react';
 
-const LIBRARIES: ('places')[] = ['places'];
-
-const mapContainerStyle = {
-  width: '100%',
-  height: '360px',
-  borderRadius: '1.25rem',
-};
-
-const mapOptions: google.maps.MapOptions = {
-  disableDefaultUI: false,
-  zoomControl: true,
-  streetViewControl: false,
-  mapTypeControl: false,
-  fullscreenControl: true,
-};
-
 interface DeliveryRoutePlannerProps {
   pedidos: Pedido[];
   onMarkAsDelivered: (pedido: Pedido) => void;
   onStartRoute: (pedidoId: number) => void;
   onOpenLocationModal?: (pedido: Pedido) => void;
 }
-
-const RouteGoogleMapCanvas: React.FC<{
-  apiKey: string;
-  activeOrigin: { lat: number; lng: number; name: string };
-  stops: RouteStop[];
-  polylinePath: { lat: number; lng: number }[];
-  onMapLoad: (map: google.maps.Map) => void;
-}> = ({ apiKey, activeOrigin, stops, polylinePath, onMapLoad }) => {
-  const { isLoaded, loadError } = useJsApiLoader({
-    id: 'google-map-script',
-    googleMapsApiKey: apiKey,
-    libraries: LIBRARIES,
-  });
-
-  if (!isLoaded || loadError) return null;
-
-  return (
-    <div className="relative rounded-3xl overflow-hidden border-2 border-trigo-300 shadow-warm">
-      <GoogleMap
-        mapContainerStyle={mapContainerStyle}
-        center={activeOrigin}
-        zoom={13}
-        onLoad={onMapLoad}
-        options={mapOptions}
-      >
-        <Marker
-          position={activeOrigin}
-          title={activeOrigin.name}
-          icon={{
-            url: 'https://maps.google.com/mapfiles/ms/icons/red-dot.png',
-          }}
-        />
-
-        {stops.map((stop) => (
-          <Marker
-            key={stop.pedido.id}
-            position={{ lat: stop.latitude, lng: stop.longitude }}
-            label={{
-              text: String(stop.stopIndex),
-              color: '#ffffff',
-              fontWeight: 'bold',
-              fontSize: '12px',
-            }}
-            title={`#${stop.stopIndex} - ${stop.pedido.cliente_nombre}`}
-          />
-        ))}
-
-        {polylinePath.length >= 2 && (
-          <Polyline
-            path={polylinePath}
-            options={{
-              strokeColor: '#e11d48',
-              strokeOpacity: 0.85,
-              strokeWeight: 4,
-            }}
-          />
-        )}
-      </GoogleMap>
-
-      <div className="absolute bottom-3 left-3 bg-white/95 backdrop-blur-md px-3 py-1.5 rounded-xl border border-trigo-200 text-[10px] text-chocolate-800 font-bold flex items-center gap-2 shadow-sm">
-        <span className="w-2.5 h-2.5 rounded-full bg-red-500 inline-block"></span>
-        <span>Ruta Secuenciada (Paradas 1 a {stops.length})</span>
-      </div>
-    </div>
-  );
-};
 
 export const DeliveryRoutePlanner: React.FC<DeliveryRoutePlannerProps> = ({
   pedidos,
@@ -260,34 +177,6 @@ export const DeliveryRoutePlanner: React.FC<DeliveryRoutePlannerProps> = ({
     setCustomSequence(route.stops.map((s) => s.pedido));
   };
 
-  // Polilínea de ruta para el mapa
-  const polylinePath = useMemo(() => {
-    const path = [{ lat: activeOrigin.lat, lng: activeOrigin.lng }];
-    currentRouteData.stops.forEach((s) => {
-      path.push({ lat: s.latitude, lng: s.longitude });
-    });
-    return path;
-  }, [activeOrigin, currentRouteData.stops]);
-
-  // Centro y bounds del mapa
-  const [mapInstance, setMapInstance] = useState<google.maps.Map | null>(null);
-
-  const onMapLoad = useCallback(
-    (map: google.maps.Map) => {
-      setMapInstance(map);
-      if (typeof window !== 'undefined' && window.google?.maps) {
-        const bounds = new window.google.maps.LatLngBounds();
-        bounds.extend(activeOrigin);
-        currentRouteData.stops.forEach((s) => {
-          bounds.extend({ lat: s.latitude, lng: s.longitude });
-        });
-        map.fitBounds(bounds, { top: 40, right: 40, bottom: 40, left: 40 });
-      }
-    },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [activeOrigin, currentRouteData.stops.length]
-  );
-
   return (
     <div className="space-y-4 animate-fade-in">
       {/* 1. Panel Superior de Métricas y Control de Ruta */}
@@ -388,53 +277,43 @@ export const DeliveryRoutePlanner: React.FC<DeliveryRoutePlannerProps> = ({
       </div>
 
       {/* 2. Mapa Interactivo de la Ruta con Google Maps oficial */}
-      {apiKey ? (
-        <RouteGoogleMapCanvas
-          apiKey={apiKey}
-          activeOrigin={activeOrigin}
-          stops={currentRouteData.stops}
-          polylinePath={polylinePath}
-          onMapLoad={onMapLoad}
+      <div className="rounded-3xl overflow-hidden border-2 border-trigo-300 shadow-warm bg-white">
+        <iframe
+          title="Vista de Ruta Google Maps"
+          src={`https://maps.google.com/maps?q=${encodeURIComponent(
+            currentRouteData.stops.length > 0
+              ? `${currentRouteData.stops[0].latitude},${currentRouteData.stops[0].longitude}`
+              : `${activeOrigin.lat},${activeOrigin.lng}`
+          )}&z=14&output=embed`}
+          width="100%"
+          height="300"
+          style={{ border: 0 }}
+          loading="lazy"
+          referrerPolicy="no-referrer-when-downgrade"
         />
-      ) : (
-        <div className="rounded-3xl overflow-hidden border-2 border-trigo-300 shadow-warm bg-white">
-          <iframe
-            title="Vista de Ruta Google Maps"
-            src={`https://maps.google.com/maps?q=${encodeURIComponent(
-              currentRouteData.stops.length > 0
-                ? `${currentRouteData.stops[0].latitude},${currentRouteData.stops[0].longitude}`
-                : `${activeOrigin.lat},${activeOrigin.lng}`
-            )}&z=14&output=embed`}
-            width="100%"
-            height="300"
-            style={{ border: 0 }}
-            loading="lazy"
-            referrerPolicy="no-referrer-when-downgrade"
-          />
-          <div className="p-3 bg-crema/70 border-t border-trigo-200 flex flex-wrap items-center justify-between gap-3 text-xs">
-            <div className="flex items-center gap-2 text-chocolate-800">
-              <Navigation className="w-4 h-4 text-frambuesa-600 shrink-0" />
-              <div>
-                <p className="font-bold">Mapa en Vivo de Ruta Optimizada</p>
-                <p className="text-[11px] text-chocolate-600">
-                  Secuencia optimizada de {currentRouteData.stops.length} paradas lista para navegación GPS paso a paso.
-                </p>
-              </div>
+        <div className="p-3 bg-crema/70 border-t border-trigo-200 flex flex-wrap items-center justify-between gap-3 text-xs">
+          <div className="flex items-center gap-2 text-chocolate-800">
+            <Navigation className="w-4 h-4 text-frambuesa-600 shrink-0" />
+            <div>
+              <p className="font-bold">Mapa en Vivo de Ruta Optimizada</p>
+              <p className="text-[11px] text-chocolate-600">
+                Secuencia optimizada de {currentRouteData.stops.length} paradas lista para navegación GPS paso a paso.
+              </p>
             </div>
-            {currentRouteData.googleMapsUrl && (
-              <a
-                href={currentRouteData.googleMapsUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs shrink-0 flex items-center gap-1.5 shadow-xs transition-colors"
-              >
-                <span>Abrir Ruta Completa en Google Maps</span>
-                <ExternalLink className="w-3.5 h-3.5" />
-              </a>
-            )}
           </div>
+          {currentRouteData.googleMapsUrl && (
+            <a
+              href={currentRouteData.googleMapsUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs shrink-0 flex items-center gap-1.5 shadow-xs transition-colors"
+            >
+              <span>Abrir Ruta Completa en Google Maps</span>
+              <ExternalLink className="w-3.5 h-3.5" />
+            </a>
+          )}
         </div>
-      )}
+      </div>
 
       {/* 3. Lista Interactiva de Paradas Secuenciadas */}
       <div className="space-y-3">
