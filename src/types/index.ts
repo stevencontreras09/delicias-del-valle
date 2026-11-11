@@ -358,6 +358,7 @@ export type ActiveTab =
   | 'recipes'
   | 'quotes'
   | 'orders'
+  | 'clients'
   | 'kitchen'
   | 'delivery'
   | 'bazaar'

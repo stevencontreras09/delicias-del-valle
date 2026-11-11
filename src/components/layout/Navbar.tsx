@@ -16,6 +16,7 @@ import {
   Shield,
   Trash2,
   Truck,
+  Contact,
 } from 'lucide-react';
 import { canAccessTab, getDefaultTabForRole } from '../../utils/security';
 
@@ -70,6 +71,11 @@ export const Navbar: React.FC = () => {
       label: 'Pedidos',
       icon: <Receipt className="w-3.5 h-3.5" />,
       badge: activeOrdersCount > 0 ? activeOrdersCount : undefined,
+    },
+    {
+      id: 'clients',
+      label: 'Clientes',
+      icon: <Contact className="w-3.5 h-3.5" />,
     },
     { id: 'kitchen', label: 'Cocina', icon: <ChefHat className="w-3.5 h-3.5" /> },
     {

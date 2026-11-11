@@ -11,6 +11,7 @@ import {
   ChefHat,
   Truck,
   Users,
+  Contact,
   LogOut,
   Menu,
   X,
@@ -32,6 +33,7 @@ export const Sidebar: React.FC<SidebarProps> = () => {
     insumos,
     pedidos,
     cotizaciones,
+    clientes,
     currentUser,
     logout,
   } = useApp();
@@ -92,6 +94,13 @@ export const Sidebar: React.FC<SidebarProps> = () => {
       description: 'Control de órdenes',
       icon: Receipt,
       badge: activeOrdersCount > 0 ? activeOrdersCount : undefined,
+    },
+    {
+      id: 'clients',
+      label: 'Clientes',
+      description: 'Cartera, Mapa & Catálogo',
+      icon: Contact,
+      badge: clientes.length > 0 ? clientes.length : undefined,
     },
     {
       id: 'bazaar',

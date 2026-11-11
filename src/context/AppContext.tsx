@@ -89,6 +89,7 @@ export type ActiveTab =
   | 'recipes'
   | 'quotes'
   | 'orders'
+  | 'clients'
   | 'kitchen'
   | 'delivery'
   | 'bazaar'
@@ -1814,10 +1815,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const updateCliente = (id: number, data: Partial<Cliente>) => {
     let cliNombre = '';
+    let prevNombre = '';
+    let prevTelefono = '';
     setClientes((prev) =>
       prev.map((c) => {
         if (c.id !== id) return c;
-        const updated = { ...c, ...data };
+        prevNombre = c.nombre;
+        prevTelefono = c.telefono;
+        const updated = { ...c, ...data, updated_at: new Date().toISOString() };
         cliNombre = updated.nombre;
         if (isSupabaseConfigured()) {
           syncClienteToSupabase(updated);
@@ -1825,6 +1830,41 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         return updated;
       })
     );
+
+    // Si se actualizaron datos de dirección o ubicación, propagar a pedidos activos y cotizaciones del cliente
+    if (
+      data.direccion !== undefined ||
+      data.punto_referencia !== undefined ||
+      data.maps_url !== undefined ||
+      data.zona_delivery_id !== undefined
+    ) {
+      const targetDigits = (prevTelefono || '').replace(/\D/g, '');
+      setPedidos((prevPedidos) =>
+        prevPedidos.map((p) => {
+          if (p.estado === 'entregado' || p.estado === 'cancelado') return p;
+          const pDigits = (p.cliente_telefono || '').replace(/\D/g, '');
+          const isSameClient =
+            p.cliente_id === id ||
+            (prevNombre && p.cliente_nombre.trim().toLowerCase() === prevNombre.trim().toLowerCase()) ||
+            (targetDigits.length >= 7 && pDigits === targetDigits);
+          if (!isSameClient) return p;
+
+          const updatedPedido: Pedido = {
+            ...p,
+            direccion_entrega: data.direccion !== undefined ? data.direccion : p.direccion_entrega,
+            punto_referencia: data.punto_referencia !== undefined ? data.punto_referencia : p.punto_referencia,
+            maps_url: data.maps_url !== undefined ? data.maps_url : p.maps_url,
+            zona_delivery_id: data.zona_delivery_id !== undefined ? data.zona_delivery_id : p.zona_delivery_id,
+          };
+          if (isSupabaseConfigured()) {
+            syncPedidoToSupabase(updatedPedido);
+          }
+          return updatedPedido;
+        })
+      );
+    }
+
+    showToast('success', 'Cliente Actualizado', `Se guardaron los datos y ubicación de ${cliNombre || 'cliente'}.`);
     if (isSupabaseConfigured() && cliNombre) {
       broadcastChange('modificó los datos de', 'el cliente', cliNombre, id);
     }

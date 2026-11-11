@@ -13,10 +13,45 @@ import {
   Loader2,
   AlertTriangle,
   Crosshair,
+  KeyRound,
+  Check,
+  ExternalLink,
 } from 'lucide-react';
 import { DELICIAS_WORKSHOP_COORDS } from '../../utils/routeOptimizer';
 
 const LIBRARIES: ('places')[] = ['places'];
+
+export const GOOGLE_MAPS_KEY_STORAGE = 'delicias_google_maps_api_key';
+
+export function getResolvedGoogleMapsApiKey(): string {
+  try {
+    const savedLocal = localStorage.getItem(GOOGLE_MAPS_KEY_STORAGE);
+    if (savedLocal && savedLocal.trim().length > 10 && savedLocal !== 'tu-google-maps-api-key') {
+      return savedLocal.trim();
+    }
+  } catch {}
+
+  const envKey =
+    import.meta.env.VITE_GOOGLE_MAPS_API_KEY ||
+    (typeof process !== 'undefined' ? (process.env as any)?.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY : '') ||
+    '';
+
+  if (envKey && envKey !== 'tu-google-maps-api-key' && envKey.trim().length > 10) {
+    return envKey.trim();
+  }
+  return '';
+}
+
+export function saveGoogleMapsApiKey(key: string): void {
+  try {
+    const clean = key.trim();
+    if (clean) {
+      localStorage.setItem(GOOGLE_MAPS_KEY_STORAGE, clean);
+    } else {
+      localStorage.removeItem(GOOGLE_MAPS_KEY_STORAGE);
+    }
+  } catch {}
+}
 
 const mapContainerStyle = {
   width: '100%',
@@ -52,18 +87,29 @@ export interface MapLocationPickerProps {
   }) => void;
 }
 
-export const MapLocationPicker: React.FC<MapLocationPickerProps> = ({
+interface PlaceSuggestion {
+  display_name: string;
+  lat: number;
+  lon: number;
+}
+
+const GoogleMapsSdkView: React.FC<
+  MapLocationPickerProps & {
+    apiKey: string;
+    currentCoords: { lat: number; lng: number };
+    hasCustomCoords: boolean;
+    onSwitchToFallback: () => void;
+  }
+> = ({
+  apiKey,
   latitude,
   longitude,
   address,
-  puntoReferencia,
   onChangeLocation,
+  currentCoords,
+  hasCustomCoords,
+  onSwitchToFallback,
 }) => {
-  const apiKey =
-    import.meta.env.VITE_GOOGLE_MAPS_API_KEY ||
-    (typeof process !== 'undefined' ? (process.env as any)?.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY : '') ||
-    '';
-
   const { isLoaded, loadError } = useJsApiLoader({
     id: 'google-map-script',
     googleMapsApiKey: apiKey,
@@ -73,14 +119,6 @@ export const MapLocationPicker: React.FC<MapLocationPickerProps> = ({
   const [map, setMap] = useState<google.maps.Map | null>(null);
   const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
   const geocoderRef = useRef<google.maps.Geocoder | null>(null);
-
-  // Coordenadas activas (o el centro por defecto si aún no hay coordenadas guardadas)
-  const currentCoords = {
-    lat: latitude !== null && latitude !== undefined && !isNaN(latitude) ? latitude : DELICIAS_WORKSHOP_COORDS.lat,
-    lng: longitude !== null && longitude !== undefined && !isNaN(longitude) ? longitude : DELICIAS_WORKSHOP_COORDS.lng,
-  };
-
-  const hasCustomCoords = latitude !== null && latitude !== undefined && longitude !== null && longitude !== undefined;
 
   const onMapLoad = useCallback(
     (mapInstance: google.maps.Map) => {
@@ -100,23 +138,18 @@ export const MapLocationPicker: React.FC<MapLocationPickerProps> = ({
     setMap(null);
   }, []);
 
-  const onAutocompleteLoad = (
-    autocompleteInstance: google.maps.places.Autocomplete
-  ) => {
+  const onAutocompleteLoad = (autocompleteInstance: google.maps.places.Autocomplete) => {
     autocompleteRef.current = autocompleteInstance;
   };
 
-  // Manejar selección de lugar en Google Places Autocomplete
   const onPlaceChanged = () => {
     if (!autocompleteRef.current) return;
-
     const place = autocompleteRef.current.getPlace();
-
     if (place.geometry?.location) {
       const lat = place.geometry.location.lat();
       const lng = place.geometry.location.lng();
       const formattedAddress = place.formatted_address || place.name || address;
-      const mapsUrl = `https://maps.google.com/?q=${lat},${lng}`;
+      const mapsUrl = `https://www.google.com/maps?q=${lat.toFixed(6)},${lng.toFixed(6)}`;
 
       onChangeLocation({
         latitude: lat,
@@ -132,30 +165,26 @@ export const MapLocationPicker: React.FC<MapLocationPickerProps> = ({
     }
   };
 
-  // Manejar arrastre del marcador o clic en el mapa
   const handleMarkerUpdate = (lat: number, lng: number) => {
-    const mapsUrl = `https://maps.google.com/?q=${lat},${lng}`;
+    const mapsUrl = `https://www.google.com/maps?q=${lat.toFixed(6)},${lng.toFixed(6)}`;
 
     if (geocoderRef.current) {
-      geocoderRef.current.geocode(
-        { location: { lat, lng } },
-        (results, status) => {
-          if (status === 'OK' && results && results[0]) {
-            onChangeLocation({
-              latitude: lat,
-              longitude: lng,
-              address: results[0].formatted_address,
-              mapsUrl,
-            });
-          } else {
-            onChangeLocation({
-              latitude: lat,
-              longitude: lng,
-              mapsUrl,
-            });
-          }
+      geocoderRef.current.geocode({ location: { lat, lng } }, (results, status) => {
+        if (status === 'OK' && results && results[0]) {
+          onChangeLocation({
+            latitude: lat,
+            longitude: lng,
+            address: results[0].formatted_address,
+            mapsUrl,
+          });
+        } else {
+          onChangeLocation({
+            latitude: lat,
+            longitude: lng,
+            mapsUrl,
+          });
         }
-      );
+      });
     } else {
       onChangeLocation({
         latitude: lat,
@@ -181,7 +210,6 @@ export const MapLocationPicker: React.FC<MapLocationPickerProps> = ({
     }
   };
 
-  // Centrar en ubicación actual del usuario por GPS
   const handleGetCurrentLocation = () => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
@@ -201,36 +229,11 @@ export const MapLocationPicker: React.FC<MapLocationPickerProps> = ({
     }
   };
 
-  if (!apiKey) {
-    return (
-      <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 text-xs space-y-2">
-        <div className="flex items-center gap-2 font-bold text-chocolate-800">
-          <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
-          <span>Google Maps API no detectada en este despliegue</span>
-        </div>
-        <p className="text-[11px] text-amber-800">
-          Si acabas de agregar la variable <code>VITE_GOOGLE_MAPS_API_KEY</code> en <strong>Vercel</strong>, recuerda hacer un <strong>Redeploy</strong> en la pestaña <em>Deployments</em> para que se compile con la nueva clave.
-        </p>
-        <p className="text-[11px] text-amber-800">
-          Si estás en local (localhost), reinicia tu terminal con <code>npm run dev</code>.
-        </p>
-      </div>
-    );
-  }
-
-  if (loadError) {
-    return (
-      <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-900 text-xs space-y-2">
-        <div className="flex items-center gap-2 font-bold text-rose-800">
-          <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
-          <span>Error al conectar con Google Maps</span>
-        </div>
-        <p className="text-[11px] text-rose-800">
-          Google Maps no pudo cargarse ({loadError.message || 'Verifica la consola'}). Asegúrate de que tu clave tenga habilitadas en Google Cloud Console: <strong>Maps JavaScript API</strong> y <strong>Places API</strong>, y que el dominio actual esté autorizado en las restricciones de la clave.
-        </p>
-      </div>
-    );
-  }
+  useEffect(() => {
+    if (loadError) {
+      onSwitchToFallback();
+    }
+  }, [loadError, onSwitchToFallback]);
 
   if (!isLoaded) {
     return (
@@ -245,20 +248,20 @@ export const MapLocationPicker: React.FC<MapLocationPickerProps> = ({
 
   return (
     <div className="space-y-3">
-      {/* Buscador de Direcciones con Google Places Autocomplete */}
       <div>
-        <label className="block text-xs font-bold text-chocolate-700 mb-1 uppercase tracking-wider">
+        <label
+          htmlFor="gmaps-places-search"
+          className="block text-xs font-bold text-chocolate-700 mb-1 uppercase tracking-wider"
+        >
           Buscar Dirección Oficial (Google Places)
         </label>
         <div className="relative">
           <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-chocolate-400 z-10">
             <Search className="w-4 h-4" />
           </div>
-          <Autocomplete
-            onLoad={onAutocompleteLoad}
-            onPlaceChanged={onPlaceChanged}
-          >
+          <Autocomplete onLoad={onAutocompleteLoad} onPlaceChanged={onPlaceChanged}>
             <input
+              id="gmaps-places-search"
               type="text"
               placeholder="Escribe la calle, sector, residencial o punto en RD..."
               defaultValue={address}
@@ -277,7 +280,6 @@ export const MapLocationPicker: React.FC<MapLocationPickerProps> = ({
         </div>
       </div>
 
-      {/* Mapa interactivo con Marcador Arrastrable */}
       <div className="relative rounded-2xl overflow-hidden border border-trigo-300 shadow-sm">
         <GoogleMap
           mapContainerStyle={mapContainerStyle}
@@ -297,14 +299,266 @@ export const MapLocationPicker: React.FC<MapLocationPickerProps> = ({
           />
         </GoogleMap>
 
-        {/* Instrucción visual sobre el mapa */}
         <div className="absolute top-2 left-2 bg-white/95 backdrop-blur-md px-2.5 py-1 rounded-lg border border-trigo-200 text-[10px] text-chocolate-700 font-bold flex items-center space-x-1.5 shadow-sm">
           <Navigation className="w-3 h-3 text-frambuesa-600 animate-pulse" />
           <span>Arrastra el pin o toca el mapa para afinar el punto de entrega</span>
         </div>
       </div>
+    </div>
+  );
+};
 
-      {/* Muestra visual de Coordenadas en tiempo real */}
+export const MapLocationPicker: React.FC<MapLocationPickerProps> = (props) => {
+  const { latitude, longitude, address, onChangeLocation } = props;
+  const [apiKey, setApiKey] = useState<string>(() => getResolvedGoogleMapsApiKey());
+  const [useFallbackMap, setUseFallbackMap] = useState<boolean>(false);
+  const [showKeyConfig, setShowKeyConfig] = useState<boolean>(false);
+  const [tempKeyInput, setTempKeyInput] = useState<string>(apiKey);
+
+  // Buscador de lugares (Photon / Nominatim RD) para modo híbrido / sin llave JS
+  const [searchQuery, setSearchQuery] = useState<string>(address || '');
+  const [suggestions, setSuggestions] = useState<PlaceSuggestion[]>([]);
+  const [isSearching, setIsSearching] = useState<boolean>(false);
+
+  const currentCoords = {
+    lat:
+      latitude !== null && latitude !== undefined && !isNaN(latitude)
+        ? latitude
+        : DELICIAS_WORKSHOP_COORDS.lat,
+    lng:
+      longitude !== null && longitude !== undefined && !isNaN(longitude)
+        ? longitude
+        : DELICIAS_WORKSHOP_COORDS.lng,
+  };
+
+  const hasCustomCoords =
+    latitude !== null && latitude !== undefined && longitude !== null && longitude !== undefined;
+
+  useEffect(() => {
+    if (address && address !== searchQuery) {
+      setSearchQuery(address);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [address]);
+
+  const handleSearchPlaces = async (query: string) => {
+    setSearchQuery(query);
+    if (query.trim().length < 3) {
+      setSuggestions([]);
+      return;
+    }
+
+    setIsSearching(true);
+    try {
+      const q = encodeURIComponent(`${query.trim()}, República Dominicana`);
+      const res = await fetch(
+        `https://photon.komoot.io/api/?q=${q}&lat=${DELICIAS_WORKSHOP_COORDS.lat}&lon=${DELICIAS_WORKSHOP_COORDS.lng}&limit=5`
+      );
+      if (res.ok) {
+        const data = await res.json();
+        if (data?.features && Array.isArray(data.features)) {
+          const mapped: PlaceSuggestion[] = data.features
+            .map((f: any) => {
+              const p = f.properties || {};
+              const coords = f.geometry?.coordinates || [];
+              const parts = [p.name, p.street, p.district, p.city, p.state, 'RD'].filter(Boolean);
+              const uniqueParts = Array.from(new Set(parts));
+              return {
+                display_name: uniqueParts.join(', '),
+                lon: Number(coords[0]),
+                lat: Number(coords[1]),
+              };
+            })
+            .filter((item: PlaceSuggestion) => !isNaN(item.lat) && !isNaN(item.lon));
+          setSuggestions(mapped);
+        }
+      }
+    } catch {
+      // Fallback silencioso
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  const handleSelectSuggestion = (s: PlaceSuggestion) => {
+    const mapsUrl = `https://www.google.com/maps?q=${s.lat.toFixed(6)},${s.lon.toFixed(6)}`;
+    setSearchQuery(s.display_name);
+    setSuggestions([]);
+    onChangeLocation({
+      latitude: s.lat,
+      longitude: s.lon,
+      address: s.display_name,
+      mapsUrl,
+    });
+  };
+
+  const handleGetCurrentLocationFallback = () => {
+    if (!navigator.geolocation) return;
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const lat = position.coords.latitude;
+        const lng = position.coords.longitude;
+        const mapsUrl = `https://www.google.com/maps?q=${lat.toFixed(6)},${lng.toFixed(6)}`;
+        onChangeLocation({
+          latitude: lat,
+          longitude: lng,
+          address: searchQuery.trim() || `Ubicación GPS (${lat.toFixed(5)}, ${lng.toFixed(5)})`,
+          mapsUrl,
+        });
+      },
+      (err) => {
+        console.warn('Error GPS:', err.message);
+      }
+    );
+  };
+
+  const handleSaveApiKey = () => {
+    saveGoogleMapsApiKey(tempKeyInput);
+    setApiKey(tempKeyInput.trim());
+    setUseFallbackMap(false);
+    setShowKeyConfig(false);
+    if (tempKeyInput.trim()) {
+      window.location.reload();
+    }
+  };
+
+  const googleEmbedUrl = `https://maps.google.com/maps?q=${encodeURIComponent(
+    hasCustomCoords
+      ? `${currentCoords.lat},${currentCoords.lng}`
+      : searchQuery.trim()
+      ? `${searchQuery.trim()}, Santo Domingo, República Dominicana`
+      : `${currentCoords.lat},${currentCoords.lng}`
+  )}&z=16&output=embed`;
+
+  return (
+    <div className="space-y-3">
+      {apiKey && !useFallbackMap ? (
+        <GoogleMapsSdkView
+          {...props}
+          apiKey={apiKey}
+          currentCoords={currentCoords}
+          hasCustomCoords={hasCustomCoords}
+          onSwitchToFallback={() => setUseFallbackMap(true)}
+        />
+      ) : (
+        <div className="space-y-3">
+          {/* Buscador interactivo de calles y sectores con geocodificación + GPS */}
+          <div className="relative">
+            <div className="flex items-center justify-between mb-1">
+              <label
+                htmlFor="hybrid-places-search"
+                className="block text-xs font-bold text-chocolate-700 uppercase tracking-wider"
+              >
+                Buscar Calle, Sector o Residencial (Google Maps & Geocoder RD)
+              </label>
+              <button
+                type="button"
+                onClick={() => setShowKeyConfig(!showKeyConfig)}
+                className="text-[10px] font-bold text-frambuesa-700 hover:underline inline-flex items-center gap-1"
+              >
+                <KeyRound className="w-3 h-3" />
+                <span>{apiKey ? 'Cambiar API Key JS' : 'Configurar API Key Google Maps JS'}</span>
+              </button>
+            </div>
+
+            {showKeyConfig && (
+              <div className="mb-2.5 p-3 rounded-xl bg-amber-50/90 border border-amber-200 text-xs space-y-2">
+                <p className="text-[11px] text-amber-900 font-medium">
+                  Ingresa tu clave <code>VITE_GOOGLE_MAPS_API_KEY</code> (<code>AIzaSy...</code>) para activar el pin arrastrable nativo de Google Maps JS SDK:
+                </p>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    placeholder="AIzaSy..."
+                    value={tempKeyInput}
+                    onChange={(e) => setTempKeyInput(e.target.value)}
+                    className="flex-1 px-3 py-1.5 rounded-lg border border-amber-300 bg-white font-mono text-xs"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleSaveApiKey}
+                    className="px-3 py-1.5 rounded-lg bg-chocolate-800 hover:bg-chocolate-900 text-white font-bold text-xs inline-flex items-center gap-1"
+                  >
+                    <Check className="w-3.5 h-3.5" />
+                    <span>Guardar y Activar</span>
+                  </button>
+                </div>
+              </div>
+            )}
+
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-chocolate-400">
+                {isSearching ? <Loader2 className="w-4 h-4 animate-spin text-frambuesa-600" /> : <Search className="w-4 h-4" />}
+              </div>
+              <input
+                id="hybrid-places-search"
+                type="text"
+                placeholder="Ej: Piantini, Naco, Arroyo Hondo, Ágora Mall, Calle..."
+                value={searchQuery}
+                onChange={(e) => handleSearchPlaces(e.target.value)}
+                className="w-full pl-10 pr-24 py-2.5 rounded-xl border border-trigo-300 bg-white text-chocolate-900 text-xs placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-frambuesa-400 font-medium"
+              />
+              <button
+                type="button"
+                onClick={handleGetCurrentLocationFallback}
+                title="Usar mi ubicación GPS actual"
+                className="absolute inset-y-1 right-1 px-2.5 rounded-lg bg-frambuesa-50 hover:bg-frambuesa-100 text-frambuesa-700 border border-frambuesa-200 text-[10px] font-bold flex items-center gap-1 transition-colors"
+              >
+                <Crosshair className="w-3.5 h-3.5" />
+                <span>Mi GPS</span>
+              </button>
+            </div>
+
+            {suggestions.length > 0 && (
+              <div className="absolute z-30 left-0 right-0 mt-1 bg-white rounded-xl border border-trigo-300 shadow-lg divide-y divide-trigo-100 max-h-48 overflow-y-auto">
+                {suggestions.map((s, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => handleSelectSuggestion(s)}
+                    className="w-full text-left px-3 py-2 hover:bg-crema/70 text-xs flex items-center gap-2 transition-colors"
+                  >
+                    <MapPin className="w-3.5 h-3.5 text-frambuesa-600 shrink-0" />
+                    <span className="truncate font-medium text-chocolate-900">{s.display_name}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Mapa Interactivo de Google Maps Embebido en Tiempo Real */}
+          <div className="relative rounded-2xl overflow-hidden border border-trigo-300 shadow-sm bg-canvas">
+            <iframe
+              title="Mapa de Ubicación de Entrega Google Maps"
+              src={googleEmbedUrl}
+              width="100%"
+              height="300"
+              style={{ border: 0 }}
+              loading="lazy"
+              referrerPolicy="no-referrer-when-downgrade"
+            />
+            <div className="p-2.5 bg-white border-t border-trigo-200 flex flex-wrap items-center justify-between gap-2 text-[11px]">
+              <span className="text-chocolate-700 font-semibold flex items-center gap-1.5">
+                <Navigation className="w-3.5 h-3.5 text-frambuesa-600" />
+                <span>Vista en vivo de Google Maps para el punto de entrega</span>
+              </span>
+              <a
+                href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+                  searchQuery.trim() || `${currentCoords.lat},${currentCoords.lng}`
+                )}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-sky-700 hover:underline font-bold inline-flex items-center gap-1"
+              >
+                <span>Abrir mapa completo</span>
+                <ExternalLink className="w-3 h-3" />
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Muestra visual y ajuste fino de Coordenadas GPS en tiempo real */}
       <div className="p-3 rounded-xl bg-canvas border border-trigo-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 shadow-2xs">
         <div className="flex items-center space-x-2 text-xs">
           <div className="w-6 h-6 rounded-lg bg-frambuesa-50 text-frambuesa-600 flex items-center justify-center flex-shrink-0">
@@ -319,12 +573,46 @@ export const MapLocationPicker: React.FC<MapLocationPickerProps> = ({
         </div>
 
         <div className="flex items-center space-x-2 font-mono text-xs">
-          <span className="px-2.5 py-1 rounded-lg bg-white text-chocolate-800 border border-trigo-300 font-bold shadow-2xs">
-            Lat: <strong className="text-frambuesa-600">{currentCoords.lat.toFixed(6)}</strong>
-          </span>
-          <span className="px-2.5 py-1 rounded-lg bg-white text-chocolate-800 border border-trigo-300 font-bold shadow-2xs">
-            Lng: <strong className="text-frambuesa-600">{currentCoords.lng.toFixed(6)}</strong>
-          </span>
+          <label className="px-2 py-1 rounded-lg bg-white text-chocolate-800 border border-trigo-300 font-bold shadow-2xs flex items-center gap-1">
+            <span>Lat:</span>
+            <input
+              type="number"
+              step="0.0001"
+              aria-label="Latitud GPS"
+              value={Number(currentCoords.lat.toFixed(6))}
+              onChange={(e) => {
+                const lat = parseFloat(e.target.value);
+                if (!isNaN(lat)) {
+                  onChangeLocation({
+                    latitude: lat,
+                    longitude: currentCoords.lng,
+                    mapsUrl: `https://www.google.com/maps?q=${lat.toFixed(6)},${currentCoords.lng.toFixed(6)}`,
+                  });
+                }
+              }}
+              className="w-24 text-frambuesa-600 font-bold bg-transparent focus:outline-none"
+            />
+          </label>
+          <label className="px-2 py-1 rounded-lg bg-white text-chocolate-800 border border-trigo-300 font-bold shadow-2xs flex items-center gap-1">
+            <span>Lng:</span>
+            <input
+              type="number"
+              step="0.0001"
+              aria-label="Longitud GPS"
+              value={Number(currentCoords.lng.toFixed(6))}
+              onChange={(e) => {
+                const lng = parseFloat(e.target.value);
+                if (!isNaN(lng)) {
+                  onChangeLocation({
+                    latitude: currentCoords.lat,
+                    longitude: lng,
+                    mapsUrl: `https://www.google.com/maps?q=${currentCoords.lat.toFixed(6)},${lng.toFixed(6)}`,
+                  });
+                }
+              }}
+              className="w-24 text-frambuesa-600 font-bold bg-transparent focus:outline-none"
+            />
+          </label>
         </div>
       </div>
     </div>
