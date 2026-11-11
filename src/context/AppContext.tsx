@@ -188,7 +188,7 @@ interface AppContextType {
   bazaarEvents: BazaarEvent[];
   activeBazaar: BazaarEvent | null;
   setActiveBazaarId: (id: string | null) => void;
-  crearBazaarEvent: (nombre: string, fecha: string, fondoInicial: number, ubicacion?: string, notas?: string) => BazaarEvent;
+  crearBazaarEvent: (nombre: string, fechaInicio: string, fondoInicial: number, ubicacion?: string, notas?: string, fechaFin?: string) => BazaarEvent;
   actualizarBazaarEvent: (id: string, updates: Partial<BazaarEvent>) => void;
   agregarVentaBazaar: (bazaarId: string, venta: Omit<BazaarVenta, 'id' | 'folio' | 'bazaar_id' | 'hora'>) => BazaarVenta;
   agregarGastoBazaar: (bazaarId: string, gasto: Omit<BazaarGasto, 'id' | 'bazaar_id' | 'hora'>) => BazaarGasto;
@@ -2587,12 +2587,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     fecha: string,
     fondoInicial: number,
     ubicacion?: string,
-    notas?: string
+    notas?: string,
+    fechaFin?: string
   ): BazaarEvent => {
     const newEvent: BazaarEvent = {
       id: `bazaar-${Date.now()}`,
       nombre: sanitizeInput(nombre),
       fecha,
+      fecha_fin: fechaFin || fecha,
       fondo_caja_inicial: fondoInicial,
       ubicacion: ubicacion ? sanitizeInput(ubicacion) : undefined,
       estado: 'activo',
@@ -2801,6 +2803,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       });
     }
 
+    const rangoFechasTexto = bz.fecha_fin && bz.fecha_fin !== bz.fecha
+      ? `del ${bz.fecha} al ${bz.fecha_fin}`
+      : `del ${bz.fecha}`;
+
     const nuevoPedidoCentral: Pedido = {
       id: nextId,
       numero_factura,
@@ -2808,7 +2814,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       cliente_telefono: '809-555-0100',
       cliente_email: 'ventas@deliciasdelvalle.do',
       fecha_pedido: bz.fecha,
-      fecha_entrega: bz.fecha,
+      fecha_entrega: bz.fecha_fin || bz.fecha,
       hora_entrega: '20:00',
       tipo_entrega: 'recogida_local',
       tipo_despacho: 'retiro',
@@ -2822,7 +2828,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       fecha_entregado: new Date().toISOString(),
       inventario_descontado: true,
       pagos: pagosBazar,
-      notas_cocina: `Ventas consolidadas del Bazar "${bz.nombre}". Gastos directos deducidos del evento: RD$${totalGastos.toLocaleString()}. Beneficio neto: RD$${gananciaNeta.toLocaleString()}.`,
+      notas_cocina: `Ventas consolidadas del Bazar "${bz.nombre}" (${rangoFechasTexto}). Gastos directos deducidos del evento: RD$${totalGastos.toLocaleString()}. Beneficio neto: RD$${gananciaNeta.toLocaleString()}.`,
       created_at: new Date().toISOString(),
     };
 

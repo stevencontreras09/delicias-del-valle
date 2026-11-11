@@ -77,9 +77,27 @@ export const BazaarManager: React.FC = () => {
   const [isNewBazaarModalOpen, setIsNewBazaarModalOpen] = useState(false);
   const [newBazaarNombre, setNewBazaarNombre] = useState('');
   const [newBazaarFecha, setNewBazaarFecha] = useState(new Date().toISOString().split('T')[0]);
+  const [newBazaarFechaFin, setNewBazaarFechaFin] = useState(new Date().toISOString().split('T')[0]);
   const [newBazaarFondo, setNewBazaarFondo] = useState('2000');
   const [newBazaarUbicacion, setNewBazaarUbicacion] = useState('');
   const [newBazaarNotas, setNewBazaarNotas] = useState('');
+
+  // Helpers para calcular duración en días y formatear rango de fechas del bazar
+  const getBazaarDurationDays = (inicio: string, fin?: string): number => {
+    if (!fin || fin === inicio) return 1;
+    const d1 = new Date(`${inicio}T00:00:00`);
+    const d2 = new Date(`${fin}T00:00:00`);
+    const diffTime = d2.getTime() - d1.getTime();
+    const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24)) + 1;
+    return diffDays > 0 ? diffDays : 1;
+  };
+
+  const formatBazaarDateRange = (inicio: string, fin?: string): string => {
+    if (!fin || fin === inicio) {
+      return formatDate(inicio);
+    }
+    return `Del ${formatDate(inicio)} al ${formatDate(fin)}`;
+  };
 
   // Estados del POS Express
   const [cart, setCart] = useState<BazaarVentaItem[]>([]);
@@ -252,13 +270,18 @@ export const BazaarManager: React.FC = () => {
       alert('Por favor indica el nombre del bazar o evento.');
       return;
     }
+    if (newBazaarFechaFin && newBazaarFechaFin < newBazaarFecha) {
+      alert('La fecha final del evento no puede ser anterior a la fecha de inicio.');
+      return;
+    }
     const fondo = Number(newBazaarFondo) || 0;
     crearBazaarEvent(
       newBazaarNombre.trim(),
       newBazaarFecha,
       fondo,
       newBazaarUbicacion.trim() || undefined,
-      newBazaarNotas.trim() || undefined
+      newBazaarNotas.trim() || undefined,
+      newBazaarFechaFin || newBazaarFecha
     );
 
     setIsNewBazaarModalOpen(false);
@@ -368,9 +391,13 @@ export const BazaarManager: React.FC = () => {
               </div>
               <p className="text-xs text-chocolate-600 mt-0.5 flex items-center gap-3 flex-wrap">
                 {activeBazaar?.fecha && (
-                  <span className="inline-flex items-center gap-1">
-                    <Calendar className="w-3 h-3 text-chocolate-400" />
-                    {formatDate(activeBazaar.fecha)}
+                  <span className="inline-flex items-center gap-1.5 font-medium text-chocolate-700">
+                    <Calendar className="w-3.5 h-3.5 text-frambuesa-600" />
+                    <span>{formatBazaarDateRange(activeBazaar.fecha, activeBazaar.fecha_fin)}</span>
+                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-amber-100/80 text-amber-900 border border-amber-200">
+                      {getBazaarDurationDays(activeBazaar.fecha, activeBazaar.fecha_fin)}{' '}
+                      {getBazaarDurationDays(activeBazaar.fecha, activeBazaar.fecha_fin) === 1 ? 'día' : 'días'}
+                    </span>
                   </span>
                 )}
                 {activeBazaar?.ubicacion && (
@@ -392,11 +419,14 @@ export const BazaarManager: React.FC = () => {
                 onChange={(e) => setActiveBazaarId(e.target.value)}
                 className="text-xs font-bold text-chocolate-800 bg-canvas border border-trigo-300 rounded-xl px-3 py-2 shadow-xs focus:ring-2 focus:ring-frambuesa-400"
               >
-                {bazaarEvents.map((b) => (
-                  <option key={b.id} value={b.id}>
-                    {b.nombre} ({b.fecha}) {b.estado === 'activo' ? '⚡' : '✓'}
-                  </option>
-                ))}
+                {bazaarEvents.map((b) => {
+                  const rango = b.fecha_fin && b.fecha_fin !== b.fecha ? `${b.fecha} al ${b.fecha_fin}` : b.fecha;
+                  return (
+                    <option key={b.id} value={b.id}>
+                      {b.nombre} ({rango}) {b.estado === 'activo' ? '⚡' : '✓'}
+                    </option>
+                  );
+                })}
               </select>
             )}
 
@@ -1279,8 +1309,16 @@ export const BazaarManager: React.FC = () => {
                           </span>
                         )}
                       </div>
-                      <span className="text-[11px] text-chocolate-500 mt-0.5 block">
-                        {formatDate(b.fecha)} • {b.ubicacion || 'Sin ubicación registrada'} • {b.ventas.length} tickets
+                      <span className="text-[11px] text-chocolate-500 mt-0.5 flex items-center gap-1.5 flex-wrap">
+                        <span className="font-semibold text-chocolate-700">
+                          {formatBazaarDateRange(b.fecha, b.fecha_fin)}
+                        </span>
+                        <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-amber-50 text-amber-800 border border-amber-200">
+                          {getBazaarDurationDays(b.fecha, b.fecha_fin)}{' '}
+                          {getBazaarDurationDays(b.fecha, b.fecha_fin) === 1 ? 'día' : 'días'}
+                        </span>
+                        <span>• {b.ubicacion || 'Sin ubicación registrada'}</span>
+                        <span>• {b.ventas.length} tickets</span>
                       </span>
                     </div>
 
@@ -1341,20 +1379,46 @@ export const BazaarManager: React.FC = () => {
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="font-semibold text-chocolate-700 block mb-1">
-                Fecha del Evento *
+                Fecha de Inicio del Evento *
               </label>
               <input
                 type="date"
                 value={newBazaarFecha}
-                onChange={(e) => setNewBazaarFecha(e.target.value)}
+                onChange={(e) => {
+                  const nuevaFechaInicio = e.target.value;
+                  setNewBazaarFecha(nuevaFechaInicio);
+                  if (newBazaarFechaFin < nuevaFechaInicio) {
+                    setNewBazaarFechaFin(nuevaFechaInicio);
+                  }
+                }}
                 className="w-full border border-trigo-200 rounded-xl px-3 py-2 bg-canvas focus:ring-2 focus:ring-frambuesa-400"
                 required
               />
             </div>
 
+            <div>
+              <label className="font-semibold text-chocolate-700 flex items-center justify-between mb-1">
+                <span>Fecha Final del Evento *</span>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-frambuesa-50 text-frambuesa-700 border border-frambuesa-200">
+                  {getBazaarDurationDays(newBazaarFecha, newBazaarFechaFin)}{' '}
+                  {getBazaarDurationDays(newBazaarFecha, newBazaarFechaFin) === 1 ? 'día' : 'días'}
+                </span>
+              </label>
+              <input
+                type="date"
+                min={newBazaarFecha}
+                value={newBazaarFechaFin}
+                onChange={(e) => setNewBazaarFechaFin(e.target.value)}
+                className="w-full border border-trigo-200 rounded-xl px-3 py-2 bg-canvas focus:ring-2 focus:ring-frambuesa-400"
+                required
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="font-semibold text-chocolate-700 block mb-1">
                 Fondo Inicial de Caja (RD$) *
@@ -1368,19 +1432,19 @@ export const BazaarManager: React.FC = () => {
                 required
               />
             </div>
-          </div>
 
-          <div>
-            <label className="font-semibold text-chocolate-700 block mb-1">
-              Ubicación / Plaza (Opcional)
-            </label>
-            <input
-              type="text"
-              placeholder="Ej: Ágora Mall, Nivel 1, Santo Domingo"
-              value={newBazaarUbicacion}
-              onChange={(e) => setNewBazaarUbicacion(e.target.value)}
-              className="w-full border border-trigo-200 rounded-xl px-3 py-2 bg-canvas focus:ring-2 focus:ring-frambuesa-400"
-            />
+            <div>
+              <label className="font-semibold text-chocolate-700 block mb-1">
+                Ubicación / Plaza (Opcional)
+              </label>
+              <input
+                type="text"
+                placeholder="Ej: Ágora Mall, Nivel 1, Santo Domingo"
+                value={newBazaarUbicacion}
+                onChange={(e) => setNewBazaarUbicacion(e.target.value)}
+                className="w-full border border-trigo-200 rounded-xl px-3 py-2 bg-canvas focus:ring-2 focus:ring-frambuesa-400"
+              />
+            </div>
           </div>
 
           <div>

@@ -419,7 +419,8 @@ export interface BazaarItemStock {
 export interface BazaarEvent {
   id: string;
   nombre: string;
-  fecha: string;
+  fecha: string; // Fecha de inicio del evento
+  fecha_fin?: string; // Fecha final del evento (para bazares de varios días)
   ubicacion?: string;
   fondo_caja_inicial: number;
   estado: 'activo' | 'finalizado';
